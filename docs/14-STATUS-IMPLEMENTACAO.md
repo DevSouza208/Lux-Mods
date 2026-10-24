@@ -37,6 +37,18 @@
 - Transição suave e `CARREGANDO...` animado; agora randomização sem repetição até completar rodadas. A matemática de embaralhamento foi exercitada em Java 21 isoladamente, **não** compilada nem testada no NeoForge 1.21.1.
 - Guia: `docs/33-LUX-LOADING-SLIDESHOW.md`; checklist estendido em `docs/30-CHECKLIST-DE-TESTES.md`.
 
+## Clean Fantasy v3 — refinamentos do playtest (24/10/2026)
+
+A partir dos prints do usuário:
+- **Lux HUD:** removidos rótulos redundantes VIDA/FOME/XP, retrato alinhado ao bloco de três barras iguais (vida, fome, progresso XP); nível permanece no cabeçalho.
+- **Missões:** novo recurso PNG pixel-art `quest_scroll.png`, bordas com respiro, subtítulo reposicionado.
+- **Hotbar:** duas novas texturas PNG transparentes em `assets/lux_hud/textures/gui/hotbar`, com detalhes lilás/champagne e destaque do slot selecionado. Render extra acima da hotbar vanilla, sem cancelá-la nem interceptar itens/controles; `decorateHotbar=true` configurável, modo CLASSIC ignora a decoração.
+- **Lux Menu:** tratamento localizado do botão `Mods` de NeoForge, mesmo que seja subclass de `Button`, sem estilizar outras subclasses indiscriminadamente.
+
+**Evidência:** fontes publicadas e os três PNGs verificados pela assinatura PNG, dimensões, CRC32 e fechamento de chunks. **Ainda falta build e teste em Minecraft após esta mudança.** O visual anterior dos cinco mods e slideshow foi confirmado em screenshots, mas não garante estas mudanças novas.
+
+Guia de layout e testes: `docs/35-LUX-CLEAN-FANTASY-V3.md` + seção 4B de `docs/30-CHECKLIST-DE-TESTES.md`.
+
 ## Próximas fases
 
 1. Revisar compatibilidade compile/API do Lux Menu e dos botões temáticos; teste conjunto dos cinco módulos quando o usuário estiver disponível.
