@@ -15,11 +15,21 @@ Write-Host "=== SMOKE JAVA (SEM INTERNET) ===" -ForegroundColor Cyan
 & cmd.exe /c "scripts\smoke-pure-java.bat"
 if ($LASTEXITCODE -ne 0) { throw "Smoke Java falhou: codigo $LASTEXITCODE" }
 Write-Host "=== BUILD NEOFORGE (PODE BAIXAR DEPENDENCIAS) ===" -ForegroundColor Cyan
-& cmd.exe /c "gradlew.bat :lux-engine:build :lux-discovery:build --no-daemon --stacktrace"
+& cmd.exe /c "gradlew.bat assembleTestPack --no-daemon --stacktrace"
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Build falhou. Envie logs sanitizados para PR #14."
     exit $LASTEXITCODE
 }
-Write-Host "=== JARS GERADOS ===" -ForegroundColor Green
+Write-Host "=== JARS GERADOS PARA TESTE ===" -ForegroundColor Green
+$Playtest = "build/lux-testpack/mods"
+if (!(Test-Path $Playtest)) { throw "Gradle terminou mas a pasta do pacote nao foi criada: $Playtest" }
+Get-ChildItem -Path $Playtest -Filter "*.jar" | Select-Object Name, Length
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    Write-Host "=== VALIDACAO DE JARS (PYTHON 3.11+) ===" -ForegroundColor Cyan
+    & python scripts/verify_jars.py
+    if ($LASTEXITCODE -ne 0) { throw "Metadados dos JARs inconsistentes" }
+} else {
+    Write-Warning "Python nao encontrado; execute o verificador depois se desejar, ou confira os JARs manualmente."
+}
 Get-ChildItem -Path @("modules/lux-engine/build/libs","modules/lux-discovery/build/libs") -Filter "*.jar" -ErrorAction Stop | Select-Object FullName, Length
-Write-Host "Ainda falta testar os JARs no Minecraft e no servidor dedicado."
+Write-Host "Pacote pronto em $Playtest. Ainda falta testar no Minecraft e servidor dedicado." -ForegroundColor Yellow
