@@ -24,8 +24,11 @@ if (-not $env:JAVA_HOME -or -not (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.
     throw 'JAVA_HOME invalido. Configure a pasta de instalacao do JDK 21.'
 }
 $env:Path = (Join-Path $env:JAVA_HOME 'bin') + ';' + $env:Path
-$running = (& java -version 2>&1 | Out-String)
-if ($running -notmatch 'version "21[\.]') {
+# No PowerShell 5.1, "java -version" escreve no stderr, e com
+# ErrorActionPreference=Stop pode virar NativeCommandError mesmo com Java ok.
+# "java --version" (JDK 9+) escreve no stdout.
+$running = (& java --version | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $running -notmatch '(?m)^(openjdk|java) 21(\.|\s|$)') {
     throw "O Java que executa o Gradle nao e 21: $running"
 }
 
