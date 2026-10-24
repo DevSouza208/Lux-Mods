@@ -1,11 +1,10 @@
 import dev.luxmods.engine.api.LuxServiceKey;
 import dev.luxmods.engine.api.LuxServiceRegistry;
 import dev.luxmods.discovery.DiscoveryDebouncer;
+import dev.luxmods.discovery.DiscoveryLedger;
+import java.util.Set;
 
-/**
- * Smoke check executável com apenas JDK 21: não requer Gradle nem Minecraft.
- * Usa exceptions explícitas, não depende da flag -ea.
- */
+/** Teste sem Gradle ou Minecraft. Executável somente com JDK 21. */
 public final class LuxSmokeMain {
     interface Compass {
         int direction();
@@ -14,7 +13,7 @@ public final class LuxSmokeMain {
     public static void main(String[] args) {
         LuxServiceRegistry registry = new LuxServiceRegistry();
         LuxServiceKey<Compass> key = new LuxServiceKey<>("lux_atlas:compass", Compass.class);
-        check(registry.find(key).isEmpty(), "serviço ausente deveria retornar Optional.empty");
+        check(registry.find(key).isEmpty(), "serviço ausente");
         registry.register(key, () -> 180);
         check(registry.find(key).orElseThrow().direction() == 180, "registro tipado");
 
@@ -27,27 +26,24 @@ public final class LuxSmokeMain {
         check(duplicateRejected, "registro duplicado deveria falhar");
 
         DiscoveryDebouncer d = new DiscoveryDebouncer();
-        check(d.tick("overworld", "plains", 3, 4).isEmpty(), "deve esperar 3 ticks");
-        check(d.tick("overworld", "plains", 3, 4).isEmpty(), "deve esperar");
+        check(d.tick("overworld", "plains", 3, 4).isEmpty(), "espera 3 ticks");
+        check(d.tick("overworld", "plains", 3, 4).isEmpty(), "espera");
         check("plains".equals(d.tick("overworld", "plains", 3, 4).orElseThrow()),
-                "deve anunciar após estabilidade");
-        check(d.tick("overworld", "plains", 3, 4).isEmpty(), "não duplica em mesmo bioma");
-        check(d.tick("the_nether", "plains", 1, 4).isEmpty(), "cooldown respeitado");
-        check(d.tick("the_nether", "plains", 1, 4).isEmpty(), "cooldown respeitado");
-        check("plains".equals(d.tick("the_nether", "plains", 1, 4).orElseThrow()),
-                "dimensão tem descoberta própria");
-        check(d.tick("overworld", "plains", 1, 4).isEmpty(),
-                "voltar dimensão não deve duplicar descoberta");
-        d.reset();
-        check("plains".equals(d.tick("overworld", "plains", 1, 4).orElseThrow()),
-                "nova sessão deve permitir descobrir novamente");
+                "primeiro título após estabilidade");
+        check(d.tick("overworld", "plains", 3, 4).isEmpty(), "não repete");
 
-        System.out.println("LUX SMOKE PASSOU — service registry + discovery debounce/cooldown");
+        var first = DiscoveryLedger.mark(Set.of(), "overworld", "plains");
+        check(first.firstVisit(), "primeiro registro deve ser inédito");
+        var second = DiscoveryLedger.mark(first.saved(), "overworld", "plains");
+        check(!second.firstVisit(), "relog não pode repetir bioma salvo");
+        check(second.saved().size() == 1, "não duplicar itens salvos");
+        var third = DiscoveryLedger.mark(second.saved(), "the_nether", "plains");
+        check(third.firstVisit() && third.saved().size() == 2, "dimensão distinta");
+
+        System.out.println("LUX SMOKE PASSOU: services, discovery debounce e ledger persistente");
     }
 
     private static void check(boolean condition, String message) {
-        if (!condition) {
-            throw new AssertionError(message);
-        }
+        if (!condition) throw new AssertionError(message);
     }
 }

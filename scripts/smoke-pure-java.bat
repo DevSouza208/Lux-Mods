@@ -7,6 +7,7 @@ javac -encoding UTF-8 -d "%LUX_TMP%" ^
  modules\lux-engine\src\main\java\dev\luxmods\engine\api\LuxServiceKey.java ^
  modules\lux-engine\src\main\java\dev\luxmods\engine\api\LuxServiceRegistry.java ^
  modules\lux-discovery\src\main\java\dev\luxmods\discovery\DiscoveryDebouncer.java ^
+ modules\lux-discovery\src\main\java\dev\luxmods\discovery\DiscoveryLedger.java ^
  scripts\src\LuxSmokeMain.java
 if errorlevel 1 (
   rmdir /s /q "%LUX_TMP%"

@@ -2,6 +2,7 @@ package dev.luxmods.discovery.server;
 
 import dev.luxmods.discovery.DiscoveryAttachments;
 import dev.luxmods.discovery.DiscoveryDebouncer;
+import dev.luxmods.discovery.DiscoveryLedger;
 import dev.luxmods.discovery.DiscoveryServerConfig;
 import dev.luxmods.discovery.network.BiomeDiscoveredPayload;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,7 +12,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -42,15 +42,13 @@ public final class DiscoveryServerEvents {
     }
 
     private void recordAndAnnounce(ServerPlayer player, String dimensionId, String biomeId) {
-        String key = dimensionId + "|" + biomeId;
         Set<String> old = player.getData(DiscoveryAttachments.SEEN_BIOMES);
+        DiscoveryLedger.MarkResult result = DiscoveryLedger.mark(old, dimensionId, biomeId);
 
-        // Apenas o servidor decide se esta descoberta é inédita para o personagem.
-        if (old.contains(key)) return;
+        // O servidor guarda a primeira descoberta. Itens conhecidos não anunciam de novo.
+        if (!result.firstVisit()) return;
 
-        Set<String> updated = new HashSet<>(old);
-        updated.add(key);
-        player.setData(DiscoveryAttachments.SEEN_BIOMES, Set.copyOf(updated));
+        player.setData(DiscoveryAttachments.SEEN_BIOMES, result.saved());
         PacketDistributor.sendToPlayer(player, new BiomeDiscoveredPayload(biomeId));
     }
 
