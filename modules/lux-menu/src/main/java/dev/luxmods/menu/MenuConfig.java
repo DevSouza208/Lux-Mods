@@ -14,6 +14,10 @@ public final class MenuConfig {
             .comment("Desenha os botoes comuns no tema Clean Fantasy; preserva as acoes vanilla.")
             .define("styleButtons", true);
 
+    public static final ModConfigSpec.BooleanValue STYLE_SUBMENUS = BUILDER
+            .comment("Aplica somente o estilo dos botoes vanilla nas telas Opcoes, Mundos e Multiplayer.")
+            .define("styleSubmenus", true);
+
     public static final ModConfigSpec.BooleanValue SHOW_BRANDING = BUILDER
             .comment("Exibe a assinatura discreta do Lux Mods sem alterar o logo Minecraft.")
             .define("showBranding", true);

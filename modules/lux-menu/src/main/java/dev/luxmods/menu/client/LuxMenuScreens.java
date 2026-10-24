@@ -8,6 +8,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.List;
@@ -19,14 +22,22 @@ import java.util.List;
 public final class LuxMenuScreens {
     private LuxMenuScreens() { }
 
-    private static boolean supported(Screen screen) {
+    private static boolean isPrimaryScreen(Screen screen) {
         return screen instanceof TitleScreen || screen instanceof PauseScreen;
+    }
+
+    private static boolean isButtonStyleScreen(Screen screen) {
+        if (isPrimaryScreen(screen)) return true;
+        if (!MenuConfig.STYLE_SUBMENUS.get()) return false;
+        // Keep these screens' lists, file/hostname fields and special controls untouched.
+        return screen instanceof OptionsScreen || screen instanceof JoinMultiplayerScreen
+                || screen instanceof SelectWorldScreen;
     }
 
     /** Run after vanilla has added its controls. Preserve all nonstandard widgets. */
     public static void onInit(ScreenEvent.Init.Post event) {
         if (!MenuConfig.ENABLED.get() || !MenuConfig.STYLE_BUTTONS.get()
-                || !supported(event.getScreen())) return;
+                || !isButtonStyleScreen(event.getScreen())) return;
 
         // Only replace exact vanilla Button objects: leave subclass-specific
         // buttons, sliders, modded widgets and event-provided controls alone.
@@ -42,7 +53,7 @@ public final class LuxMenuScreens {
     /** Branding is drawn after the screen but outside interactive controls. */
     public static void onRender(ScreenEvent.Render.Post event) {
         if (!MenuConfig.ENABLED.get() || !MenuConfig.SHOW_BRANDING.get()
-                || !supported(event.getScreen())) return;
+                || !isPrimaryScreen(event.getScreen())) return;
         GuiGraphics g = event.getGuiGraphics();
         Minecraft mc = Minecraft.getInstance();
         int width = g.guiWidth(), height = g.guiHeight();

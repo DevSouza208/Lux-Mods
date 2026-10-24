@@ -25,6 +25,7 @@ final class LuxMenuButton extends Button {
         // Keep the original button's state in sync when vanilla changes it later.
         this.active = original.active;
         this.visible = original.visible;
+        this.setMessage(original.getMessage());
         if (!visible) return;
 
         int x = getX(), y = getY(), w = getWidth(), h = getHeight();
