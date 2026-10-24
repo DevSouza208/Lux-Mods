@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lux Boot — Protótipo Clean Fantasy</title>
+<style>
+:root {
+  color-scheme:dark; --bg:#121019; --panel:#1c1929; --line:#76558e;
+  --accent:#af84ee; --champagne:#f4ce87; --text:#f7f1ff; --soft:#c9c0d4;
+  --track:#282232; --fill:#8c61c7;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 10%,#281e36 0%,#0e0b13 75%);
+  font-family:Consolas,"Courier New",monospace;color:var(--text)}
+main{width:min(96vw,1010px);padding:24px 0}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+h1{font-size:15px;letter-spacing:2px;margin:0;color:var(--champagne)}
+.note{font-size:11px;color:var(--soft);max-width:50ch}
+.screen{aspect-ratio:854/480;width:100%;background:linear-gradient(155deg,#252035 0%,var(--bg) 60%,#14101d 100%);
+position:relative;overflow:hidden;border:2px solid var(--accent);
+box-shadow:0 0 0 2px #32223d,0 20px 60px #07060b, inset 0 0 0 3px #55406b;}
+.screen:before{content:"";position:absolute;inset:8px;border:1px solid #6a4c83;pointer-events:none}
+.corner{position:absolute;width:14px;height:14px;background:#b485ef;border:3px solid #433055;
+transform:rotate(45deg);z-index:3;box-shadow:0 0 7px #6f4da5}
+.tl{left:1px;top:1px}.tr{right:1px;top:1px}.bl{left:1px;bottom:1px}.br{right:1px;bottom:1px}
+header{position:absolute;left:5%;right:5%;top:8%;display:flex;justify-content:space-between;align-items:center;
+font-size:clamp(9px,1.2vw,14px);letter-spacing:1.5px;color:var(--soft)}
+.brand{border:1px solid var(--line);padding:9px 13px;background:#1c1824cc;color:var(--champagne)}
+.symbol{display:inline-block;color:var(--accent);margin-right:7px;font-size:18px}
+.state{text-transform:uppercase}
+.center{position:absolute;top:28%;left:5%;right:5%;text-align:center}
+.eyebrow{font-size:clamp(8px,.95vw,12px);color:var(--champagne);letter-spacing:4px;text-transform:uppercase}
+.logo{font-size:clamp(28px,6.5vw,74px);font-weight:bold;letter-spacing:6px;
+color:var(--text);text-shadow:3px 4px 0 #634889,6px 7px 0 #291d3d;margin:5px 0 9px}
+.subtitle{font-size:clamp(9px,1.5vw,17px);color:var(--soft);letter-spacing:3px}
+.orn{margin:22px auto 0;border-bottom:1px solid var(--line);max-width:38%;position:relative}
+.orn:after{content:"◆";color:var(--champagne);position:absolute;top:-11px;left:calc(50% - 7px);
+background:var(--bg);padding:0 3px;font-size:15px}
+.progress{position:absolute;left:16%;right:16%;bottom:17%}
+.track-title{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;
+font-size:clamp(9px,1.1vw,14px);color:var(--champagne)}
+.bar{height:19px;border:2px solid var(--line);padding:2px;background:#100c17;box-shadow:inset 0 0 0 1px #201627}
+.fill{height:100%;width:0%;background:linear-gradient(180deg,#c9a2ff 0 2px,var(--fill) 2px 100%);transition:width .22s linear}
+.subline{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:var(--soft);
+font-size:clamp(8px,1vw,13px)}
+.footer{position:absolute;bottom:5%;left:5%;right:5%;border-top:1px solid #4f3a60;padding-top:10px;
+display:flex;justify-content:space-between;color:var(--soft);font-size:clamp(8px,1vw,12px)}
+.controls{margin:14px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;background:#251a35;color:var(--text);border:1px solid var(--accent);
+padding:9px 14px;cursor:pointer}button:hover,button:focus-visible{background:#4b3267;outline:1px solid var(--champagne)}
+small{color:var(--soft)}
+@media(max-width:600px){main{padding:10px}.center{top:25%}.orn{margin-top:11px}
+.logo{letter-spacing:2px}.progress{left:10%;right:10%;bottom:18%}.brand{padding:4px 6px}.bar{height:12px}}
+@media(prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<div class="top">
+<h1>LUX BOOT / CLEAN FANTASY</h1>
+<div class="note"><strong>PROTÓTIPO NO NAVEGADOR</strong> — nenhum progresso exibido é real. Não altera Minecraft.</div>
+</div>
+<section class="screen" aria-label="Simulação da tela de carregamento Lux">
+<span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+<header><div class="brand"><span class="symbol">◆</span> LUX MODS</div><span class="state">NEOFORGE · 1.21.1</span></header>
+<div class="center">
+<div class="eyebrow">Uma nova aventura começa</div>
+<div class="logo">LUX MODS</div>
+<div class="subtitle">CLEAN FANTASY</div>
+<div class="orn"></div>
+</div>
+<div class="progress">
+<div class="track-title"><span id="phase">Simulando carregamento...</span><span id="pct">0%</span></div>
+<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progresso simulado" id="track"><div class="fill" id="fill"></div></div>
+<div class="subline"><span id="status">Esta prévia não lê mods nem arquivos reais.</span><span>PROGRESSO SIMULADO</span></div>
+</div>
+<div class="footer"><span>◆ CAMINHOS SE REVELAM</span><span>BUILD VISUAL V0.1 / CONCEITO</span></div>
+</section>
+<div class="controls">
+<button type="button" id="restart">Reiniciar simulação</button>
+<button type="button" id="pause">Pausar</button>
+<small>O carregamento real do FML precisa de um provedor próprio para exibir essa arte.</small>
+</div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var fill=document.getElementById('fill'),pct=document.getElementById('pct');
+  var phase=document.getElementById('phase'),status=document.getElementById('status');
+  var track=document.getElementById('track'),pause=document.getElementById('pause');
+  var phases=[
+    ['Preparando o mundo...', 'Iniciando sistemas de interface'],
+    ['Carregando módulos Lux...', 'Engine / Discovery / Atlas / HUD / Menu'],
+    ['Preparando recursos...', 'Aplicando identidade visual Clean Fantasy'],
+    ['Quase lá...', 'A aventura está pronta para começar']
+  ];
+  var percent=0,paused=false;
+  function render(){
+    var i=Math.min(phases.length-1,Math.floor(percent/25));
+    phase.textContent=phases[i][0];status.textContent=phases[i][1];
+    pct.textContent=percent+'%';fill.style.width=percent+'%';
+    track.setAttribute('aria-valuenow',String(percent));
+  }
+  document.getElementById('restart').addEventListener('click',function(){percent=0;paused=false;pause.textContent='Pausar';render()});
+  pause.addEventListener('click',function(){paused=!paused;pause.textContent=paused?'Continuar':'Pausar'});
+  setInterval(function(){if(!paused && percent<100){percent=Math.min(100,percent+1);render()}},105);
+  render();
+}());
+</script>
+</body>
+</html>
