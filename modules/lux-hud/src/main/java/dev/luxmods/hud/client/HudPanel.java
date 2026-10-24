@@ -11,12 +11,12 @@ import net.minecraft.world.effect.MobEffectInstance;
 import java.util.Comparator;
 
 /**
- * Lux Clean Fantasy v2: pixel-framed portrait, inline stat icons/numbers,
- * compact XP, real potion-effects tray and optional genuine party + quests.
+ * Lux Clean Fantasy v3. A 3-row stat grid aligned with a single tall portrait.
+ * Distinct icons are sufficient: no VIDA/FOME/XP labels crowd the bars.
  */
 public final class HudPanel {
     private static final int WIDTH = 230;
-    private static final int HEIGHT = 84;
+    private static final int HEIGHT = 80;
     private static final int LEFT = 10;
     private static final int TOP = 10;
 
@@ -35,29 +35,33 @@ public final class HudPanel {
         int x = LEFT, y = TOP;
 
         LuxGuiStyle.panel(g, x, y, WIDTH, HEIGHT);
-        g.fill(x + 7, y + 15, x + 45, y + 53, 0xFF282234);
-        PlayerFaceRenderer.draw(g, player.getSkin(), x + 10, y + 18, 32);
-        LuxGuiStyle.icon(g, "portrait_frame", x + 7, y + 15, 38, 38);
 
-        String name = player.getName().getString();
-        if (name.length() > 16) name = name.substring(0, 13) + "...";
-        g.drawString(mc.font, name, x + 49, y + 7, LuxGuiStyle.FOREGROUND, true);
+        // Portrait height is precisely the three rows: y+24 through y+72.
+        g.fill(x + 8, y + 23, x + 58, y + 73, 0xFF282234);
+        PlayerFaceRenderer.draw(g, player.getSkin(), x + 10, y + 25, 46);
+        LuxGuiStyle.icon(g, "portrait_frame", x + 7, y + 22, 52, 52);
 
         String level = "Nv. " + player.experienceLevel;
-        g.drawString(mc.font, level, x + WIDTH - 11 - mc.font.width(level),
-                y + 8, LuxGuiStyle.MUTED_TEXT, false);
+        int levelX = x + WIDTH - 10 - mc.font.width(level);
+        g.drawString(mc.font, level, levelX, y + 8, LuxGuiStyle.MUTED_TEXT, false);
 
-        // Portrait frame stays unobstructed; values live inside their beveled bars.
-        drawStat(g, mc, x + 49, y + 23, "stat_health", "VIDA", player.getHealth(),
-                player.getMaxHealth(), LuxGuiStyle.HEALTH);
-        drawStat(g, mc, x + 49, y + 44, "stat_hunger", "FOME",
-                player.getFoodData().getFoodLevel(), 20f, LuxGuiStyle.HUNGER);
+        String name = player.getName().getString();
+        int maxNameWidth = Math.max(38, levelX - (x + 65) - 8);
+        if (mc.font.width(name) > maxNameWidth) {
+            while (!name.isEmpty() && mc.font.width(name + "...") > maxNameWidth) {
+                name = name.substring(0, name.length() - 1);
+            }
+            name += "...";
+        }
+        g.drawString(mc.font, name, x + 65, y + 8, LuxGuiStyle.FOREGROUND, true);
 
-        LuxGuiStyle.separator(g, x + 8, y + 64, WIDTH - 16);
-        g.drawString(mc.font, "XP", x + 10, y + 69, LuxGuiStyle.EXPERIENCE, false);
-        LuxGuiStyle.icon(g, "stat_xp", x + 27, y + 68, 12, 12);
-        LuxGuiStyle.bar(g, x + 43, y + 70, WIDTH - 96, 8,
-                player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE);
+        // Three icons, three bars, identical x alignment and row spacing.
+        drawStat(g, mc, x + 63, y + 25, "stat_health", player.getHealth(),
+                player.getMaxHealth(), LuxGuiStyle.HEALTH, false);
+        drawStat(g, mc, x + 63, y + 43, "stat_hunger",
+                player.getFoodData().getFoodLevel(), 20f, LuxGuiStyle.HUNGER, false);
+        drawStat(g, mc, x + 63, y + 61, "stat_xp",
+                player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE, true);
 
         if (HudConfig.SHOW_EFFECTS.get()) {
             drawEffects(g, mc, x + WIDTH + 9, y + 2, WIDTH);
@@ -71,13 +75,15 @@ public final class HudPanel {
     }
 
     private static void drawStat(GuiGraphics g, Minecraft mc, int x, int y,
-                                 String icon, String label, float value,
-                                 float max, int color) {
-        g.drawString(mc.font, label, x, y, LuxGuiStyle.MUTED_TEXT, false);
-        LuxGuiStyle.icon(g, icon, x, y + 10, 11, 11);
-        LuxGuiStyle.bar(g, x + 15, y + 10, 132, 11, value, max, color);
-        String amount = Math.round(value) + "/" + Math.round(max);
-        g.drawString(mc.font, amount, x + 22, y + 11, 0xFFFFFFFF, true);
+                                 String icon, float value, float max, int color,
+                                 boolean percent) {
+        LuxGuiStyle.icon(g, icon, x, y, 12, 12);
+        int bx = x + 17;
+        LuxGuiStyle.bar(g, bx, y, 143, 11, value, max, color);
+        String amount = percent ? Math.round(value * 100f) + "%"
+                : Math.round(value) + "/" + Math.round(max);
+        // Keep the numeric value readable even when the fill is empty.
+        g.drawString(mc.font, amount, bx + 6, y + 1, 0xFFFFFFFF, true);
     }
 
     private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int panelWidth) {
@@ -87,7 +93,6 @@ public final class HudPanel {
                 .limit(4).toList();
         if (effects.isEmpty()) return;
 
-        // Keep clear of the right-hand quest panel on narrower screens.
         int available = mc.getWindow().getGuiScaledWidth() - 212 - x;
         int count = Math.min(effects.size(), Math.max(0, (available - 8) / 25));
         if (count == 0) return;

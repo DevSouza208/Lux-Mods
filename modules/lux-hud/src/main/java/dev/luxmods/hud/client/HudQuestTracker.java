@@ -4,7 +4,7 @@ import dev.luxmods.engine.client.LuxGuiStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-/** Real quest data only; rich pixel framing even when no quest is tracked. */
+/** Quest status is always real; the decorative scroll icon is never a fake task. */
 public final class HudQuestTracker {
     private static final int WIDTH = 194;
     private static Quest tracked;
@@ -39,30 +39,31 @@ public final class HudQuestTracker {
         int width = Math.min(WIDTH, g.guiWidth() - x - 10);
         if (width < 128) return;
         Quest current = tracked;
-        int height = current == null ? 46 : 81;
+        int height = current == null ? 62 : 104;
 
         LuxGuiStyle.panel(g, x, top, width, height);
-        LuxGuiStyle.icon(g, "quest_badge", x + 7, top + 5, 18, 18);
-        g.drawString(mc.font, "MISSÕES", x + 29, top + 10,
+
+        // Scroll parchment with lavender gemstone seal; 14px internal padding.
+        LuxGuiStyle.icon(g, "quest_scroll", x + 13, top + 9, 22, 22);
+        g.drawString(mc.font, "MISSÕES", x + 42, top + 15,
                 LuxGuiStyle.FOREGROUND, true);
-        LuxGuiStyle.separator(g, x + 9, top + 25, width - 18);
+        LuxGuiStyle.separator(g, x + 14, top + 35, width - 28);
 
         if (current == null) {
-            g.drawString(mc.font,
-                    width < 170 ? "Sem missão ativa" : "Nenhuma missão acompanhada",
-                    x + 9, top + 32, LuxGuiStyle.MUTED_TEXT, false);
+            g.drawString(mc.font, width < 175 ? "Sem missão ativa" : "Sem missão acompanhada",
+                    x + 17, top + 44, LuxGuiStyle.MUTED_TEXT, false);
             return;
         }
-        g.drawString(mc.font, elide(current.title(), width < 170 ? 18 : 27),
-                x + 9, top + 32, LuxGuiStyle.AMBER, true);
-        LuxGuiStyle.icon(g, "quest_check", x + 9, top + 48, 10, 10);
-        g.drawString(mc.font, elide(current.objective(), width < 170 ? 17 : 24),
-                x + 23, top + 49, LuxGuiStyle.MUTED_TEXT, false);
-        LuxGuiStyle.bar(g, x + 9, top + 64, width - 18, 6,
+        g.drawString(mc.font, elide(current.title(), width < 175 ? 16 : 25),
+                x + 17, top + 45, LuxGuiStyle.AMBER, true);
+        LuxGuiStyle.icon(g, "quest_check", x + 16, top + 64, 10, 10);
+        g.drawString(mc.font, elide(current.objective(), width < 175 ? 15 : 23),
+                x + 31, top + 65, LuxGuiStyle.MUTED_TEXT, false);
+        LuxGuiStyle.bar(g, x + 16, top + 81, width - 32, 7,
                 current.done(), current.total(), LuxGuiStyle.TOP_ACCENT);
         String count = current.done() + "/" + current.total();
-        g.drawString(mc.font, count, x + width - 10 - mc.font.width(count),
-                top + 72, LuxGuiStyle.AMBER, false);
+        g.drawString(mc.font, count, x + width - 17 - mc.font.width(count),
+                top + 92, LuxGuiStyle.AMBER, false);
     }
 
     private static String elide(String value, int max) {

@@ -28,6 +28,10 @@ public final class HudConfig {
             .comment("Mostrar rastreador de missoes a direita; sem tarefas ficticias.")
             .define("showQuests", true);
 
+    public static final ModConfigSpec.BooleanValue DECORATE_HOTBAR = BUILDER
+            .comment("Moldura pixel art Clean Fantasy na hotbar, sem substituir os slots/items vanilla.")
+            .define("decorateHotbar", true);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private HudConfig() {

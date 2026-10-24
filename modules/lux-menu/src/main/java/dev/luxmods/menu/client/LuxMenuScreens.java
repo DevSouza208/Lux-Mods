@@ -42,8 +42,14 @@ public final class LuxMenuScreens {
         // Only replace exact vanilla Button objects: leave subclass-specific
         // buttons, sliders, modded widgets and event-provided controls alone.
         for (var item : List.copyOf(event.getListenersList())) {
-            if (item.getClass() != Button.class) continue;
-            Button button = (Button) item;
+            if (!(item instanceof Button button)) continue;
+            // NeoForge supplies its Mods button as a Button subclass. Only
+            // decorate this explicitly recognized entry on the title screen;
+            // leave all other third-party subclasses and sliders unchanged.
+            boolean plainVanilla = item.getClass() == Button.class;
+            boolean modsEntry = event.getScreen() instanceof TitleScreen
+                    && "Mods".equalsIgnoreCase(button.getMessage().getString().strip());
+            if (!plainVanilla && !modsEntry) continue;
             if (button.getWidth() < 62 || button.getHeight() < 16) continue;
             event.removeListener(button);
             event.addListener(new LuxMenuButton(button));

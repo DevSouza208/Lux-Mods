@@ -13,6 +13,11 @@ public final class HudClientLayers {
     public static void register(RegisterGuiLayersEvent event) {
         event.registerAbove(
                 VanillaGuiLayers.HOTBAR,
+                ResourceLocation.fromNamespaceAndPath(LuxHud.MOD_ID, "hotbar_trim"),
+                HudHotbar::render
+        );
+        event.registerAbove(
+                VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(LuxHud.MOD_ID, "player_panel"),
                 HudPanel::render
         );

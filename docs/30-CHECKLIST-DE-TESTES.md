@@ -68,6 +68,23 @@
 - [ ] 04.13 Verificar visual em baixa resolução/escala automática e com nome de jogador longo.
 - [ ] 04.14 HUD e sincronização com clientes multiplayer + servidor dedicado (servidor não carrega GUI).
 
+
+## 4B — HUD Clean Fantasy v3 e hotbar (implementações aguardando playtest)
+
+- [ ] 04B.01 Retrato do personagem alinhado verticalmente ao conjunto de **três** barras, sem cortes da skin.
+- [ ] 04B.02 Barras na ordem Vida, Fome, XP; todas com o mesmo alinhamento, tamanho e intervalo.
+- [ ] 04B.03 Textos VIDA/FOME/XP removidos; ícones corretos continuam legíveis com os valores reais.
+- [ ] 04B.04 Vida/fome/XP alteram valores e comprimentos corretamente ao sofrer dano, comer e ganhar experiência.
+- [ ] 04B.05 MISSÕES com ícone pergaminho, margem interna ampliada e descrição sem tocar na moldura.
+- [ ] 04B.06 Se houver quest real, título/objetivo/contador continuam visíveis sem corte.
+- [ ] 04B.07 Hotbar exibe acabamento roxo e champagne, nove divisões legíveis e contorno de slot selecionado.
+- [ ] 04B.08 Mudar de slot com 1–9 ou scroll acompanha a seleção; itens, contagens, durabilidade e teclas vanilla continuam intactos.
+- [ ] 04B.09 Bússola fica acima da hotbar personalizada sem sobreposição, também em escalas de GUI diferentes.
+- [ ] 04B.10 Inventário offhand, espectador, F1 e outras GUIs continuam vanilla quando necessário.
+- [ ] 04B.11 `decorateHotbar=false` ou `mode=CLASSIC` restaura a barra original sem ornamentos.
+- [ ] 04B.12 No menu principal, o botão Mods deve ter o mesmo estilo sem perder clique, foco ou tooltip.
+- [ ] 04B.13 Conferir os assets novos `quest_scroll.png`, `lux_hotbar_trim.png` e `lux_hotbar_selected.png` nos JARs finais.
+
 ## 5 — Lux Menu (primeiro print real do menu recebido em 24/10/2026)
 
 - [ ] 05.01 O quinto mod `lux_menu` aparece como Loaded sem afetar os quatro existentes.
