@@ -1,84 +1,86 @@
-# Lux Boot — reversible dark startup for SKlauncher TESTE only.
-# Default Preview: no modifications. This is NOT a custom graphics provider.
+# Lux Boot v2 — FML 1.21.1 BLACK palette preserving progress indicators.
+# Preview by default. ONLY the SKlauncher "teste" instance is modified.
 [CmdletBinding()]
-param([ValidateSet('Preview','Apply','Restore')][string]$Action = 'Preview')
-$ErrorActionPreference = 'Stop'
-$instance = Join-Path $env:APPDATA '.sklauncher\instances\teste'
-$fml = Join-Path $instance 'config\fml.toml'
-$options = Join-Path $instance 'options.txt'
-$backups = Join-Path $instance 'lux-boot-backup'
-function Read-Text($path) {
-    return [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+param([ValidateSet('Preview','Apply','Restore')][string]$Action='Preview')
+$ErrorActionPreference='Stop'
+$dir=Join-Path $env:APPDATA '.sklauncher\instances\teste'
+$options=Join-Path $dir 'options.txt'
+$fml=Join-Path $dir 'config\fml.toml'
+$backups=Join-Path $dir 'lux-boot-backup'
+$pattern='(?m)^darkMojangStudiosBackground:(?<state>true|false)(?<trail>[ \t]*)(?<cr>\r?)$'
+function Read-Text($path) {[System.IO.File]::ReadAllText($path,[Text.Encoding]::UTF8)}
+function Write-Text($path,$value) {
+    $encoding=New-Object Text.UTF8Encoding($false)
+    [IO.File]::WriteAllText($path,$value,$encoding)
 }
-function Write-Text($path, $value) {
-    $utf8 = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($path, $value, $utf8)
+if ((Split-Path $dir -Leaf) -cne 'teste' -or !(Test-Path $dir -PathType Container)) {
+    throw "Instancia teste indisponivel: $dir"
 }
-if (-not (Test-Path $instance -PathType Container)) {
-    throw "Instancia de teste nao encontrada: $instance"
+if (!(Test-Path $options -PathType Leaf)) {throw "options.txt nao encontrado: $options"}
+$current=Read-Text $options
+$found=[regex]::Matches($current,$pattern)
+if($found.Count -gt 1){throw 'Preferencia duplicada; abortado sem alteracoes.'}
+$lf=[string][char]10
+$crlf=[string][char]13+$lf
+$eol=if($current.Contains($crlf)){$crlf}else{$lf}
+$fmlControl='desconhecido'
+if(Test-Path $fml -PathType Leaf){
+    $control=[regex]::Matches((Read-Text $fml),'(?m)^[ \t]*earlyWindowControl[ \t]*=[ \t]*(true|false)[ \t]*(?:#.*)?\r?$')
+    if($control.Count -gt 1){throw 'Configuracoes earlyWindowControl duplicadas; abortado.'}
+    if($control.Count -eq 1){$fmlControl=$control[0].Groups[1].Value}
 }
-if ((Split-Path $instance -Leaf) -ne 'teste') {
-    throw 'Seguranca: esta ferramenta atua exclusivamente na instancia teste.'
-}
-if ($Action -eq 'Restore') {
-    $previous = @(Get-ChildItem -Path $backups -Directory -ErrorAction SilentlyContinue |
-        Where-Object { (Test-Path (Join-Path $_.FullName 'fml.toml')) -and
-                       (Test-Path (Join-Path $_.FullName 'options.txt')) } |
+if($Action -eq 'Restore'){
+    $last=@(Get-ChildItem $backups -Directory -ErrorAction SilentlyContinue |
+        Where-Object {Test-Path (Join-Path $_.FullName 'boot-state.json')} |
         Sort-Object Name -Descending | Select-Object -First 1)
-    if ($previous.Count -ne 1) {
-        throw 'Backup ausente. Nenhuma alteracao realizada.'
+    if($last.Count -ne 1){throw 'Backup Lux Boot v2 nao encontrado.'}
+    $state=Get-Content (Join-Path $last[0].FullName 'boot-state.json') -Raw | ConvertFrom-Json
+    if($state.schema -ne 2 -or $state.instanceName -ne 'teste'){throw 'Backup invalido.'}
+    if($state.originalPresent){
+        $oldLine=[string]$state.originalLine
+        if($found.Count -eq 0){
+            $sep=if($current.EndsWith($lf)){''}else{$eol}
+            $restored=$current+$sep+$oldLine+$eol
+        }else{
+            $restored=[regex]::Replace($current,$pattern,[Text.RegularExpressions.MatchEvaluator]{
+                param($m)
+                return $oldLine+$m.Groups['cr'].Value
+            })
+        }
+    }else{
+        $restored=[regex]::Replace($current,'(?m)^darkMojangStudiosBackground:(?:true|false)[ \t]*\r?\n?','')
     }
-    Copy-Item -LiteralPath (Join-Path $previous[0].FullName 'fml.toml') -Destination $fml -Force
-    Copy-Item -LiteralPath (Join-Path $previous[0].FullName 'options.txt') -Destination $options -Force
-    Write-Host 'Configuracoes originais restauradas. Reinicie o Minecraft.' -ForegroundColor Green
+    if($restored -cne $current){Write-Text $options $restored}
+    Write-Host 'Preferencia original restaurada, outras opcoes preservadas.' -ForegroundColor Green
     exit 0
 }
-if (-not (Test-Path $fml -PathType Leaf) -or -not (Test-Path $options -PathType Leaf)) {
-    throw 'fml.toml ou options.txt nao encontrado. Abra a instancia uma vez antes de usar o tema.'
+$oldValue=if($found.Count -eq 0){'ausente'}else{$found[0].Groups['state'].Value}
+Write-Host "LUX BOOT - instancia TESTE - earlyWindowControl=$fmlControl (inalterado)" -ForegroundColor Magenta
+Write-Host "darkMojangStudiosBackground: $oldValue -> true (FML black com barras de progresso)"
+Write-Warning 'Apenas fundo preto; tema grafite/roxo completo ainda nao implementado.'
+if($Action -eq 'Preview'){Write-Host 'PREVIEW: nenhuma alteracao.';exit 0}
+if($oldValue -eq 'true'){Write-Host 'Ja ativo; nenhuma alteracao.';exit 0}
+$backup=Join-Path $backups (Get-Date -Format 'yyyyMMdd-HHmmss-fff')
+New-Item $backup -ItemType Directory -Force | Out-Null
+Copy-Item -LiteralPath $options -Destination (Join-Path $backup 'options.txt') -Force
+if(Test-Path $fml -PathType Leaf){
+    Copy-Item -LiteralPath $fml -Destination (Join-Path $backup 'fml.toml') -Force
 }
-$oldFml = Read-Text $fml
-$oldOptions = Read-Text $options
-$pat = '(?m)^[ \t]*earlyWindowControl[ \t]*=[ \t]*(?:true|false)[ \t]*(?:#.*)?$'
-$hits = [regex]::Matches($oldFml, $pat)
-if ($hits.Count -ne 1) {
-    throw "Configuracao FML desconhecida: esperado um earlyWindowControl, encontrado $($hits.Count). Abortado."
+$line=if($found.Count -eq 1){$found[0].Value.TrimEnd([char]13)}else{''}
+$state=@{schema=2;instanceName='teste';originalPresent=($found.Count -eq 1);originalLine=$line}
+Write-Text (Join-Path $backup 'boot-state.json') ($state | ConvertTo-Json)
+if($found.Count -eq 1){
+    $updated=[regex]::Replace($current,$pattern,[Text.RegularExpressions.MatchEvaluator]{
+        param($m)
+        return 'darkMojangStudiosBackground:true'+$m.Groups['trail'].Value+$m.Groups['cr'].Value
+    })
+}else{
+    $sep=if($current.EndsWith($lf)){''}else{$eol}
+    $updated=$current+$sep+'darkMojangStudiosBackground:true'+$eol
 }
-$newFml = [regex]::Replace($oldFml, $pat, 'earlyWindowControl = false')
-$optPat = '(?m)^darkMojangStudiosBackground:(?:true|false)[ \t]*$'
-$optHits = [regex]::Matches($oldOptions, $optPat)
-if ($optHits.Count -gt 1) {
-    throw 'Configuracao Mojang duplicada em options.txt. Abortado.'
+try{Write-Text $options $updated}
+catch{
+    Copy-Item (Join-Path $backup 'options.txt') -Destination $options -Force
+    throw 'Falha na escrita; options.txt original recuperado.'
 }
-if ($optHits.Count -eq 1) {
-    $newOptions = [regex]::Replace($oldOptions, $optPat, 'darkMojangStudiosBackground:true')
-} else {
-    $ending = [Environment]::NewLine
-    if ($oldOptions.EndsWith([char]10)) { $ending = '' }
-    $newOptions = $oldOptions + $ending + 'darkMojangStudiosBackground:true' + [Environment]::NewLine
-}
-Write-Host '=== LUX BOOT / MODO EXPERIMENTAL REVERSIVEL ===' -ForegroundColor Magenta
-Write-Host "Instancia: $instance"
-Write-Host 'Desabilita a janela vermelha antecipada FML; escurece somente a tela Mojang posterior.'
-Write-Warning 'NAO e um tema Lux completo: barras, estatisticas e a raposa da janela FML deixam de aparecer.'
-if ($Action -eq 'Preview') {
-    Write-Host 'PREVIEW: nada foi alterado.' -ForegroundColor Green
-    exit 0
-}
-if ($newFml -ceq $oldFml -and $newOptions -ceq $oldOptions) {
-    Write-Host 'Opcoes ja estavam aplicadas. Nada modificado.' -ForegroundColor Green
-    exit 0
-}
-$folder = Join-Path $backups (Get-Date -Format 'yyyyMMdd-HHmmss-fff')
-New-Item -Path $folder -ItemType Directory -Force | Out-Null
-Copy-Item -LiteralPath $fml -Destination (Join-Path $folder 'fml.toml') -Force
-Copy-Item -LiteralPath $options -Destination (Join-Path $folder 'options.txt') -Force
-try {
-    if ($newFml -cne $oldFml) { Write-Text $fml $newFml }
-    if ($newOptions -cne $oldOptions) { Write-Text $options $newOptions }
-} catch {
-    Copy-Item (Join-Path $folder 'fml.toml') -Destination $fml -Force
-    Copy-Item (Join-Path $folder 'options.txt') -Destination $options -Force
-    throw 'Falha na gravacao. Arquivos originais restaurados.'
-}
-Write-Host "Aplicado somente na instancia teste. Backup: $folder" -ForegroundColor Green
-Write-Host 'Para desfazer: -Action Restore. Reinicie o Minecraft.'
+Write-Host "Aplicado a TESTE. Backup: $backup" -ForegroundColor Green
