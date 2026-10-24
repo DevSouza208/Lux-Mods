@@ -19,18 +19,18 @@
 - GitHub Actions teve incidentes `startup_failure` sem jobs (issue #15); não presumir CI verde.
 - Não alterar `main`, não concluir PR #14, não publicar release antes do teste integrado e dedicated server.
 - O usuário prefere **fazer todos os testes em uma sessão posterior**, não solicitar teste em cada nova atualização.
-- O **checklist único de 70 verificações** está em `docs/30-CHECKLIST-DE-TESTES.md`. Há também scripts locais `scripts/TESTAR-PACOTE-LUX.bat` e `scripts/reunir-evidencias.ps1` que inventariam os JARs sem alterar o mundo ou enviar logs.
+- O **checklist único de 78 verificações** está em `docs/30-CHECKLIST-DE-TESTES.md`. Há também scripts locais `scripts/TESTAR-PACOTE-LUX.bat` e `scripts/reunir-evidencias.ps1` que inventariam os JARs sem alterar o mundo ou enviar logs.
 
 ## Experimento de boot (sem teste)
 
 - `docs/32-LUX-BOOT-CARREGAMENTO.md` documenta o estudo da janela vermelha NeoForge e a incompatibilidade de versões entre loaders.
-- `scripts/lux-boot-theme.ps1` foi preparado como ferramenta **opt-in** que, se autorizada, altera configurações somente da instância `teste`, com backup e restauração. **Não faz parte do atualizador, não está ativada nem testada no jogo**.
+- `scripts/lux-boot-theme.ps1` revisado: modo opt-in altera **somente options.txt** da instância `teste`, definindo `darkMojangStudiosBackground:true`. O FancyModLoader 1.21.1 suporta diretamente esse modo de fundo preto, preservando a janela antecipada e as barras de progresso reais, sem alterar earlyWindowControl. A ferramenta tem Preview, Apply e Restore com backup local. **Não faz parte do atualizador, não está ativada nem testada no jogo**.
 - O tema completo de loading Lux ainda **não está implementado**; não confundir com essa opção escura mínima.
 
 ## Próximas fases
 
 1. Revisar compatibilidade compile/API do Lux Menu e dos botões temáticos; teste conjunto dos cinco módulos quando o usuário estiver disponível.
-2. Estudar modificação **segura e isolável** da tela vermelha de inicialização do NeoForge (boot antecipado); não tratá-la como `TitleScreen`.
+2. Depois do teste do modo escuro nativo, estudar implementação **segura e isolável** de um provider do FML 1.21.1 para a arte roxa do Lux Boot (boot antecipado); não tratá-lo como `TitleScreen`.
 3. Concluir Lux Atlas Mapa `M` e depois Lux Quests, conectando dados verdadeiros ao quadro de missões; respeitar módulos independentes.
 4. Dedicated server e testes multiplayer com time scoreboard (aproximação do sistema futuro Lux Party).
 
