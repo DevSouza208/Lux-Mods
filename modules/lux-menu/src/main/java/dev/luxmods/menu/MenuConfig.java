@@ -22,6 +22,18 @@ public final class MenuConfig {
             .comment("Exibe a assinatura discreta do Lux Mods sem alterar o logo Minecraft.")
             .define("showBranding", true);
 
+    public static final ModConfigSpec.BooleanValue LOADING_SLIDESHOW = BUILDER
+            .comment("Fotos com crossfade ao entrar/criar mundos. Nao altera a tela vermelha FML inicial.")
+            .define("loadingSlideshow", true);
+
+    public static final ModConfigSpec.IntValue SLIDE_SECONDS = BUILDER
+            .comment("Segundos por foto, sem incluir o tempo de transicao.")
+            .defineInRange("slideSeconds", 5, 2, 20);
+
+    public static final ModConfigSpec.IntValue FADE_MILLIS = BUILDER
+            .comment("Duracao da transicao suave entre fotos, em milissegundos.")
+            .defineInRange("fadeMillis", 1200, 200, 3000);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private MenuConfig() { }

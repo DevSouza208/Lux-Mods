@@ -1,6 +1,7 @@
 package dev.luxmods.menu;
 
 import dev.luxmods.menu.client.LuxMenuScreens;
+import dev.luxmods.menu.client.LuxLoadingSlideshow;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -31,6 +32,7 @@ public final class LuxMenu {
         private static void register() {
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(LuxMenuScreens::onInit);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(LuxMenuScreens::onRender);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(LuxLoadingSlideshow::onRender);
         }
     }
 }
