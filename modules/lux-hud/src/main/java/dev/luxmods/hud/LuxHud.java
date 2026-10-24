@@ -22,6 +22,9 @@ public final class LuxHud {
 
     public LuxHud(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, HudConfig.SPEC);
+        modBus.addListener(dev.luxmods.hud.network.HudNetwork::register);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(
+                new dev.luxmods.hud.server.HudPartyServerEvents());
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientSetup.register(modBus);
         }
