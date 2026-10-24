@@ -1,0 +1,27 @@
+# Java / Gradle
+.gradle/
+build/
+**/build/
+out/
+*.class
+*.log
+.idea/
+*.iml
+.vscode/
+# Runtime / saves
+run/
+runs/
+**/runs/
+**/saves/
+**/logs/
+**/crash-reports/
+# Frontend
+node_modules/
+dist/
+.next/
+# Local secrets and system files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
