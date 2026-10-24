@@ -103,6 +103,10 @@
 - [ ] 06.11 Se o modo escuro for testado, confirmar que o Minecraft permanece encerrável e inicializável mesmo após voltar do menu principal.
 - [ ] 06.12 Confirmar que `Apply` repetido não cria backups extras e que o backup permanece fora das pastas `mods` e `config`.
 
+- [ ] 06.13 Abrir `experimental/lux-boot-preview/index.html` no navegador (fora do Minecraft) e verificar layout na largura desktop e mobile.
+- [ ] 06.14 Clicar nos controles Reiniciar/Pausar e confirmar que o progresso indica **SIMULADO** permanentemente.
+- [ ] 06.15 Conferir que o protótipo HTML/JS não foi instalado na pasta mods nem incluído em nenhum JAR NeoForge.
+
 ## 7 — Testes de resiliência, entrega e fechamento
 
 - [ ] 07.01 Rodar `scripts/smoke-pure-java.bat` (lógica isolada), registrar sucesso real.

@@ -19,13 +19,14 @@
 - GitHub Actions teve incidentes `startup_failure` sem jobs (issue #15); não presumir CI verde.
 - Não alterar `main`, não concluir PR #14, não publicar release antes do teste integrado e dedicated server.
 - O usuário prefere **fazer todos os testes em uma sessão posterior**, não solicitar teste em cada nova atualização.
-- O **checklist único de 78 verificações** está em `docs/30-CHECKLIST-DE-TESTES.md`. Há também scripts locais `scripts/TESTAR-PACOTE-LUX.bat` e `scripts/reunir-evidencias.ps1` que inventariam os JARs sem alterar o mundo ou enviar logs.
+- O **checklist único de 81 verificações** está em `docs/30-CHECKLIST-DE-TESTES.md`. Há também scripts locais `scripts/TESTAR-PACOTE-LUX.bat` e `scripts/reunir-evidencias.ps1` que inventariam os JARs sem alterar o mundo ou enviar logs.
 
 ## Experimento de boot (sem teste)
 
 - `docs/32-LUX-BOOT-CARREGAMENTO.md` documenta o estudo da janela vermelha NeoForge e a incompatibilidade de versões entre loaders.
 - `scripts/lux-boot-theme.ps1` revisado: modo opt-in altera **somente options.txt** da instância `teste`, definindo `darkMojangStudiosBackground:true`. O FancyModLoader 1.21.1 suporta diretamente esse modo de fundo preto, preservando a janela antecipada e as barras de progresso reais, sem alterar earlyWindowControl. A ferramenta tem Preview, Apply e Restore com backup local. **Não faz parte do atualizador, não está ativada nem testada no jogo**.
-- O tema completo de loading Lux ainda **não está implementado**; não confundir com essa opção escura mínima.
+- O tema completo de loading Lux ainda **não está implementado**: o protótipo visual interativo em `experimental/lux-boot-preview/index.html` reproduz apenas o visual com animação de progresso **explicitamente simulada**. Não está vinculado ao boot FML nem aos JARs.
+- O protótipo mantém referência de dimensões 854x480, paleta própria em `theme.json` e três controles/estados de simulação para avaliação futura.
 
 ## Próximas fases
 

@@ -29,3 +29,6 @@ Com o jogo FECHADO, PowerShell na raiz do repositório:
 A janela antecipada não oferece, na branch 1.21.1, a configuração de temas JSON que existe na branch principal mais nova. Para personalizar fundo roxo, molduras e progresso com identidade Lux é necessário um provedor ImmediateWindowProvider específico para FML 1.21.1, instalado fora do ciclo normal de @Mod e testado em sandbox isolado. Um provider inválido pode bloquear startup em vez de fazer fallback, conforme issue https://github.com/neoforged/FancyModLoader/issues/415 .
 
 **Limite de validação:** roteiro e script revisados estaticamente; PowerShell do Windows e NeoForge 21.1.264 não foram executados nesta revisão.
+## Prévia interativa sem risco de boot
+
+Criados `experimental/lux-boot-preview/index.html`, `theme.json` e `README.md` para construir a linguagem visual grafite/roxo com barras ilustrativas em proporção **854 × 480** (escala lógica do FML 1.21.1). A prévia roda inteiramente em um navegador, não exige servidor web, possui Pausar e Reiniciar e mantém texto **PROGRESSO SIMULADO** visível. NÃO deve ser confundida com carregamento real e não é incluída nos JARs. Os números do protótipo são ficção visual; um provider real deve consumir `StartupNotificationManager` e `ProgressMeter` do FML sem alterar esse sistema.
