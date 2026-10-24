@@ -107,6 +107,11 @@ project(':lux-discovery') {
                 sourceSet project(':lux-engine').sourceSets.main
             }
         }
+        unitTest {
+            // JUnit no contexto do Discovery exige também o Engine, pois
+            // lux_discovery o declara como mod obrigatório no neoforge.mods.toml.
+            loadedMods = [mods.lux_discovery, mods.lux_engine]
+        }
     }
 }
 
