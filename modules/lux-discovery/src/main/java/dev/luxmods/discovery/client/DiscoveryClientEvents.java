@@ -1,70 +1,34 @@
 package dev.luxmods.discovery.client;
 
 import dev.luxmods.discovery.DiscoveryConfig;
-import dev.luxmods.discovery.DiscoveryDebouncer;
-import dev.luxmods.discovery.LuxDiscovery;
+import dev.luxmods.discovery.network.BiomeDiscoveredPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.Locale;
 
 /**
- * Client-only. Controle de sessão acompanha a conexão, NÃO cada ClientLevel:
- * a troca de dimensão mantém as regiões vistas até desconectar do servidor.
+ * Somente cliente: apresentador de títulos.
+ * O servidor envia o evento apenas após registrar a descoberta no save.
  */
-@EventBusSubscriber(modid = LuxDiscovery.MOD_ID, value = Dist.CLIENT)
 public final class DiscoveryClientEvents {
-    private static final DiscoveryDebouncer TRACKER = new DiscoveryDebouncer();
-    private static Object currentConnection;
-
     private DiscoveryClientEvents() {
     }
 
-    @SubscribeEvent
-    public static void clientTick(ClientTickEvent.Post event) {
+    public static void handleBiome(BiomeDiscoveredPayload payload, IPayloadContext context) {
+        if (!DiscoveryConfig.ENABLED.get()) return;
+
         Minecraft mc = Minecraft.getInstance();
-        Object connection = mc.getConnection();
+        if (mc.level == null) return;
+        ResourceLocation id = ResourceLocation.tryParse(payload.biomeId());
+        if (id == null) return;
 
-        if (connection == null) {
-            // A sessão terminou. Um novo mundo/servidor começa com descoberta limpa.
-            currentConnection = null;
-            TRACKER.reset();
-            return;
-        }
-        if (currentConnection != connection) {
-            currentConnection = connection;
-            TRACKER.reset();
-        }
-        if (mc.level == null || mc.player == null) {
-            return; // Transferência de dimensão / loading screen: não limpar estado.
-        }
-        if (!DiscoveryConfig.ENABLED.get() || mc.screen != null) {
-            return;
-        }
-
-        mc.level.getBiome(mc.player.blockPosition()).unwrapKey().ifPresent(biomeKey -> {
-            ResourceLocation id = biomeKey.location();
-            TRACKER.tick(
-                    mc.level.dimension().location().toString(),
-                    id.toString(),
-                    DiscoveryConfig.STABLE_TICKS.get(),
-                    DiscoveryConfig.TITLE_COOLDOWN_TICKS.get()
-            ).ifPresent(ignored -> showTitle(mc, id));
-        });
-    }
-
-    private static void showTitle(Minecraft mc, ResourceLocation id) {
-        String fallback = humanize(id.getPath());
         Component name = Component.translatableWithFallback(
-                "biome." + id.getNamespace() + "." + id.getPath(), fallback)
+                        "biome." + id.getNamespace() + "." + id.getPath(), humanize(id.getPath()))
                 .withStyle(ChatFormatting.GOLD);
-
         mc.gui.setTimes(12, 55, 22);
         mc.gui.setSubtitle(Component.translatable("message.lux_discovery.biome")
                 .withStyle(ChatFormatting.GRAY));
