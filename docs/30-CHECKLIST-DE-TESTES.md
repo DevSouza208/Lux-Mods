@@ -110,13 +110,15 @@
 - [ ] 06.15 Conferir que o protótipo HTML/JS não foi instalado na pasta mods nem incluído em nenhum JAR NeoForge.
 
 
-## 6B — Lux Loading Slideshow (FOTOS DO USUÁRIO, NOVO / NÃO TESTADO EM JOGO)
+## 6B — Lux Loading Slideshow (primeiro carregamento real confirmado por print em 24/10/2026)
 
 - [ ] 06B.01 Extrair `Lux_Mods_Slideshow_Aleatorio_v2.zip` e colocar fotos JPG/PNG em `FOTOS-AQUI` (sem teto fixo; medir uso de memória com muitas imagens).
 - [ ] 06B.02 Abrir `PREVIA-FOTOS.html`, selecionar fotos e conferir crossfade e `CARREGANDO...` animado.
 - [ ] 06B.03 Executar `ENVIAR-FOTOS-GITHUB.bat`, verificar conversão `slide_0001.png` em diante, autorizar `S` e confirmar push na branch de desenvolvimento.
 - [ ] 06B.04 Conferir no GitHub `modules/lux-menu/src/main/resources/assets/lux_menu/textures/gui/loading/slide_0001.png` até o último slide enviado.
 - [ ] 06B.05 Rodar atalho de atualização com Minecraft fechado; Gradle build SUCCESSFUL e 5 JARs sem duplicação.
+- [x] 06B.00 Primeira confirmação em jogo: tela de loading de mundo apresenta arte personalizada de pôr do sol, sobreposição `CARREGANDO` no canto inferior direito e cobertura da janela, conforme print do usuário em 24/10/2026 (sem comprovar transição ou ordem aleatória).
+- [ ] 06B.00a Ajustar a posição/apresentação da porcentagem vanilla: `0%` branco aparece solto no centro da arte. Preservar **progresso verdadeiro**, sem mostrar porcentagem inventada.
 - [ ] 06B.06 Entrar/criar mundo: crossfade de 1,2s após 5s por foto, transição suave também do último slide para o primeiro da próxima rodada.
 - [ ] 06B.07 Animar `CARREGANDO`, `CARREGANDO.`, `CARREGANDO..`, `CARREGANDO...`; não mostrar progresso numérico fictício.
 - [ ] 06B.08 Tela de carregamento de mundo sem fotos mantém vanilla intacta e evita quadriculado roxo/preto.
@@ -149,7 +151,8 @@
 |---|---|---|---|---|---|
 | Prévia Engine + Discovery | 24/10/2026 | teste, singleplayer | versão anterior | parcial ✅ | prints e confirmação usuário |
 | Prévia Atlas + HUD v2 | 24/10/2026 | teste, singleplayer | versão anterior | visual aprovado ✅ | print do usuário |
-| Pacote 5 mods / menu principal | 24/10/2026 | teste, menu inicial | commit exato a confirmar | visual do menu parcial ✅ | print do usuário: tema roxo aplicado; Mods cinza; loading/gameplay a verificar |
+| Pacote 5 mods / menu principal | 24/10/2026 | teste, menu inicial | commit exato a confirmar | visual do menu parcial ✅ | print do usuário: tema roxo aplicado; Mods cinza |
+| Loading de mundo personalizado | 24/10/2026 | teste, carregamento de mundo | commit exato a confirmar | arte + texto renderizados ✅ | print do usuário: pôr do sol, `CARREGANDO` no canto; `0%` vanilla sobreposto; fade/aleatoriedade não confirmados |
 
 ### Em caso de erro no Lux Menu
 
