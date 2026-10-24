@@ -37,10 +37,10 @@ public final class LuxLoadingSlideshow {
     private static ResourceManager indexedManager;
     private static List<ResourceLocation> available = List.of();
     private static List<ResourceLocation> playlist = List.of();
+    private static List<ResourceLocation> nextPlaylist = List.of();
     private static Screen previousScreen;
     private static long startNanos;
     private static long currentRound = -1L;
-    private static ResourceLocation previousLast;
 
     private LuxLoadingSlideshow() { }
 
@@ -64,9 +64,11 @@ public final class LuxLoadingSlideshow {
         if (previousScreen != screen) {
             previousScreen = screen;
             startNanos = System.nanoTime();
-            currentRound = -1L;
-            previousLast = null;
+            currentRound = 0L;
             playlist = new ArrayList<>(available);
+            SlideShuffle.shuffleInPlace(playlist, RANDOM, null);
+            nextPlaylist = shuffledAfter(playlist);
+
         }
 
         long elapsedMs = Math.max(0L, (System.nanoTime() - startNanos) / 1_000_000L);
@@ -75,10 +77,15 @@ public final class LuxLoadingSlideshow {
         long duration = (long) hold + fade;
         long roundLength = Math.max(1L, duration * playlist.size());
         long round = elapsedMs / roundLength;
-        if (round != currentRound) {
-            SlideShuffle.shuffleInPlace(playlist, RANDOM, previousLast);
-            currentRound = round;
-            previousLast = playlist.get(playlist.size() - 1);
+        if (round < currentRound) {
+            currentRound = 0L;
+        }
+        // Prepare next order in advance so the final crossfade of a round
+        // is continuous into the first photo of the next randomized round.
+        while (round > currentRound) {
+            playlist = nextPlaylist;
+            nextPlaylist = shuffledAfter(playlist);
+            currentRound++;
         }
 
         // Local elapsed time per round. The last image fades into the first
@@ -90,8 +97,10 @@ public final class LuxLoadingSlideshow {
         if (width <= 0 || height <= 0) return;
 
         drawCover(g, playlist.get(frame.current()), width, height, 1f);
-        if (frame.nextOpacity() > 0f && frame.current() != frame.next()) {
-            drawCover(g, playlist.get(frame.next()), width, height, frame.nextOpacity());
+        ResourceLocation nextImage = frame.current() == playlist.size() - 1
+                ? nextPlaylist.get(0) : playlist.get(frame.next());
+        if (frame.nextOpacity() > 0f && !playlist.get(frame.current()).equals(nextImage)) {
+            drawCover(g, nextImage, width, height, frame.nextOpacity());
         }
 
         g.fillGradient(0, Math.max(0, height - 96), width, height, 0x00161524, 0xD9151224);
@@ -101,6 +110,12 @@ public final class LuxLoadingSlideshow {
         g.drawString(mc.font, text, tx, ty, LuxGuiStyle.FOREGROUND, true);
         LuxGuiStyle.icon(g, "ornament_diamond", tx - 19, ty - 2, 12, 12);
         g.fill(0, height - 3, width, height - 2, 0x66AF84EE);
+    }
+
+    private static List<ResourceLocation> shuffledAfter(List<ResourceLocation> current) {
+        List<ResourceLocation> next = new ArrayList<>(available);
+        SlideShuffle.shuffleInPlace(next, RANDOM, current.get(current.size() - 1));
+        return next;
     }
 
     private static boolean isWorldLoadingScreen(Screen screen) {
