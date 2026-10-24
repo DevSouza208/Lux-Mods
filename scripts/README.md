@@ -38,3 +38,10 @@ Smoke Java testa lógica pura, mas **não comprova** renderização de GUI NeoFo
 precisam ser testados dentro do cliente e o carregamento em servidor dedicado permanece pendente.
 
 O GitHub Actions apresentou `startup_failure` com zero jobs; ver issue #15.
+
+
+## Lux HUD — teste funcional
+
+O modo RPG exibe personagem à esquerda (skin/vida/fome/XP), colegas menores abaixo apenas se estiverem no mesmo time de scoreboard e missões no canto direito. Sem Lux Quests, o rastreador mostra um estado vazio — nunca inventa missões. Ícones de efeitos ativos ficam perto da vida. O HUD tem um modo `CLASSIC` para voltar ao vanilla e toggles de barras/efeitos/colegas/missões na configuração CLIENT.
+
+Para experimentar colegas em multiplayer, use os comandos vanilla ` /team add luxparty`, `/team join luxparty Jogador1` e `/team join luxparty Jogador2` (com OP/permissões). Até existir Lux Party, o scoreboard team é a origem dos membros e o servidor sincroniza a vida de até quatro deles.

@@ -31,3 +31,9 @@ Dados de aliados vêm do servidor, com escopo por grupo/proximidade e privacidad
 
 ## Aceite
 Movimento tranquilo oculta; interação traz de volta; HUD não esconde alertas críticos; FOME e XP não se confundem; panel de aliados válido em servidor dedicado; overlays de mods ausentes não quebram.
+
+## Implementação experimental — 24/10/2026
+
+Código de `lux-hud` criado na branch de desenvolvimento e adicionado ao pacote de quatro JARs. O primeiro incremento tem modo RPG (skin pessoal; vida/fome/XP; efeitos reais perto da vida; barras vanilla ocultadas quando cobertas), modo CLASSIC (preserva HUD vanilla), quadro de missões à direita com estado honesto vazio e colegas menores abaixo (até quatro do mesmo time vanilla, vida/nível sincronizados pelo servidor). A equipe do placar é uma solução temporária, **não um sistema formal de convites Lux Party**.
+
+**Pendente:** compilação real NeoForge e playtest dessa versão, servidor dedicado, UI responsiva, animações, autoocultação dinâmica e ligação à Lux Quests/Progression. Enquanto não houver dados reais de missão, não apresentar dados fictícios. A PR permanece draft.

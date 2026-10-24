@@ -12,6 +12,9 @@ javac --release 21 -encoding UTF-8 -d "%LUX_TMP%" ^
  modules\lux-discovery\src\main\java\dev\luxmods\discovery\DiscoveryLedger.java ^
  modules\lux-discovery\src\main\java\dev\luxmods\discovery\LuxDiscoveryEvents.java ^
  modules\lux-atlas\src\main\java\dev\luxmods\atlas\CompassMath.java ^
+ modules\lux-hud\src\main\java\dev\luxmods\hud\HudBarMath.java ^
+ modules\lux-hud\src\main\java\dev\luxmods\hud\HudPartyCodec.java ^
+ scripts\src\LuxHudSmoke.java ^
  scripts\src\LuxCompassSmoke.java ^
  scripts\src\LuxSmokeMain.java ^
  scripts\src\LuxEventDepthSmoke.java
@@ -30,6 +33,11 @@ if errorlevel 1 (
   exit /b 1
 )
 java -cp "%LUX_TMP%" LuxCompassSmoke
+if errorlevel 1 (
+  rmdir /s /q "%LUX_TMP%"
+  exit /b 1
+)
+java -cp "%LUX_TMP%" LuxHudSmoke
 set "LUX_EXIT=%ERRORLEVEL%"
 rmdir /s /q "%LUX_TMP%"
 exit /b %LUX_EXIT%
