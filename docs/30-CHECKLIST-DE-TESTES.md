@@ -68,9 +68,11 @@
 - [ ] 04.13 Verificar visual em baixa resolução/escala automática e com nome de jogador longo.
 - [ ] 04.14 HUD e sincronização com clientes multiplayer + servidor dedicado (servidor não carrega GUI).
 
-## 5 — Lux Menu (NOVO — QUINTO MOD; NENHUM TESTE REAL ATÉ AGORA)
+## 5 — Lux Menu (primeiro print real do menu recebido em 24/10/2026)
 
 - [ ] 05.01 O quinto mod `lux_menu` aparece como Loaded sem afetar os quatro existentes.
+- [x] 05.00 Print de 24/10/2026 comprova menu principal aberto sem crash, botões roxos em Singleplayer/Multiplayer/Realms/Options/Quit Game, assinatura Lux Mods no topo direito, rodapé Lux e logo vanilla preservado. **Botão Mods ainda cinza**; não comprova clique, hover, loading nem 5 módulos individualmente.
+- [ ] 05.00a Verificar a razão de `Mods` permanecer cinza (widget NeoForge próprio) e aplicar estilo sem interceptar ação, foco ou tooltip; revalidar depois.
 - [ ] 05.02 Tela principal: botões gráficos grafite/roxo, hover lilás, logo Minecraft e panorama preservados.
 - [ ] 05.03 `Singleplayer`, `Multiplayer`, `Mods`, `Options`, `Quit Game` continuam acionando destinos corretos.
 - [ ] 05.04 Abrir mundo, apertar ESC: `Resume Game`, `Options`, `Save and Quit to Title` funcionam normalmente.
@@ -147,7 +149,7 @@
 |---|---|---|---|---|---|
 | Prévia Engine + Discovery | 24/10/2026 | teste, singleplayer | versão anterior | parcial ✅ | prints e confirmação usuário |
 | Prévia Atlas + HUD v2 | 24/10/2026 | teste, singleplayer | versão anterior | visual aprovado ✅ | print do usuário |
-| Pacote 5 mods | — | teste | a verificar | ☐ pendente | não testar até o usuário estar disponível |
+| Pacote 5 mods / menu principal | 24/10/2026 | teste, menu inicial | commit exato a confirmar | visual do menu parcial ✅ | print do usuário: tema roxo aplicado; Mods cinza; loading/gameplay a verificar |
 
 ### Em caso de erro no Lux Menu
 
