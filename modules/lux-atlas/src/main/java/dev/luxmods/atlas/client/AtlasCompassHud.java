@@ -2,14 +2,15 @@ package dev.luxmods.atlas.client;
 
 import dev.luxmods.atlas.AtlasConfig;
 import dev.luxmods.atlas.CompassMath;
+import dev.luxmods.engine.client.LuxGuiStyle;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-/** Compact 2D compass above the hotbar; no exploration data or networking. */
+/** Lux Clean Fantasy compass: fine bearings, thin border, no opaque bulky box. */
 public final class AtlasCompassHud {
     private static final int WIDTH = 182;
-    private static final int HEIGHT = 26;
+    private static final int HEIGHT = 21;
     private static final int HALF_WINDOW_DEGREES = 65;
     private static final float PIXELS_PER_DEGREE = WIDTH / (2.0f * HALF_WINDOW_DEGREES);
 
@@ -26,9 +27,9 @@ public final class AtlasCompassHud {
         int x = centerX - WIDTH / 2;
         float heading = CompassMath.fromMinecraftYaw(mc.player.getYRot());
 
-        graphics.fill(x - 1, y - 1, x + WIDTH + 1, y + HEIGHT + 1, 0xA00B0B16);
-        graphics.fill(x, y, x + WIDTH, y + 1, 0xFF7955C9);
-        graphics.fill(x, y + HEIGHT - 1, x + WIDTH, y + HEIGHT, 0x886C54AA);
+        LuxGuiStyle.panel(graphics, x, y, WIDTH, HEIGHT);
+        LuxGuiStyle.icon(graphics, "compass_end_left", x - 14, y, 17, 20);
+        LuxGuiStyle.icon(graphics, "compass_end_right", x + WIDTH - 3, y, 17, 20);
 
         for (int bearing = 0; bearing < 360; bearing += 15) {
             float angle = CompassMath.signedOffset(bearing, heading);
@@ -36,17 +37,15 @@ public final class AtlasCompassHud {
             int px = Math.round(centerX + angle * PIXELS_PER_DEGREE);
             boolean cardinal = bearing % 90 == 0;
             boolean major = bearing % 45 == 0;
-
-            graphics.fill(px, y + 4, px + 1, y + (major ? 11 : 8),
-                    cardinal ? 0xFFFFCB6A : 0xFFADB0C2);
+            graphics.fill(px, y + 3, px + 1, y + (major ? 9 : 6),
+                    cardinal ? LuxGuiStyle.AMBER : 0xFF817C99);
             if (cardinal) {
                 String text = CompassMath.cardinalLabel(bearing);
                 graphics.drawString(mc.font, text, px - mc.font.width(text) / 2,
-                        y + 13, 0xFFFFD68D, true);
+                        y + 10, LuxGuiStyle.AMBER, true);
             }
         }
-        // Vertical marker indicates current look direction.
-        graphics.fill(centerX - 1, y + 2, centerX + 2, y + 12, 0xFFE5D8FF);
-        graphics.fill(centerX - 1, y + 20, centerX + 2, y + 24, 0xFF926FE1);
+        graphics.fill(centerX - 1, y + 2, centerX + 2, y + 8, 0xFFE5D5FA);
+        graphics.fill(centerX, y + 16, centerX + 1, y + 19, LuxGuiStyle.TOP_ACCENT);
     }
 }

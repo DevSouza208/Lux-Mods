@@ -1,6 +1,6 @@
 package dev.luxmods.hud.client;
 
-import dev.luxmods.hud.HudBarMath;
+import dev.luxmods.engine.client.LuxGuiStyle;
 import dev.luxmods.hud.HudConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -10,17 +10,12 @@ import net.minecraft.world.effect.MobEffectInstance;
 
 import java.util.Comparator;
 
-/**
- * Functional MVP: real player skin, vanilla health/hunger/XP, potion sprites,
- * small teammates underneath, and a truthful quest tracker on the right.
- * Styling, transitions and quest synchronization will follow after playtesting.
- */
+/** Functional HUD with Lux Clean Fantasy styling; all stats remain genuine. */
 public final class HudPanel {
-    private static final int WIDTH = 252;
-    private static final int HEIGHT = 100;
-    private static final int BAR_WIDTH = 146;
-    private static final int LEFT = 8;
-    private static final int TOP = 8;
+    private static final int WIDTH = 230;
+    private static final int HEIGHT = 89;
+    private static final int LEFT = 9;
+    private static final int TOP = 9;
 
     private HudPanel() {
     }
@@ -38,63 +33,68 @@ public final class HudPanel {
         int x = LEFT;
         int y = TOP;
 
-        graphics.fill(x - 2, y - 2, x + WIDTH + 2, y + HEIGHT + 2, 0xA00B0B14);
-        graphics.fill(x, y, x + WIDTH, y + 2, 0xFF8061D8);
-        graphics.fill(x + 5, y + 18, x + 43, y + 56, 0xFF3B3447);
-        PlayerFaceRenderer.draw(graphics, player.getSkin(), x + 8, y + 21, 32);
+        LuxGuiStyle.panel(graphics, x, y, WIDTH, HEIGHT);
+        graphics.fill(x + 8, y + 16, x + 42, y + 50, 0xFF3A3445);
+        PlayerFaceRenderer.draw(graphics, player.getSkin(), x + 9, y + 17, 32);
+        LuxGuiStyle.icon(graphics, "lux_mark", x + WIDTH - 24, y + 6, 16, 16);
 
         String name = player.getName().getString();
-        if (name.length() > 21) name = name.substring(0, 18) + "...";
-        graphics.drawString(mc.font, name, x + 49, y + 8, 0xFFFFFFFF, true);
+        if (name.length() > 16) name = name.substring(0, 13) + "...";
+        graphics.drawString(mc.font, name, x + 49, y + 7, LuxGuiStyle.FOREGROUND, true);
 
-        float hp = player.getHealth();
-        float max = player.getMaxHealth();
-        graphics.drawString(mc.font, "VIDA " + Math.round(hp) + "/" + Math.round(max),
-                x + 49, y + 21, 0xFFFFC1CB, false);
-        bar(graphics, x + 49, y + 32, hp, max, 0xFFDB4E62);
+        float health = player.getHealth();
+        float maxHealth = player.getMaxHealth();
+        graphics.drawString(mc.font, "VIDA " + Math.round(health) + "/" + Math.round(maxHealth),
+                x + 49, y + 19, 0xFFFFD3DA, false);
+        LuxGuiStyle.bar(graphics, x + 49, y + 31, 118, 5,
+                health, maxHealth, LuxGuiStyle.HEALTH);
 
-        if (HudConfig.SHOW_EFFECTS.get()) drawEffects(graphics, mc, x + 197, y + 23);
+        if (HudConfig.SHOW_EFFECTS.get()) {
+            drawEffects(graphics, mc, x + 176, y + 26);
+        }
 
-        float hunger = player.getFoodData().getFoodLevel();
-        graphics.drawString(mc.font, "FOME " + Math.round(hunger) + "/20",
-                x + 49, y + 45, 0xFFFFD89B, false);
-        bar(graphics, x + 49, y + 56, hunger, 20, 0xFFE2A951);
+        float food = player.getFoodData().getFoodLevel();
+        graphics.drawString(mc.font, "FOME " + Math.round(food) + "/20",
+                x + 49, y + 42, LuxGuiStyle.AMBER, false);
+        LuxGuiStyle.bar(graphics, x + 49, y + 54, 118, 5,
+                food, 20f, LuxGuiStyle.HUNGER);
 
-        graphics.drawString(mc.font, "XP", x + 8, y + 74, 0xFF9DE0AA, false);
+        LuxGuiStyle.separator(graphics, x + 8, y + 65, WIDTH - 16);
+        graphics.drawString(mc.font, "XP", x + 9, y + 72,
+                LuxGuiStyle.EXPERIENCE, false);
         graphics.drawString(mc.font, "Nv. " + player.experienceLevel,
-                x + WIDTH - 47, y + 74, 0xFFDCF5DC, false);
-        bar(graphics, x + 49, y + 85, player.experienceProgress, 1f, 0xFF69C584);
+                x + WIDTH - 47, y + 72, LuxGuiStyle.MUTED_TEXT, false);
+        LuxGuiStyle.bar(graphics, x + 34, y + 76, 139, 5,
+                player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE);
 
         if (HudConfig.SHOW_TEAMMATES.get()) {
             HudPartyClientState.render(graphics, mc, x, y + HEIGHT + 7, WIDTH);
         }
         if (HudConfig.SHOW_QUESTS.get()) {
-            HudQuestTracker.render(graphics, mc, x + WIDTH + 10, y);
+            HudQuestTracker.render(graphics, mc, x + WIDTH + 14, y);
         }
     }
 
     private static void drawEffects(GuiGraphics graphics, Minecraft mc, int x, int y) {
-        // Nearby, never overlay the health bar. Only genuine active potion effects.
+        // Leave original Minecraft potion icon texture intact.
         var effects = mc.player.getActiveEffects().stream()
                 .filter(MobEffectInstance::showIcon)
                 .sorted(Comparator.comparing(MobEffectInstance::getDescriptionId))
-                .limit(3).toList();
+                .limit(2).toList();
+
         for (int i = 0; i < effects.size(); i++) {
-            MobEffectInstance effect = effects.get(i);
-            graphics.blit(x + i * 17, y, 0, 15, 15,
+            var effect = effects.get(i);
+            int slotX = x + i * 21;
+            graphics.fill(slotX - 1, y - 1, slotX + 18, y + 18, 0xAA242431);
+            LuxGuiStyle.icon(graphics, "effect_slot", slotX, y, 16, 16);
+            graphics.blit(slotX, y, 0, 16, 16,
                     mc.getMobEffectTextures().get(effect.getEffect()));
         }
         long overflow = mc.player.getActiveEffects().stream()
                 .filter(MobEffectInstance::showIcon).count() - effects.size();
         if (overflow > 0) {
-            graphics.drawString(mc.font, "+" + overflow, x + 2, y + 18, 0xFFE8E8F2, true);
+            graphics.drawString(mc.font, "+" + overflow, x + 3, y + 21,
+                    LuxGuiStyle.MUTED_TEXT, true);
         }
-    }
-
-    static void bar(GuiGraphics graphics, int x, int y,
-                    float value, float max, int color) {
-        graphics.fill(x, y, x + BAR_WIDTH, y + 6, 0xFF292733);
-        int filled = HudBarMath.filledWidth(value, max, BAR_WIDTH);
-        if (filled > 0) graphics.fill(x, y, x + filled, y + 6, color);
     }
 }

@@ -1,14 +1,12 @@
 package dev.luxmods.hud.client;
 
+import dev.luxmods.engine.client.LuxGuiStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-/**
- * Client-side rendering adapter for future Lux Quests integration.
- * No fabricated quests. The right panel displays a truthful empty state.
- */
+/** Placeholder for real Lux Quests data; never fabricates progress. */
 public final class HudQuestTracker {
-    private static final int WIDTH = 198;
+    private static final int WIDTH = 194;
     private static Quest tracked;
 
     public record Quest(String title, String objective, int done, int total) {
@@ -38,28 +36,32 @@ public final class HudQuestTracker {
     }
 
     public static void render(GuiGraphics graphics, Minecraft mc, int minX, int top) {
-        // Shrink the quest panel if GUI scaling leaves less horizontal room.
-        // Never obscure the character panel on narrow screens.
-        int x = Math.max(minX, graphics.guiWidth() - WIDTH - 8);
-        int width = Math.min(WIDTH, graphics.guiWidth() - x - 8);
+        int x = Math.max(minX, graphics.guiWidth() - WIDTH - 9);
+        int width = Math.min(WIDTH, graphics.guiWidth() - x - 9);
         if (width < 128) return;
-        int h = tracked == null ? 43 : 69;
-        graphics.fill(x - 2, top - 2, x + width + 2, top + h + 2, 0xA00B0B14);
-        graphics.fill(x, top, x + WIDTH, top + 2, 0xFF8061D8);
-        graphics.drawString(mc.font, "MISSÕES", x + 8, top + 9, 0xFFF0E4FF, true);
         Quest current = tracked;
+        int h = current == null ? 40 : 69;
+
+        LuxGuiStyle.panel(graphics, x, top, width, h);
+        LuxGuiStyle.icon(graphics, "quest_badge", x + 7, top + 5, 16, 16);
+        graphics.drawString(mc.font, "MISSÕES", x + 28, top + 10,
+                LuxGuiStyle.AMBER, true);
+        LuxGuiStyle.separator(graphics, x + 8, top + 23, width - 16);
+
         if (current == null) {
-            graphics.drawString(mc.font, width < 170 ? "Sem missão ativa" : "Nenhuma missão acompanhada",
-                    x + 8, top + 25, 0xFFB6B1C2, false);
+            graphics.drawString(mc.font,
+                    width < 170 ? "Sem missão ativa" : "Nenhuma missão acompanhada",
+                    x + 9, top + 28, LuxGuiStyle.MUTED_TEXT, false);
             return;
         }
-        graphics.drawString(mc.font, elide(current.title(), width < 170 ? 19 : 31), x + 8, top + 23, 0xFFFFFFFF, false);
-        graphics.drawString(mc.font, elide(current.objective(), width < 170 ? 19 : 31), x + 8, top + 36, 0xFFBEC2D1, false);
-        int filled = dev.luxmods.hud.HudBarMath.filledWidth(current.done(), current.total(), width - 16);
-        graphics.fill(x + 8, top + 54, x + width - 8, top + 59, 0xFF2B2738);
-        if (filled > 0) graphics.fill(x + 8, top + 54, x + 8 + filled, top + 59, 0xFF8B71E2);
+        graphics.drawString(mc.font, elide(current.title(), width < 170 ? 19 : 29),
+                x + 9, top + 28, LuxGuiStyle.FOREGROUND, true);
+        graphics.drawString(mc.font, elide(current.objective(), width < 170 ? 19 : 29),
+                x + 9, top + 41, LuxGuiStyle.MUTED_TEXT, false);
+        LuxGuiStyle.bar(graphics, x + 9, top + 55, width - 18, 4,
+                current.done(), current.total(), LuxGuiStyle.TOP_ACCENT);
         graphics.drawString(mc.font, current.done() + "/" + current.total(),
-                x + width - 42, top + 62, 0xFFD4CEE8, false);
+                x + width - 37, top + 61, LuxGuiStyle.AMBER, false);
     }
 
     private static String elide(String value, int max) {
