@@ -18,6 +18,8 @@ final class LuxMenuButton extends Button {
         this.original = original;
         this.active = original.active;
         this.visible = original.visible;
+        this.setTooltip(original.getTooltip());
+        this.setTabOrderGroup(original.getTabOrderGroup());
     }
 
     @Override
@@ -26,6 +28,8 @@ final class LuxMenuButton extends Button {
         this.active = original.active;
         this.visible = original.visible;
         this.setMessage(original.getMessage());
+        this.setTooltip(original.getTooltip());
+        this.setRectangle(original.getWidth(), original.getHeight(), original.getX(), original.getY());
         if (!visible) return;
 
         int x = getX(), y = getY(), w = getWidth(), h = getHeight();
