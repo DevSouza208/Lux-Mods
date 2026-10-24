@@ -90,6 +90,9 @@ subprojects {
     }
 }
 
+// Evaluate Engine before Discovery references its sourceSets, as in official MDG testproject.
+project(':lux-discovery').evaluationDependsOn(':lux-engine')
+
 // No empacotamento, os dois JARs permanecem separados e independentes.
 project(':lux-discovery') {
     dependencies {

@@ -20,6 +20,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Verificar configuração offline
+        run: python3 scripts/preflight.py
       - name: Executar smoke Java isolado
         run: bash scripts/smoke-pure-java.sh
 
