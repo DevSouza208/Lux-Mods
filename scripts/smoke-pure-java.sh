@@ -11,5 +11,7 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryDebouncer.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryLedger.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/LuxDiscoveryEvents.java \
-  scripts/src/LuxSmokeMain.java
+  scripts/src/LuxSmokeMain.java \
+  scripts/src/LuxEventDepthSmoke.java
 java -cp "$TMP" LuxSmokeMain
+java -cp "$TMP" LuxEventDepthSmoke

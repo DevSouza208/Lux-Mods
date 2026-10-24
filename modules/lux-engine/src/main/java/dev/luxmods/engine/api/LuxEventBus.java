@@ -7,15 +7,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
- * Synchronous event fan-out, separate from the NeoForge lifecycle/event bus.
- * The calling thread must be the correct logical side (normally server thread).
- * Publish only AFTER an authoritative game-state transaction was committed.
- * A failing listener is logged and cannot stop other listeners or the gameplay
- * transaction. Callbacks are observers: they must be short and side-correct.
+ * Synchronous, local fan-out of typed events. Only publish committed game facts
+ * on the owning logical thread (normally the Minecraft server thread).
+ * A failing observer does not interrupt other observers or undo committed data.
+ * Recursive event chains have a hard depth cap to prevent runaway addon loops.
  */
 public final class LuxEventBus {
     private static final System.Logger LOGGER = System.getLogger(LuxEventBus.class.getName());
+    private static final int MAX_PUBLISH_DEPTH = 16;
+
     private final ConcurrentMap<String, Channel> channels = new ConcurrentHashMap<>();
+    private final ThreadLocal<Integer> publishDepth = ThreadLocal.withInitial(() -> 0);
 
     public interface Subscription extends AutoCloseable {
         @Override void close();
@@ -31,8 +33,8 @@ public final class LuxEventBus {
     }
 
     /**
-     * @return number of observers successfully invoked. Listener failures
-     * are logged and do not abort the remaining listeners.
+     * Returns the number of listeners successfully invoked. Exceptions in
+     * individual observers are logged without aborting subsequent observers.
      */
     public <T> int publish(LuxEventType<T> type, T event) {
         Objects.requireNonNull(type, "type");
@@ -43,16 +45,28 @@ public final class LuxEventBus {
         Channel channel = channels.get(type.id());
         if (channel == null) return 0;
         verifyContract(type, channel);
-        int invoked = 0;
-        for (Consumer<Object> listener : channel.listeners) {
-            try {
-                listener.accept(event);
-                invoked++;
-            } catch (RuntimeException exception) {
-                LOGGER.log(System.Logger.Level.ERROR, "Lux event handler failed: " + type.id(), exception);
-            }
+
+        int previousDepth = publishDepth.get();
+        if (previousDepth >= MAX_PUBLISH_DEPTH) {
+            throw new IllegalStateException("Lux event recursion limit exceeded: " + type.id());
         }
-        return invoked;
+        publishDepth.set(previousDepth + 1);
+        try {
+            int invoked = 0;
+            for (Consumer<Object> listener : channel.listeners) {
+                try {
+                    listener.accept(event);
+                    invoked++;
+                } catch (RuntimeException exception) {
+                    LOGGER.log(System.Logger.Level.ERROR,
+                            "Lux event handler failed: " + type.id(), exception);
+                }
+            }
+            return invoked;
+        } finally {
+            if (previousDepth == 0) publishDepth.remove();
+            else publishDepth.set(previousDepth);
+        }
     }
 
     private <T> Channel channelFor(LuxEventType<T> type) {
@@ -72,9 +86,6 @@ public final class LuxEventBus {
     private static final class Channel {
         private final Class<?> payloadType;
         private final CopyOnWriteArrayList<Consumer<Object>> listeners = new CopyOnWriteArrayList<>();
-
-        private Channel(Class<?> payloadType) {
-            this.payloadType = payloadType;
-        }
+        private Channel(Class<?> payloadType) { this.payloadType = payloadType; }
     }
 }
