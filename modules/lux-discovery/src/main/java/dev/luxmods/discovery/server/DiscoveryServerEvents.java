@@ -4,6 +4,8 @@ import dev.luxmods.discovery.DiscoveryAttachments;
 import dev.luxmods.discovery.DiscoveryDebouncer;
 import dev.luxmods.discovery.DiscoveryLedger;
 import dev.luxmods.discovery.DiscoveryServerConfig;
+import dev.luxmods.discovery.LuxDiscoveryEvents;
+import dev.luxmods.engine.LuxEngine;
 import dev.luxmods.discovery.network.BiomeDiscoveredPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -44,11 +46,14 @@ public final class DiscoveryServerEvents {
     private void recordAndAnnounce(ServerPlayer player, String dimensionId, String biomeId) {
         Set<String> old = player.getData(DiscoveryAttachments.SEEN_BIOMES);
         DiscoveryLedger.MarkResult result = DiscoveryLedger.mark(old, dimensionId, biomeId);
-
-        // O servidor guarda a primeira descoberta. Itens conhecidos não anunciam de novo.
         if (!result.firstVisit()) return;
 
+        // Grava antes de emitir o evento; outros módulos observam um fato confirmado.
         player.setData(DiscoveryAttachments.SEEN_BIOMES, result.saved());
+        LuxEngine.EVENTS.publish(
+                LuxDiscoveryEvents.FIRST_BIOME,
+                new LuxDiscoveryEvents.BiomeFirstDiscovered(player.getUUID(), dimensionId, biomeId)
+        );
         PacketDistributor.sendToPlayer(player, new BiomeDiscoveredPayload(biomeId));
     }
 
