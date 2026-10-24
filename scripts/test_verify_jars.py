@@ -1,0 +1,79 @@
+"""Offline unit tests for the JAR structure validator (synthetic fixtures)."""
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+from verify_jars import InvalidArtifact, validate_jar
+
+
+def metadata(mod_id, deps):
+    header = (
+        'modLoader="javafml"\nloaderVersion="[1,)"\nlicense="All Rights Reserved"\n'
+        + '[[mods]]\nmodId="' + mod_id + '"\nversion="0.1.0-SNAPSHOT"\n'
+    )
+    for dep in deps:
+        header += (
+            "\n[[dependencies." + mod_id + "]]\n"
+            + 'modId="' + dep + '"\ntype="required"\nversionRange="[0,)"\n'
+        )
+    return header
+
+
+class JarValidatorTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.path = Path(self.temp.name) / "file.jar"
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def fixture(self, mod="lux_engine", classname="dev/luxmods/engine/LuxEngine.class",
+                deps=("minecraft", "neoforge"), override=None):
+        with zipfile.ZipFile(self.path, "w") as jar:
+            jar.writestr("META-INF/neoforge.mods.toml",
+                         metadata(mod, deps) if override is None else override)
+            if classname:
+                jar.writestr(classname, b"fake class - structure only")
+
+    def test_valid_engine(self):
+        self.fixture()
+        info = validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
+        self.assertEqual("lux_engine", info["mod_id"])
+
+    def test_valid_discovery(self):
+        self.fixture("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class",
+                     ("minecraft", "neoforge", "lux_engine"))
+        result = validate_jar(self.path, "lux_discovery",
+                              "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"})
+        self.assertEqual("lux_discovery", result["mod_id"])
+
+    def test_missing_dependency(self):
+        self.fixture("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_discovery",
+                         "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"})
+
+    def test_missing_class(self):
+        self.fixture(classname=None)
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
+
+    def test_wrong_id(self):
+        self.fixture(mod="wrong")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
+
+    def test_unexpanded_version(self):
+        self.fixture(override=metadata("lux_engine", ("minecraft", "neoforge"))
+                     .replace("0.1.0-SNAPSHOT", "$mod_version"))
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
+
+    def test_corrupt_archive(self):
+        self.path.write_bytes(b"not a ZIP file")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
+
+
+if __name__ == "__main__":
+    unittest.main()
