@@ -11,6 +11,15 @@ if (-not (Get-Command javac -ErrorAction SilentlyContinue)) { throw "JDK ausente
 if (!(Test-Path "gradlew.bat") -or !(Test-Path "gradle/wrapper/gradle-wrapper.jar")) {
     throw "Wrapper Gradle nao encontrado. Confirme o checkout da branch feat/engine-discovery-bootstrap."
 }
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    Write-Host "=== PREFLIGHT (SEM GRADLE OU MINECRAFT) ===" -ForegroundColor Cyan
+    & python scripts/preflight.py
+    if ($LASTEXITCODE -ne 0) { throw "Preflight falhou. Corrija o workspace antes do build." }
+    & python -m unittest discover -s scripts -p "test_preflight.py" -v
+    if ($LASTEXITCODE -ne 0) { throw "Teste do verificador offline falhou." }
+} else {
+    Write-Warning "Python indisponivel: pulando auditoria estrutural. JDK/Gradle ainda serao testados."
+}
 Write-Host "=== SMOKE JAVA (SEM INTERNET) ===" -ForegroundColor Cyan
 & cmd.exe /c "scripts\smoke-pure-java.bat"
 if ($LASTEXITCODE -ne 0) { throw "Smoke Java falhou: codigo $LASTEXITCODE" }
