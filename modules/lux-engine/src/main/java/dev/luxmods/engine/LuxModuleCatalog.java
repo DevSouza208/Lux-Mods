@@ -10,7 +10,7 @@ import java.util.function.Predicate;
  */
 public final class LuxModuleCatalog {
     public static final List<String> KNOWN_MODULE_IDS = List.of(
-            "lux_engine", "lux_discovery", "lux_atlas", "lux_hud",
+            "lux_engine", "lux_discovery", "lux_atlas", "lux_hud", "lux_menu",
             "lux_npc", "lux_lore", "lux_quests", "lux_villages",
             "lux_progression", "lux_inventory", "lux_items", "lux_food",
             "lux_materials");

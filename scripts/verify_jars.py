@@ -12,6 +12,7 @@ MODULES = {
     "lux-discovery": ("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"}),
     "lux-atlas": ("lux_atlas", "dev/luxmods/atlas/LuxAtlas.class", {"lux_engine"}),
     "lux-hud": ("lux_hud", "dev/luxmods/hud/LuxHud.class", {"lux_engine"}),
+    "lux-menu": ("lux_menu", "dev/luxmods/menu/LuxMenu.class", {"lux_engine"}),
 }
 
 
@@ -79,7 +80,7 @@ def main():
     except InvalidArtifact as exc:
         print(f"FALHA NA VERIFICAÇÃO: {exc}", file=sys.stderr)
         return 1
-    print("Os quatro JARs parecem bem formados; ainda precisam de teste no jogo.")
+    print("Os cinco JARs parecem bem formados; ainda precisam de teste no jogo.")
     return 0
 
 

@@ -5,8 +5,9 @@ plugins {
 }
 
 rootProject.name = 'Lux-Mods'
-include ':lux-engine', ':lux-discovery', ':lux-atlas', ':lux-hud'
+include ':lux-engine', ':lux-discovery', ':lux-atlas', ':lux-hud', ':lux-menu'
 project(':lux-engine').projectDir = file('modules/lux-engine')
 project(':lux-discovery').projectDir = file('modules/lux-discovery')
 project(':lux-atlas').projectDir = file('modules/lux-atlas')
 project(':lux-hud').projectDir = file('modules/lux-hud')
+project(':lux-menu').projectDir = file('modules/lux-menu')

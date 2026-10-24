@@ -4,7 +4,7 @@
 
 No Windows, com JDK 21 e a instância `teste` fechada, use o atalho **Atualizar Lux Mods.bat**.
 Ele faz `git pull` e chama `scripts/install-to-sklauncher.ps1`, que roda `assembleTestPack` e
-copia **Lux Engine, Lux Discovery, Lux Atlas e Lux HUD** para `%APPDATA%\.sklauncher\instances\teste\mods`
+copia **Lux Engine, Lux Discovery, Lux Atlas, Lux HUD e Lux Menu** para `%APPDATA%\.sklauncher\instances\teste\mods`
 somente se o build e a verificação dos JARs passarem. Faz backup externo em
 `%APPDATA%\.sklauncher\instances\teste\lux-mods-backup`.
 
@@ -45,3 +45,7 @@ O GitHub Actions apresentou `startup_failure` com zero jobs; ver issue #15.
 O modo RPG exibe personagem à esquerda (skin/vida/fome/XP), colegas menores abaixo apenas se estiverem no mesmo time de scoreboard e missões no canto direito. Sem Lux Quests, o rastreador mostra um estado vazio — nunca inventa missões. Ícones de efeitos ativos ficam perto da vida. O HUD tem um modo `CLASSIC` para voltar ao vanilla e toggles de barras/efeitos/colegas/missões na configuração CLIENT.
 
 Para experimentar colegas em multiplayer, use os comandos vanilla ` /team add luxparty`, `/team join luxparty Jogador1` e `/team join luxparty Jogador2` (com OP/permissões). Até existir Lux Party, o scoreboard team é a origem dos membros e o servidor sincroniza a vida de até quatro deles.
+
+## Lux Menu — quinto mod experimental
+
+O menu inicial e ESC (PauseScreen) mantêm todas as ações vanilla e recebem botões com tema Clean Fantasy e assinatura discreta. Config cliente em `config/lux_menu-client.toml`: `enabled`, `styleButtons`, `showBranding`. Isso **não** modifica o splash/loading NeoForge vermelho. Para desligar somente o efeito visual sem remover o mod, defina `enabled=false`; para isolar problema de inicialização, retire somente `lux-menu-0.1.0-SNAPSHOT.jar` da instância. Para reativar o conjunto todo, use o atalho existente `Atualizar Lux Mods.bat`.

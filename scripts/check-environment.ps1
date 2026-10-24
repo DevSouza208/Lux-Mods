@@ -3,7 +3,7 @@
 # Nao instala Minecraft, nao mexe em saves.
 $ErrorActionPreference = "Stop"
 Set-Location (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-Write-Host "=== LUX MODS (ENGINE, DISCOVERY, ATLAS) / JAVA 21 ===" -ForegroundColor Cyan
+Write-Host "=== LUX MODS (ENGINE, DISCOVERY, ATLAS, HUD, MENU) / JAVA 21 ===" -ForegroundColor Cyan
 if (-not (Get-Command java -ErrorAction SilentlyContinue)) { throw "Java nao encontrado no PATH" }
 if (-not (Get-Command javac -ErrorAction SilentlyContinue)) { throw "JDK ausente: javac nao encontrado no PATH" }
 & java -version
@@ -40,5 +40,5 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
 } else {
     Write-Warning "Python nao encontrado; execute o verificador depois se desejar, ou confira os JARs manualmente."
 }
-Get-ChildItem -Path @("modules/lux-engine/build/libs","modules/lux-discovery/build/libs","modules/lux-atlas/build/libs","modules/lux-hud/build/libs") -Filter "*.jar" -ErrorAction Stop | Select-Object FullName, Length
+Get-ChildItem -Path @("modules/lux-engine/build/libs","modules/lux-discovery/build/libs","modules/lux-atlas/build/libs","modules/lux-hud/build/libs","modules/lux-menu/build/libs") -Filter "*.jar" -ErrorAction Stop | Select-Object FullName, Length
 Write-Host "Pacote pronto em $Playtest. Ainda falta testar no Minecraft e servidor dedicado." -ForegroundColor Yellow

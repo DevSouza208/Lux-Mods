@@ -73,6 +73,19 @@ class JarValidatorTests(unittest.TestCase):
             validate_jar(self.path, "lux_hud",
                          "dev/luxmods/hud/LuxHud.class", {"lux_engine"})
 
+    def test_valid_menu(self):
+        self.fixture("lux_menu", "dev/luxmods/menu/LuxMenu.class",
+                     ("minecraft", "neoforge", "lux_engine"))
+        result = validate_jar(self.path, "lux_menu",
+                              "dev/luxmods/menu/LuxMenu.class", {"lux_engine"})
+        self.assertEqual("lux_menu", result["mod_id"])
+
+    def test_menu_requires_engine(self):
+        self.fixture("lux_menu", "dev/luxmods/menu/LuxMenu.class")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_menu",
+                         "dev/luxmods/menu/LuxMenu.class", {"lux_engine"})
+
     def test_missing_dependency(self):
         self.fixture("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class")
         with self.assertRaises(InvalidArtifact):
