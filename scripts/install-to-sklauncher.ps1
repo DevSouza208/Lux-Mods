@@ -46,7 +46,7 @@ finally {
 }
 
 $files = @()
-foreach ($pattern in @('lux-engine-*.jar', 'lux-discovery-*.jar', 'lux-atlas-*.jar')) {
+foreach ($pattern in @('lux-engine-*.jar', 'lux-discovery-*.jar', 'lux-atlas-*.jar', 'lux-hud-*.jar')) {
     $found = @(Get-ChildItem $pack -Filter $pattern -File -ErrorAction Stop |
         Where-Object { $_.Name -notmatch '-(sources|javadoc)\.jar$' })
     if ($found.Count -ne 1 -or $found[0].Length -le 0) {
@@ -74,7 +74,8 @@ foreach ($file in $files) {
 # Copiar backups para FORA da pasta mods; outros mods nao sao alterados.
 $old = @(Get-ChildItem $mods -Filter 'lux-engine-*.jar' -File) +
        @(Get-ChildItem $mods -Filter 'lux-discovery-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-atlas-*.jar' -File)
+       @(Get-ChildItem $mods -Filter 'lux-atlas-*.jar' -File) +
+       @(Get-ChildItem $mods -Filter 'lux-hud-*.jar' -File)
 $backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 if ($old.Count -gt 0) {
     New-Item -ItemType Directory -Force -Path $backup | Out-Null
@@ -98,5 +99,5 @@ catch {
     }
     throw
 }
-Write-Host "Pronto! Lux Engine + Discovery + Atlas instalados somente em $mods" -ForegroundColor Green
+Write-Host "Pronto! Lux Engine + Discovery + Atlas + HUD instalados somente em $mods" -ForegroundColor Green
 explorer.exe $mods

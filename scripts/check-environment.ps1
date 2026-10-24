@@ -40,5 +40,5 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
 } else {
     Write-Warning "Python nao encontrado; execute o verificador depois se desejar, ou confira os JARs manualmente."
 }
-Get-ChildItem -Path @("modules/lux-engine/build/libs","modules/lux-discovery/build/libs","modules/lux-atlas/build/libs") -Filter "*.jar" -ErrorAction Stop | Select-Object FullName, Length
+Get-ChildItem -Path @("modules/lux-engine/build/libs","modules/lux-discovery/build/libs","modules/lux-atlas/build/libs","modules/lux-hud/build/libs") -Filter "*.jar" -ErrorAction Stop | Select-Object FullName, Length
 Write-Host "Pacote pronto em $Playtest. Ainda falta testar no Minecraft e servidor dedicado." -ForegroundColor Yellow

@@ -4,7 +4,7 @@
 
 No Windows, com JDK 21 e a instância `teste` fechada, use o atalho **Atualizar Lux Mods.bat**.
 Ele faz `git pull` e chama `scripts/install-to-sklauncher.ps1`, que roda `assembleTestPack` e
-copia **Lux Engine, Lux Discovery e Lux Atlas** para `%APPDATA%\.sklauncher\instances\teste\mods`
+copia **Lux Engine, Lux Discovery, Lux Atlas e Lux HUD** para `%APPDATA%\.sklauncher\instances\teste\mods`
 somente se o build e a verificação dos JARs passarem. Faz backup externo em
 `%APPDATA%\.sklauncher\instances\teste\lux-mods-backup`.
 
@@ -34,7 +34,7 @@ bash scripts/smoke-pure-java.sh
 python3 scripts/verify_jars.py
 ```
 
-Smoke Java testa lógica pura, mas **não comprova** renderização de GUI NeoForge. A bússola do Atlas
-precisa ser testada dentro do cliente e o carregamento em servidor dedicado permanece pendente.
+Smoke Java testa lógica pura, mas **não comprova** renderização de GUI NeoForge. O Lux HUD e a bússola do Atlas
+precisam ser testados dentro do cliente e o carregamento em servidor dedicado permanece pendente.
 
 O GitHub Actions apresentou `startup_failure` com zero jobs; ver issue #15.

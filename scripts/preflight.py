@@ -11,6 +11,7 @@ MODULES = {
     "lux-engine": ("lux_engine", "LuxEngine", "dev/luxmods/engine/LuxEngine.java"),
     "lux-discovery": ("lux_discovery", "LuxDiscovery", "dev/luxmods/discovery/LuxDiscovery.java"),
     "lux-atlas": ("lux_atlas", "LuxAtlas", "dev/luxmods/atlas/LuxAtlas.java"),
+    "lux-hud": ("lux_hud", "LuxHud", "dev/luxmods/hud/LuxHud.java"),
 }
 
 
@@ -40,13 +41,15 @@ def audit(root=ROOT):
             errors.append(f"Manifesto de mod incompleto: {project}")
         if f"[[dependencies.{modid}]]" not in metadata:
             errors.append(f"Dependências de mod ausentes: {project}")
-        if project in ("lux-discovery", "lux-atlas") and 'modId="lux_engine"' not in metadata:
+        if project in ("lux-discovery", "lux-atlas", "lux-hud") and 'modId="lux_engine"' not in metadata:
             errors.append(f"{project} não declara Engine como dependência")
 
     if "evaluationDependsOn(':lux-engine')" not in build:
         errors.append("Falta ordem de avaliação entre projetos")
     if "project(':lux-engine').sourceSets.main" not in build:
         errors.append("Engine não registrado no run do Discovery")
+    if "loadedMods = [mods.lux_hud, mods.lux_engine]" not in build:
+        errors.append("Testes HUD não carregam Engine")
     if "loadedMods = [mods.lux_atlas, mods.lux_engine]" not in build:
         errors.append("Testes Atlas não carregam Engine")
     if "loadedMods = [mods.lux_discovery, mods.lux_engine]" not in build:

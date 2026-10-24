@@ -43,7 +43,7 @@ jobs:
       - name: Guardar JARs experimentais
         uses: actions/upload-artifact@v4
         with:
-          name: lux-engine-discovery-atlas-dev
+          name: lux-engine-discovery-atlas-hud-dev
           path: modules/*/build/libs/*.jar
           if-no-files-found: error
           retention-days: 7
