@@ -22,7 +22,8 @@ public final class DiscoveryAttachments {
 
     public static final Supplier<AttachmentType<Set<String>>> SEEN_BIOMES = TYPES.register(
             "seen_biomes",
-            () -> AttachmentType.builder(Set::<String>of)
+            // Zero argumentos => Supplier; evita ambiguidade com builder(Function).
+            () -> AttachmentType.builder(() -> Set.<String>of())
                     .serialize(DISCOVERIES_CODEC)
                     .copyOnDeath()
                     .build()
