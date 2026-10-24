@@ -69,7 +69,7 @@ public final class HudPanel {
             HudPartyClientState.render(graphics, mc, x, y + HEIGHT + 7, WIDTH);
         }
         if (HudConfig.SHOW_QUESTS.get()) {
-            HudQuestTracker.render(graphics, mc, x + WIDTH + 17, y);
+            HudQuestTracker.render(graphics, mc, x + WIDTH + 10, y);
         }
     }
 

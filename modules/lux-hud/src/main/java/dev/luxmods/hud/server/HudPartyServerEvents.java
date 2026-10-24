@@ -31,7 +31,9 @@ public final class HudPartyServerEvents {
                         .map(other -> new HudPartyCodec.Member(
                                 other.getUUID(),
                                 other.getGameProfile().getName(),
-                                other.getHealth(), other.getMaxHealth(), other.experienceLevel
+                                Math.min(2048f, Math.max(0f, other.getHealth())),
+                                Math.min(2048f, Math.max(1f, other.getMaxHealth())),
+                                Math.max(0, Math.min(32767, other.experienceLevel))
                         ))
                         .toList();
 
