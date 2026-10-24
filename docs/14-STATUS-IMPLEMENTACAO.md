@@ -12,7 +12,8 @@ Atualização: 2026-10-24, PR #14, branch feat/engine-discovery-bootstrap.
 - Testes JUnit para catálogo, registro de serviços, debouncer.
 
 ## O que foi ou não foi testado
-- Smoke Java puro pode ser executado com JDK 21 sem dependências remotas. O script valida os componentes de lógica sem APIs Minecraft.
+- Em 2026-10-24, a lógica Java pura foi **compilada com javac de Java 21 e executada em um teste isolado** usando cópia equivalente das classes e runner versionados no repositório: passou para registro de serviço, antirrepetição, cooldown e separação de dimensões. Isso não executa Gradle, NeoForge ou Minecraft.
+- Os scripts versionados `scripts/smoke-pure-java.bat` e `.sh` permitem repetir o teste no checkout real; execução deles no checkout ainda é pendente.
 - **Build NeoForge completo e execução em Minecraft ainda pendentes.** Não chamar release jogável antes da compilação e validação real.
 - GitHub Actions registrou startup_failure sem jobs; status documentado na issue #15.
 - Persistência de descoberta APÓS desconectar continua **não implementada**; o controle é por sessão.
