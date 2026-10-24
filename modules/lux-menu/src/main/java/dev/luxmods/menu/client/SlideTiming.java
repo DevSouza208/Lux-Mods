@@ -26,7 +26,12 @@ public final class SlideTiming {
     }
 
     public static String loadingText(long elapsedMs) {
+        return animatedLabel("CARREGANDO", elapsedMs);
+    }
+
+    /** Shared animated caption for loading, saving and resource preparation. */
+    public static String animatedLabel(String caption, long elapsedMs) {
         int dots = (int) ((Math.max(0L, elapsedMs) / 500L) % 4L);
-        return "CARREGANDO" + ".".repeat(dots);
+        return caption + ".".repeat(dots);
     }
 }

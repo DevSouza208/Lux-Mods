@@ -22,6 +22,11 @@ class SlideTimingTest {
         assertEquals(0, SlideTiming.frame(18600L, 3, 5000, 1200).current());
     }
 
+    @Test void savingAndPreparingAnimateWithoutChangingStatus() {
+        assertEquals("SALVANDO MUNDO..", SlideTiming.animatedLabel("SALVANDO MUNDO", 1000L));
+        assertEquals("PREPARANDO RECURSOS...", SlideTiming.animatedLabel("PREPARANDO RECURSOS", 1500L));
+    }
+
     @Test void cyclesDots() {
         assertEquals("CARREGANDO", SlideTiming.loadingText(0));
         assertEquals("CARREGANDO.", SlideTiming.loadingText(500));
