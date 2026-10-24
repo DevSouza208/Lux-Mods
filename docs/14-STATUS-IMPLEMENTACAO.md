@@ -31,7 +31,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-environment.ps
 Se Gradle compilar, validar JARs em instância NeoForge isolada, nunca em save pessoal sem backup. Não mesclar a PR ou anunciar release antes de testes de client/dedicated.
 
 ## Referências
-- `docs/17-VALIDACO-BUILD.md` (note grafia correta do arquivo: `docs/17-VALIDACAO-BUILD.md`)
+- `docs/17-VALIDACAO-BUILD.md`
 - `docs/16-DISCOVERY-PERSISTENTE.md`
 - `docs/18-EVENTOS-LUX-ENGINE.md`
 - Issues #1, #2, #3, #15, #16 e PR #14.
