@@ -96,3 +96,15 @@ project(':lux-discovery') {
         implementation project(':lux-engine')
     }
 }
+
+ 
+// A single task packages both development JARs in one isolated mods directory.
+// This does NOT download the Minecraft client or change a user's .minecraft.
+tasks.register('assembleTestPack', Sync) {
+    group = 'lux mods'
+    description = 'Build and copy Lux Engine + Discovery jars for a clean Minecraft test instance.'
+    dependsOn ':lux-engine:build', ':lux-discovery:build'
+    into(layout.buildDirectory.dir('lux-testpack/mods'))
+    from(project(':lux-engine').tasks.named('jar'))
+    from(project(':lux-discovery').tasks.named('jar'))
+}
