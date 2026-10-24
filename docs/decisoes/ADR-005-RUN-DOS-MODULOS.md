@@ -1,48 +1,29 @@
-# ADR-005 — Execução conjunta do Engine e Discovery no desenvolvimento
+# ADR-005 — Executar Engine e Discovery juntos no desenvolvimento
 
-**Status:** implementado em configuração; aguarda execução do Gradle e smoke Minecraft.
+**Status:** configuração publicada, não validada com Gradle nem jogo real.
 
-## O problema
+## Problema
 
-Lux Discovery declara `lux_engine` como dependência obrigatória em `META-INF/neoforge.mods.toml`. A compilação `implementation project(':lux-engine')` coloca a API do Engine no classpath do Discovery, mas o run do ModDevGradle usa uma lista de módulos declarados em `neoForge.mods`. Antes desta decisão, o projeto Discovery listava apenas o próprio código em `mods`; executar `:lux-discovery:runClient` poderia iniciar sem registrar corretamente o mod `lux_engine`, apesar de ambos os códigos estarem no classpath.
+Discovery precisa de lux_engine; depender do projeto Java (`implementation project(':lux-engine')`) não equivale necessariamente a registrar o Engine como mod no run NeoForge. A lista de mods locais do ModDevGradle é explícita.
 
-## Solução
+## Decisão
 
-Manter os dois subprojetos e os dois JARs **independentes**. Para o run de desenvolvimento **do Discovery**, registrar ambos os source sets:
+O subprojeto `:lux-discovery` declara seu próprio mod via configuração comum e registra o source set de `:lux-engine` no `neoForge.mods`. Os testes JUnit do Discovery declaram `loadedMods = [mods.lux_discovery, mods.lux_engine]`.
 
-```groovy
-project(':lux-discovery') {
-    dependencies {
-        implementation project(':lux-engine')
-    }
-    neoForge {
-        mods {
-            lux_engine {
-                sourceSet project(':lux-engine').sourceSets.main
-            }
-        }
-    }
-}
-```
+O teste `LuxModLoadingTest` consulta `ModList.get().isLoaded()` para garantir que os dois identificadores estão presentes no ambiente de teste do FML. Se falhar, **não** mascarar o erro desativando o teste: rever a configuração de módulos na versão real do plugin.
 
-Com o próprio `lux_discovery` já registrado no `subprojects`, o ModDevGradle passa a ter dois modelos de mod no run do Discovery. Esta API de associar um `sourceSet` de subprojeto é demonstrada pelo projeto de testes oficial ModDevGradle, em `neoForge { mods { ... } }`.
-
-## Validar
+## Comandos Windows
 
 ```powershell
+.\gradlew.bat :lux-discovery:test
 .\gradlew.bat :lux-discovery:runClient
-```
-
-Após carregar, o log do Lux Engine deve mostrar **lux_engine e lux_discovery**. Confirmar menu de mods e título de bioma.
-
-```powershell
 .\gradlew.bat :lux-discovery:runServer
 ```
 
-O servidor dedicado também deve carregar ambos sem exceção de classes client-only. Verificar se execução do Engine isolado ainda funciona (`:lux-engine:runServer`).
+O runServer pode exigir aceitar a EULA oficial num mundo exclusivo de testes. `assembleTestPack` gera os dois JARs para uma instalação NeoForge isolada — sem alterar o Minecraft pessoal.
 
 ## Limitações
 
-Esta é uma mudança fundamentada no modelo ModDevGradle, **não validada em execução**: GitHub Actions registra `startup_failure` com 0 jobs e o ambiente local de análise não alcança repositórios Gradle/Maven. Se a API em `2.0.148` apresentar incompatibilidade, ajustar com logs do primeiro build, sem mesclar o código antes.
+O acesso externo Maven/Gradle indisponível neste ambiente impede o build completo. GitHub Actions continua com `startup_failure` sem iniciar jobs (issue #15). Nenhum dos comandos acima está aprovado como executado. Java puro (sem API Minecraft) é compilável e testes locais foram executados separadamente.
 
-Referência: https://github.com/neoforged/ModDevGradle — seção `ModDevGradle/testproject/build.gradle`, registro de outro `sourceSet` no bloco `mods`.
+Fonte: https://github.com/neoforged/ModDevGradle — `testproject/build.gradle`, uso de `sourceSet project(':subproject').sourceSets.main` em `neoForge.mods`.
