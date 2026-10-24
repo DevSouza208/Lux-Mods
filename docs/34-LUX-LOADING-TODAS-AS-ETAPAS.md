@@ -23,7 +23,7 @@ Também existe [`Customize Early Loading Window`](https://www.curseforge.com/min
 
 ## 3. Carregar/entrar em mundos
 
-Implementado no Lux Menu via `LuxLoadingSlideshow` + `SlideShuffle` (telas `LevelLoadingScreen`, `ReceivingLevelScreen`, `ProgressScreen` quando presentes). Galeria de imagens embaralhada e crossfade automático contínuo enquanto a Screen existir. Foto original nunca altera progresso real. Assim que Minecraft terminar, a tela some, sem tempo mínimo.
+Implementado no Lux Menu via `LuxLoadingSlideshow` + `SlideShuffle` (telas `LevelLoadingScreen`, `ReceivingLevelScreen`, `ProgressScreen` e `GenericMessageScreen` apenas para `menu.savingLevel`, `menu.savingChunks` e `selectWorld.resource_load` quando presentes). Galeria de imagens embaralhada e crossfade automático contínuo enquanto a Screen existir. Foto original nunca altera progresso real. Assim que Minecraft terminar, a tela some, sem tempo mínimo.
 
 ## 4. Respawn, teleporte e dimensões
 
@@ -36,3 +36,9 @@ Fase B — **próxima integração opt-in:** protótipo do provedor antecipado F
 Fase C — **futura:** sincronização visual com Mojang/recarga de recursos, que requer módulo/gancho separado e teste de diferentes launchers.
 
 **Status:** 'todas as etapas' não está pronto. A preparação de FML e overlays é documentada; o slideshow do Lux Menu cobre as telas normais de mundo.
+
+## 5. Fotos no salvamento e preparação de recursos (novo, pendente)
+
+Os prints de 24/10 mostraram a caixa preta "Saving world" e "Preparing Resources..." sobre panorama desfocado. A extensão do handler de `ScreenEvent.Render.Post` detecta **apenas** `GenericMessageScreen` com essas chaves de tradução, cobre a tela com a galeria e usa os textos animados "SALVANDO MUNDO..." e "PREPARANDO RECURSOS...". O visual original é coberto no fim do frame, mas a operação verdadeira continua comandada pelo Minecraft. **Não** intercepta, cancela ou força a conclusão do save.
+
+A classificação por tradução evita cobrir mensagens de erro ou confirmação. O código foi publicado sem validação no jogo após essa alteração; não afirmar que toda transição foi resolvida. O boot vermelho FML e o LoadingOverlay Mojang permanecem fora dessa cobertura.

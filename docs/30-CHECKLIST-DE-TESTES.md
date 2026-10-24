@@ -151,6 +151,19 @@
 
 **Evidência adicional:** `SlideTiming.java` e `SlideShuffle.java` passaram testes isolados Java 21 (250 imagens, 500 rodadas; sem repetição de borda). NÃO validam o render NeoForge nem PowerShell do upload no Windows.
 
+## 6C — Saída do mundo e preparação de recursos (NOVO, SEM PLAYTEST)
+
+- [ ] 06C.01 Sair de um mundo de testes pelo menu ESC: a tela "Saving world" usa foto do Lux em vez do panorama desfocado e da caixa preta.
+- [ ] 06C.02 Enquanto salva, o canto inferior mostra "SALVANDO MUNDO" com reticências animadas, sem falsificar porcentagem.
+- [ ] 06C.03 Ao entrar/criar mundo, "Preparing Resources..." usa as fotos e "PREPARANDO RECURSOS" enquanto houver uma GenericMessageScreen.
+- [ ] 06C.04 Depois de salvar, chegar ao menu principal sem qualquer atraso/loop criado pelo slideshow; reabrir o mundo e conferir integridade do save.
+- [ ] 06C.05 Simular ou encontrar tela de falha/erro e confirmar que Lux **não** a encobre.
+- [ ] 06C.06 Desativar `loadingSlideshow=false` e verificar retorno ao visual vanilla das mensagens.
+- [ ] 06C.07 Após uma troca de resource pack, garantir que a lista de fotos é reindexada e que não há textura ausente ou crash.
+- [ ] 06C.08 Verificar se overlay de outra camada do jogo ainda escapa ao ScreenEvent: somente integração específica poderá substituí-lo (não assumir "todos" prontos).
+
+**Nota:** a classe `GenericMessageScreen` foi verificada na API Minecraft 1.21.1 e as chaves de tradução usadas são restritas; a associação com as telas exatas dos dois prints ainda precisa do teste real.
+
 ## 7 — Testes de resiliência, entrega e fechamento
 
 - [ ] 07.01 Rodar `scripts/smoke-pure-java.bat` (lógica isolada), registrar sucesso real.

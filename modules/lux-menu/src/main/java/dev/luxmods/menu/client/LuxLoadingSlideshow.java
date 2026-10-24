@@ -6,17 +6,18 @@ import dev.luxmods.menu.MenuConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.ProgressScreen;
 import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -104,8 +105,9 @@ public final class LuxLoadingSlideshow {
         }
 
         g.fillGradient(0, Math.max(0, height - 96), width, height, 0x00161524, 0xD9151224);
-        String text = SlideTiming.loadingText(elapsedMs);
-        int tx = Math.max(30, width - 27 - mc.font.width("CARREGANDO..."));
+        String text = SlideTiming.animatedLabel(LoadingScreenStatus.labelFor(screen), elapsedMs);
+        String widest = LoadingScreenStatus.labelFor(screen) + "...";
+        int tx = Math.max(30, width - 27 - mc.font.width(widest));
         int ty = Math.max(14, height - 23);
         g.drawString(mc.font, text, tx, ty, LuxGuiStyle.FOREGROUND, true);
         LuxGuiStyle.icon(g, "ornament_diamond", tx - 19, ty - 2, 12, 12);
@@ -119,9 +121,24 @@ public final class LuxLoadingSlideshow {
     }
 
     private static boolean isWorldLoadingScreen(Screen screen) {
-        return screen instanceof LevelLoadingScreen
+        if (screen instanceof LevelLoadingScreen
                 || screen instanceof ReceivingLevelScreen
-                || screen instanceof ProgressScreen;
+                || screen instanceof ProgressScreen) {
+            return true;
+        }
+        // The 'Saving world' and 'Preparing Resources...' interstitials
+        // are vanilla GenericMessageScreen instances, not ProgressScreens.
+        // Match their stable translation IDs; never obscure failures or
+        // confirmation dialogs from other mods.
+        return screen instanceof GenericMessageScreen
+                && LoadingScreenStatus.isKnownInterstitial(translationKey(screen));
+    }
+
+    private static String translationKey(Screen screen) {
+        if (screen.getTitle().getContents() instanceof TranslatableContents text) {
+            return text.getKey();
+        }
+        return "";
     }
 
     private static List<ResourceLocation> discoverImages(ResourceManager manager) {
