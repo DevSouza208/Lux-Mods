@@ -10,15 +10,17 @@ import net.minecraft.world.effect.MobEffectInstance;
 
 import java.util.Comparator;
 
-/** Functional HUD with Lux Clean Fantasy styling; all stats remain genuine. */
+/**
+ * Lux Clean Fantasy v2: pixel-framed portrait, inline stat icons/numbers,
+ * compact XP, real potion-effects tray and optional genuine party + quests.
+ */
 public final class HudPanel {
     private static final int WIDTH = 230;
-    private static final int HEIGHT = 89;
-    private static final int LEFT = 9;
-    private static final int TOP = 9;
+    private static final int HEIGHT = 84;
+    private static final int LEFT = 10;
+    private static final int TOP = 10;
 
-    private HudPanel() {
-    }
+    private HudPanel() { }
 
     public static boolean shouldDraw(Minecraft mc) {
         return mc.player != null && mc.level != null && !mc.player.isSpectator()
@@ -26,75 +28,82 @@ public final class HudPanel {
                 && HudConfig.MODE.get() == HudConfig.Mode.RPG;
     }
 
-    public static void render(GuiGraphics graphics, DeltaTracker delta) {
+    public static void render(GuiGraphics g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         if (!shouldDraw(mc)) return;
         var player = mc.player;
-        int x = LEFT;
-        int y = TOP;
+        int x = LEFT, y = TOP;
 
-        LuxGuiStyle.panel(graphics, x, y, WIDTH, HEIGHT);
-        graphics.fill(x + 8, y + 16, x + 42, y + 50, 0xFF3A3445);
-        PlayerFaceRenderer.draw(graphics, player.getSkin(), x + 9, y + 17, 32);
-        LuxGuiStyle.icon(graphics, "lux_mark", x + WIDTH - 24, y + 6, 16, 16);
+        LuxGuiStyle.panel(g, x, y, WIDTH, HEIGHT);
+        g.fill(x + 7, y + 15, x + 45, y + 53, 0xFF282234);
+        PlayerFaceRenderer.draw(g, player.getSkin(), x + 10, y + 18, 32);
+        LuxGuiStyle.icon(g, "portrait_frame", x + 7, y + 15, 38, 38);
 
         String name = player.getName().getString();
         if (name.length() > 16) name = name.substring(0, 13) + "...";
-        graphics.drawString(mc.font, name, x + 49, y + 7, LuxGuiStyle.FOREGROUND, true);
+        g.drawString(mc.font, name, x + 49, y + 7, LuxGuiStyle.FOREGROUND, true);
 
-        float health = player.getHealth();
-        float maxHealth = player.getMaxHealth();
-        graphics.drawString(mc.font, "VIDA " + Math.round(health) + "/" + Math.round(maxHealth),
-                x + 49, y + 19, 0xFFFFD3DA, false);
-        LuxGuiStyle.bar(graphics, x + 49, y + 31, 118, 5,
-                health, maxHealth, LuxGuiStyle.HEALTH);
+        String level = "Nv. " + player.experienceLevel;
+        g.drawString(mc.font, level, x + WIDTH - 11 - mc.font.width(level),
+                y + 8, LuxGuiStyle.MUTED_TEXT, false);
 
-        if (HudConfig.SHOW_EFFECTS.get()) {
-            drawEffects(graphics, mc, x + 176, y + 26);
-        }
+        // Portrait frame stays unobstructed; values live inside their beveled bars.
+        drawStat(g, mc, x + 49, y + 23, "stat_health", "VIDA", player.getHealth(),
+                player.getMaxHealth(), LuxGuiStyle.HEALTH);
+        drawStat(g, mc, x + 49, y + 44, "stat_hunger", "FOME",
+                player.getFoodData().getFoodLevel(), 20f, LuxGuiStyle.HUNGER);
 
-        float food = player.getFoodData().getFoodLevel();
-        graphics.drawString(mc.font, "FOME " + Math.round(food) + "/20",
-                x + 49, y + 42, LuxGuiStyle.AMBER, false);
-        LuxGuiStyle.bar(graphics, x + 49, y + 54, 118, 5,
-                food, 20f, LuxGuiStyle.HUNGER);
-
-        LuxGuiStyle.separator(graphics, x + 8, y + 65, WIDTH - 16);
-        graphics.drawString(mc.font, "XP", x + 9, y + 72,
-                LuxGuiStyle.EXPERIENCE, false);
-        graphics.drawString(mc.font, "Nv. " + player.experienceLevel,
-                x + WIDTH - 47, y + 72, LuxGuiStyle.MUTED_TEXT, false);
-        LuxGuiStyle.bar(graphics, x + 34, y + 76, 139, 5,
+        LuxGuiStyle.separator(g, x + 8, y + 64, WIDTH - 16);
+        g.drawString(mc.font, "XP", x + 10, y + 69, LuxGuiStyle.EXPERIENCE, false);
+        LuxGuiStyle.icon(g, "stat_xp", x + 27, y + 68, 12, 12);
+        LuxGuiStyle.bar(g, x + 43, y + 70, WIDTH - 96, 8,
                 player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE);
 
+        if (HudConfig.SHOW_EFFECTS.get()) {
+            drawEffects(g, mc, x + WIDTH + 9, y + 2, WIDTH);
+        }
         if (HudConfig.SHOW_TEAMMATES.get()) {
-            HudPartyClientState.render(graphics, mc, x, y + HEIGHT + 7, WIDTH);
+            HudPartyClientState.render(g, mc, x, y + HEIGHT + 7, WIDTH);
         }
         if (HudConfig.SHOW_QUESTS.get()) {
-            HudQuestTracker.render(graphics, mc, x + WIDTH + 14, y);
+            HudQuestTracker.render(g, mc, x + WIDTH + 14, y);
         }
     }
 
-    private static void drawEffects(GuiGraphics graphics, Minecraft mc, int x, int y) {
-        // Leave original Minecraft potion icon texture intact.
+    private static void drawStat(GuiGraphics g, Minecraft mc, int x, int y,
+                                 String icon, String label, float value,
+                                 float max, int color) {
+        g.drawString(mc.font, label, x, y, LuxGuiStyle.MUTED_TEXT, false);
+        LuxGuiStyle.icon(g, icon, x, y + 10, 11, 11);
+        LuxGuiStyle.bar(g, x + 15, y + 10, 132, 11, value, max, color);
+        String amount = Math.round(value) + "/" + Math.round(max);
+        g.drawString(mc.font, amount, x + 22, y + 11, 0xFFFFFFFF, true);
+    }
+
+    private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int panelWidth) {
         var effects = mc.player.getActiveEffects().stream()
                 .filter(MobEffectInstance::showIcon)
                 .sorted(Comparator.comparing(MobEffectInstance::getDescriptionId))
-                .limit(2).toList();
+                .limit(4).toList();
+        if (effects.isEmpty()) return;
 
-        for (int i = 0; i < effects.size(); i++) {
-            var effect = effects.get(i);
-            int slotX = x + i * 21;
-            graphics.fill(slotX - 1, y - 1, slotX + 18, y + 18, 0xAA242431);
-            LuxGuiStyle.icon(graphics, "effect_slot", slotX, y, 16, 16);
-            graphics.blit(slotX, y, 0, 16, 16,
+        // Keep clear of the right-hand quest panel on narrower screens.
+        int available = mc.getWindow().getGuiScaledWidth() - 212 - x;
+        int count = Math.min(effects.size(), Math.max(0, (available - 8) / 25));
+        if (count == 0) return;
+
+        LuxGuiStyle.panel(g, x, y, count * 25 + 9, 36);
+        for (int i = 0; i < count; i++) {
+            MobEffectInstance effect = effects.get(i);
+            int slotX = x + 6 + i * 25;
+            g.fill(slotX - 1, y + 4, slotX + 18, y + 23, 0xFF292334);
+            LuxGuiStyle.icon(g, "effect_slot", slotX, y + 5, 16, 16);
+            g.blit(slotX, y + 5, 0, 16, 16,
                     mc.getMobEffectTextures().get(effect.getEffect()));
-        }
-        long overflow = mc.player.getActiveEffects().stream()
-                .filter(MobEffectInstance::showIcon).count() - effects.size();
-        if (overflow > 0) {
-            graphics.drawString(mc.font, "+" + overflow, x + 3, y + 21,
-                    LuxGuiStyle.MUTED_TEXT, true);
+
+            int seconds = Math.max(0, effect.getDuration() / 20);
+            String time = seconds / 60 + ":" + String.format("%02d", seconds % 60);
+            g.drawString(mc.font, time, slotX - 1, y + 25, LuxGuiStyle.MUTED_TEXT, false);
         }
     }
 }

@@ -9,13 +9,12 @@ import net.minecraft.client.multiplayer.ClientLevel;
 
 import java.util.List;
 
-/** Render only genuinely server-synchronized members of the player's team. */
+/** No placeholders: only real server-authoritative scoreboard-team snapshots. */
 public final class HudPartyClientState {
     private static ClientLevel world;
     private static List<HudPartyCodec.Member> members = List.of();
 
-    private HudPartyClientState() {
-    }
+    private HudPartyClientState() { }
 
     public static void update(String encoded) {
         Minecraft mc = Minecraft.getInstance();
@@ -32,24 +31,27 @@ public final class HudPartyClientState {
             world = mc.level;
             members = List.of();
         }
-        int teammateWidth = width - 16;
+        int compactWidth = width - 18;
         for (int i = 0; i < members.size(); i++) {
-            int y = startY + i * 34;
-            if (y + 31 >= g.guiHeight() - 24) break;
+            int y = startY + i * 33;
+            if (y + 32 >= g.guiHeight() - 24) break;
             var member = members.get(i);
-            LuxGuiStyle.panel(g, x, y, teammateWidth, 30);
+            LuxGuiStyle.panel(g, x, y, compactWidth, 29);
             var info = mc.getConnection() == null ? null :
                     mc.getConnection().getPlayerInfo(member.uuid());
             if (info != null) {
-                PlayerFaceRenderer.draw(g, info.getSkin(), x + 6, y + 4, 22);
+                PlayerFaceRenderer.draw(g, info.getSkin(), x + 5, y + 4, 21);
             } else {
-                g.fill(x + 6, y + 4, x + 28, y + 26, 0xFF62567A);
+                g.fill(x + 5, y + 4, x + 26, y + 25, 0xFF62567A);
             }
-            g.drawString(mc.font, member.name(), x + 35, y + 5,
-                    LuxGuiStyle.FOREGROUND, true);
-            g.drawString(mc.font, "Nv." + member.level(), x + teammateWidth - 49,
+            String name = member.name();
+            if (name.length() > 13) name = name.substring(0, 12) + "...";
+            g.drawString(mc.font, name, x + 33, y + 5, LuxGuiStyle.FOREGROUND, true);
+            String level = "Nv." + member.level();
+            g.drawString(mc.font, level, x + compactWidth - 9 - mc.font.width(level),
                     y + 5, LuxGuiStyle.MUTED_TEXT, false);
-            LuxGuiStyle.bar(g, x + 35, y + 19, teammateWidth - 45, 5,
+            LuxGuiStyle.icon(g, "stat_health", x + 32, y + 17, 9, 9);
+            LuxGuiStyle.bar(g, x + 44, y + 18, compactWidth - 54, 7,
                     member.health(), member.maxHealth(), LuxGuiStyle.HEALTH);
         }
     }
