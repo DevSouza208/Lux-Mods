@@ -1,0 +1,10 @@
+pluginManagement { repositories { gradlePluginPortal() } }
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'Lux-Mods'
+include ':lux-engine', ':lux-discovery'
+project(':lux-engine').projectDir = file('modules/lux-engine')
+project(':lux-discovery').projectDir = file('modules/lux-discovery')

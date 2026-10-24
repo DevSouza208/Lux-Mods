@@ -1,0 +1,89 @@
+plugins {
+    // Versão do MDK oficial 1.21.1; aplicada somente aos módulos.
+    id 'net.neoforged.moddev' version '2.0.148' apply false
+}
+
+allprojects {
+    group = 'dev.luxmods'
+    version = findProperty('mod_version')
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'net.neoforged.moddev'
+
+    base {
+        archivesName = project.name
+    }
+    java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+    sourceSets.main.resources {
+        srcDir('src/generated/resources')
+        exclude('**/*.bbmodel')
+    }
+
+    neoForge {
+        version = rootProject.property('neo_version')
+        parchment {
+            minecraftVersion = rootProject.property('parchment_minecraft_version')
+            mappingsVersion = rootProject.property('parchment_mappings_version')
+        }
+        runs {
+            client { client() }
+            server {
+                server()
+                programArgument '--nogui'
+            }
+            configureEach {
+                systemProperty 'forge.logging.markers', 'REGISTRIES'
+                logLevel = org.slf4j.event.Level.INFO
+            }
+        }
+        mods {
+            "${project.name.replace('-', '_')}" {
+                sourceSet(sourceSets.main)
+            }
+        }
+    }
+
+    def metadataValues = [
+        mod_id: project.name.replace('-', '_'),
+        mod_name: project.name == 'lux-engine' ? 'Lux Engine' : 'Lux Discovery',
+        mod_version: project.version,
+        mod_license: 'All Rights Reserved',
+        minecraft_version_range: rootProject.property('minecraft_version_range'),
+        neo_version: rootProject.property('neo_version'),
+        loader_version_range: rootProject.property('loader_version_range')
+    ]
+
+    def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+        inputs.properties metadataValues
+        expand metadataValues
+        from 'src/main/templates'
+        into 'build/generated/sources/modMetadata'
+    }
+
+    sourceSets.main.resources.srcDir generateModMetadata
+    neoForge.ideSyncTask generateModMetadata
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}
+
+// No empacotamento, os dois JARs permanecem separados e independentes.
+project(':lux-discovery') {
+    dependencies {
+        implementation project(':lux-engine')
+    }
+}
