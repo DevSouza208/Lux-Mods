@@ -28,6 +28,15 @@
 - O tema completo de loading Lux ainda **não está implementado**: o protótipo visual interativo em `experimental/lux-boot-preview/index.html` reproduz apenas o visual com animação de progresso **explicitamente simulada**. Não está vinculado ao boot FML nem aos JARs.
 - O protótipo mantém referência de dimensões 854x480, paleta própria em `theme.json` e três controles/estados de simulação para avaliação futura.
 
+
+## Slideshow de fotos no carregamento de mundos (novo, pendente)
+
+- Lux Menu agora contém `LuxLoadingSlideshow`, `SlideTiming` e opções `loadingSlideshow`, `slideSeconds`, `fadeMillis`.
+- Carregamento de mundos via telas normais (`LevelLoadingScreen`, `ReceivingLevelScreen`, `ProgressScreen`); **NÃO** altera tela vermelha inicial do FML nem `LoadingOverlay` da Mojang.
+- Até 8 fotos opcionais em `assets/lux_menu/textures/gui/loading/slide_01.png`…`slide_08.png`; falta usuário subir fotos pelo pacote ZIP.
+- Transição suave e `CARREGANDO...` animado; sem porcentagem fictícia. A matemática foi exercitada em Java 21 isoladamente, **não** compilada nem testada no NeoForge 1.21.1.
+- Guia: `docs/33-LUX-LOADING-SLIDESHOW.md`; checklist estendido em `docs/30-CHECKLIST-DE-TESTES.md`.
+
 ## Próximas fases
 
 1. Revisar compatibilidade compile/API do Lux Menu e dos botões temáticos; teste conjunto dos cinco módulos quando o usuário estiver disponível.
