@@ -32,7 +32,26 @@ class DiscoveryDebouncerTest {
         assertTrue(d.tick("nether", "plains", 1, 4).isEmpty());
         assertTrue(d.tick("nether", "plains", 1, 4).isEmpty());
         assertEquals("plains", d.tick("nether", "plains", 1, 4).orElseThrow());
+        // Voltar ao Overworld não repete a descoberta da mesma sessão.
+        assertTrue(d.tick("overworld", "plains", 1, 4).isEmpty());
         d.reset();
         assertEquals("plains", d.tick("overworld", "plains", 1, 4).orElseThrow());
+    }
+
+    @Test
+    void sameNameInTwoDimensionsIsNotSameDiscovery() {
+        DiscoveryDebouncer d = new DiscoveryDebouncer();
+        assertEquals("forest", d.tick("overworld", "forest", 1, 0).orElseThrow());
+        assertEquals("forest", d.tick("custom_dim", "forest", 1, 0).orElseThrow());
+        assertTrue(d.tick("overworld", "forest", 1, 0).isEmpty());
+    }
+
+    @Test
+    void invalidInputFailsInsteadOfCorruptingState() {
+        DiscoveryDebouncer d = new DiscoveryDebouncer();
+        assertThrows(IllegalArgumentException.class,
+                () -> d.tick("world", "plains", 0, 5));
+        assertThrows(NullPointerException.class,
+                () -> d.tick(null, "plains", 1, 0));
     }
 }

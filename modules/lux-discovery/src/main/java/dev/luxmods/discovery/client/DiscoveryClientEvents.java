@@ -5,7 +5,6 @@ import dev.luxmods.discovery.DiscoveryDebouncer;
 import dev.luxmods.discovery.LuxDiscovery;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -15,11 +14,14 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.util.Locale;
 
-/** Client-only: nunca importar esta classe a partir do mod comum no dedicated server. */
+/**
+ * Client-only. Controle de sessão acompanha a conexão, NÃO cada ClientLevel:
+ * a troca de dimensão mantém as regiões vistas até desconectar do servidor.
+ */
 @EventBusSubscriber(modid = LuxDiscovery.MOD_ID, value = Dist.CLIENT)
 public final class DiscoveryClientEvents {
     private static final DiscoveryDebouncer TRACKER = new DiscoveryDebouncer();
-    private static ClientLevel lastLevel;
+    private static Object currentConnection;
 
     private DiscoveryClientEvents() {
     }
@@ -27,20 +29,22 @@ public final class DiscoveryClientEvents {
     @SubscribeEvent
     public static void clientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
+        Object connection = mc.getConnection();
+
+        if (connection == null) {
+            // A sessão terminou. Um novo mundo/servidor começa com descoberta limpa.
+            currentConnection = null;
+            TRACKER.reset();
+            return;
+        }
+        if (currentConnection != connection) {
+            currentConnection = connection;
+            TRACKER.reset();
+        }
         if (mc.level == null || mc.player == null) {
-            lastLevel = null;
-            TRACKER.reset();
-            return;
+            return; // Transferência de dimensão / loading screen: não limpar estado.
         }
-        if (lastLevel != mc.level) {
-            lastLevel = mc.level;
-            TRACKER.reset();
-        }
-        if (!DiscoveryConfig.ENABLED.get()) {
-            TRACKER.reset();
-            return;
-        }
-        if (mc.screen != null) {
+        if (!DiscoveryConfig.ENABLED.get() || mc.screen != null) {
             return;
         }
 
