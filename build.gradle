@@ -93,7 +93,20 @@ subprojects {
 // No empacotamento, os dois JARs permanecem separados e independentes.
 project(':lux-discovery') {
     dependencies {
+        // Compilação normal: Discovery consome a API do Engine, mas não embute
+        // as classes dele no JAR final. Os dois artefatos são distribuídos separadamente.
         implementation project(':lux-engine')
+    }
+
+    neoForge {
+        mods {
+            // Registra o Engine como um segundo mod LOCAL para :lux-discovery:runClient,
+            // :lux-discovery:runServer e testes NeoForge. Uma dependência Gradle por
+            // si só não equivale ao registro explícito do mod na configuração de run.
+            lux_engine {
+                sourceSet project(':lux-engine').sourceSets.main
+            }
+        }
     }
 }
 
