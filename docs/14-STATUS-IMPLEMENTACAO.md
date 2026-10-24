@@ -21,6 +21,12 @@
 - O usuário prefere **fazer todos os testes em uma sessão posterior**, não solicitar teste em cada nova atualização.
 - O **checklist único de 70 verificações** está em `docs/30-CHECKLIST-DE-TESTES.md`. Há também scripts locais `scripts/TESTAR-PACOTE-LUX.bat` e `scripts/reunir-evidencias.ps1` que inventariam os JARs sem alterar o mundo ou enviar logs.
 
+## Experimento de boot (sem teste)
+
+- `docs/32-LUX-BOOT-CARREGAMENTO.md` documenta o estudo da janela vermelha NeoForge e a incompatibilidade de versões entre loaders.
+- `scripts/lux-boot-theme.ps1` foi preparado como ferramenta **opt-in** que, se autorizada, altera configurações somente da instância `teste`, com backup e restauração. **Não faz parte do atualizador, não está ativada nem testada no jogo**.
+- O tema completo de loading Lux ainda **não está implementado**; não confundir com essa opção escura mínima.
+
 ## Próximas fases
 
 1. Revisar compatibilidade compile/API do Lux Menu e dos botões temáticos; teste conjunto dos cinco módulos quando o usuário estiver disponível.

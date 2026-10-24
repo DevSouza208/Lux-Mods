@@ -93,6 +93,13 @@
 - [ ] 06.03 Testar loading sem trocar `game assets` da UI em tempo de boot.
 - [ ] 06.04 Depois: apenas se estável, personalizar telas de opções internas/inventário/diálogo (escopos futuros).
 
+- [ ] 06.05 Ler o guia `docs/32-LUX-BOOT-CARREGAMENTO.md` sobre incompatibilidade entre FancyModLoader main e versão 1.21.1.
+- [ ] 06.06 Rodar `scripts/lux-boot-theme.ps1 -Action Preview` e confirmar que não modifica a instância.
+- [ ] 06.07 (Opcional; somente com jogo fechado) `-Action Apply` guarda backup e ativa carregamento escuro, sem trocar os JARs.
+- [ ] 06.08 Verificar se o jogo ainda inicia com alterações de FML e comparar o comportamento das barras de loading.
+- [ ] 06.09 `-Action Restore` recupera configurações originais e carregamento padrão.
+- [ ] 06.10 **NÃO MARCAR** tema Lux completo como pronto: ainda falta implementação de provedor próprio e teste isolado.
+
 ## 7 — Testes de resiliência, entrega e fechamento
 
 - [ ] 07.01 Rodar `scripts/smoke-pure-java.bat` (lógica isolada), registrar sucesso real.

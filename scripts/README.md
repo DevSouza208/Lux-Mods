@@ -49,3 +49,8 @@ Para experimentar colegas em multiplayer, use os comandos vanilla ` /team add lu
 ## Lux Menu — quinto mod experimental
 
 O menu inicial e ESC (PauseScreen) mantêm todas as ações vanilla e recebem botões com tema Clean Fantasy e assinatura discreta. Config cliente em `config/lux_menu-client.toml`: `enabled`, `styleButtons`, `showBranding`. Isso **não** modifica o splash/loading NeoForge vermelho. Para desligar somente o efeito visual sem remover o mod, defina `enabled=false`; para isolar problema de inicialização, retire somente `lux-menu-0.1.0-SNAPSHOT.jar` da instância. Para reativar o conjunto todo, use o atalho existente `Atualizar Lux Mods.bat`.
+
+
+## Lux Boot — próximo incremento experimental, não instalado
+
+Foi preparado `scripts/lux-boot-theme.ps1` para a **instância teste somente**, com `-Action Preview` como padrão sem alteração e os comandos explícitos `-Action Apply` e `-Action Restore`. Ele **não desenha a UI Lux de loading**: ao aplicar, apenas desliga a janela antecipada FML e define o fundo Mojang posterior escuro; isso remove as barras/indicadores do carregador antecipado. O sistema avançado de themes JSON da branch main do FancyModLoader não existe da mesma forma na branch 1.21.1. Consulte `docs/32-LUX-BOOT-CARREGAMENTO.md` e não execute por padrão no instalador de mods.
