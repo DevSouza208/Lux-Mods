@@ -46,6 +46,15 @@ subprojects {
         }
     }
 
+    // NeoForge/ModDevGradle requires explicit opt-in to run JUnit within the mod context.
+    // See official ModDevGradle documentation, 'Unit testing with JUnit'.
+    neoForge {
+        unitTest {
+            enable()
+            testedMod = mods."\${project.name.replace('-', '_')}"
+        }
+    }
+
     def metadataValues = [
         mod_id: project.name.replace('-', '_'),
         mod_name: project.name == 'lux-engine' ? 'Lux Engine' : 'Lux Discovery',
