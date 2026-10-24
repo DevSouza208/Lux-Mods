@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "hud": {
+    "mode": "cinematic",
+    "portraitTopLeft": true,
+    "showHunger": true,
+    "showSaturation": false,
+    "autoHideWhenExploring": true,
+    "questTracker": "compact"
+  },
+  "atlas": {
+    "compassAnchor": "above_hotbar",
+    "mapKey": "M"
+  },
+  "discovery": {
+    "showBiomes": true,
+    "showVillageNames": true,
+    "fade": true
+  },
+  "note": "Preferencias apenas locais; nao modificam mundo do servidor."
+}

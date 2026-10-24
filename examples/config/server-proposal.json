@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "modules": {
+    "npc": true,
+    "villages": true,
+    "quests": true,
+    "discovery": true
+  },
+  "quests": {
+    "needReviewMinGameDays": 2,
+    "needReviewMaxGameDays": 3,
+    "rollOnDialogue": false
+  },
+  "villages": {
+    "enableRepairs": true,
+    "enablePopulationChange": true,
+    "enableTierEvolution": false,
+    "respectPlayerBuildingsOutsideVillageParcels": true,
+    "repairPlayerVandalizedVillageProperty": true
+  },
+  "performance": {
+    "maxVillageRepairChangesPerTick": 3,
+    "maxSimultaneousVillageWorks": 2
+  },
+  "note": "Parametros de performance ilustrativos; testar e medir antes do release."
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "dialogueId": "lux_lore:perola_bibliotecario",
+  "npcConditions": {
+    "profession": "librarian",
+    "knowledgeTags": [
+      "lore.end.basic"
+    ]
+  },
+  "playerConditions": {
+    "anyOf": [
+      {
+        "inventoryItem": "minecraft:ender_pearl"
+      },
+      {
+        "knownFact": "player.saw_ender_pearl"
+      }
+    ],
+    "noneOf": [
+      {
+        "knownFact": "player.completed_end_investigation"
+      }
+    ]
+  },
+  "dialogue": {
+    "playerOption": "Você conhece isto?",
+    "npcReply": "Uma pérola do Ender! Há registros de que estes objetos estejam ligados a lugares esquecidos. Talvez a biblioteca tenha algum livro sobre isso."
+  },
+  "effects": [
+    {
+      "setPlayerFact": "player.ask_librarian_ender_pearl"
+    }
+  ],
+  "note": "Se dragao ja morreu, avaliar disponibilidade da investigacao via WorldFact; nao impor linha linear."
+}

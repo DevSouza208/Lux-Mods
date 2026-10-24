@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "bookId": "lux_lore:olhos_dos_antigos_1",
+  "title": "Os Olhos dos Antigos",
+  "author": "Autor desconhecido",
+  "language": "pt_br",
+  "pages": [
+    "Nas noites mais escuras, há relatos de criaturas que surgem onde antes não havia ninguém.",
+    "Alguns estudiosos associam as pérolas dessas criaturas a antigas fortalezas subterrâneas.",
+    "Há registros de passagens para um lugar que os mapas comuns não mostram."
+  ],
+  "onRead": {
+    "grantPlayerFact": "player.read_eyes_of_ancients_vol1"
+  },
+  "questAutoStart": false,
+  "note": "Texto original de planejamento; historia nao precisa ser missao."
+}

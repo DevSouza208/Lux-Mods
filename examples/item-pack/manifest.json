@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "packId": "lux-exemplo-arsenal",
+  "name": "Arsenal Exemplo",
+  "version": "0.1.0",
+  "requiredLuxItemsApi": "prototipo",
+  "items": [
+    "items/espada_prata.json"
+  ],
+  "assets": [
+    "textures/items/espada_prata.png"
+  ],
+  "notice": "Exemplo documental. Textura referida nao existe ainda. Nenhum parser esta implementado."
+}

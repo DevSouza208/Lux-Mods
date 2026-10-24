@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "id": "lux_arsenal:espada_prata",
+  "type": "sword",
+  "localizationKey": "item.lux_arsenal.espada_prata",
+  "properties": {
+    "maxStackSize": 1,
+    "durability": 450,
+    "attackDamageBonus": 7,
+    "attackSpeedBonus": -2.4
+  },
+  "asset": {
+    "guiTexture": "textures/items/espada_prata.png",
+    "modelKind": "generated-2d"
+  },
+  "notice": "Formato proposto; nao e um registro NeoForge pronto."
+}

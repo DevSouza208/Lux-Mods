@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "templateId": "lux_quests:tavern_supply",
+  "profession": "tavern_keeper",
+  "review": {
+    "minMinecraftDays": 2,
+    "maxMinecraftDays": 3,
+    "rollTrigger": "game_day_boundary_or_lazy_loaded_review",
+    "rollOnDialogue": false
+  },
+  "offers": [
+    {
+      "item": "minecraft:coal",
+      "countRange": [
+        16,
+        32
+      ],
+      "rewardItem": "minecraft:emerald",
+      "rewardRange": [
+        6,
+        14
+      ],
+      "weight": 25
+    },
+    {
+      "item": "minecraft:cooked_beef",
+      "countRange": [
+        12,
+        24
+      ],
+      "rewardItem": "minecraft:emerald",
+      "rewardRange": [
+        8,
+        16
+      ],
+      "weight": 30
+    },
+    {
+      "item": "lux_food:healing_drink",
+      "countRange": [
+        4,
+        12
+      ],
+      "rewardItem": "minecraft:emerald",
+      "rewardRange": [
+        10,
+        20
+      ],
+      "weight": 20
+    }
+  ],
+  "noNeedWeight": 25,
+  "sharing": "server_world_per_npc",
+  "claimPolicy": "first_valid_completion",
+  "note": "Pesos sao placeholders. Instancia de oferta salva ID, dia, valor e estado; reabrir dialogo NAO rerrola."
+}

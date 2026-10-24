@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "0.1-proposta",
+  "id": "lux_quests:piglin_gold_statue",
+  "scope": "party_or_player",
+  "startNode": "talk_leader",
+  "nodes": [
+    {
+      "id": "talk_leader",
+      "type": "dialogue",
+      "npcRole": "piglin_leader",
+      "next": "accept"
+    },
+    {
+      "id": "accept",
+      "type": "branch",
+      "choices": [
+        {
+          "label": "Aceitar contrato",
+          "next": "build"
+        },
+        {
+          "label": "Recusar",
+          "next": "end_no_contract"
+        }
+      ]
+    },
+    {
+      "id": "build",
+      "type": "verify_structure",
+      "blueprintId": "lux_blueprints:piglin_gold_statue_small",
+      "consumeRealBlocks": true,
+      "acceptManualPlacement": true,
+      "completionWhen": "world_matches_blueprint",
+      "next": "reward"
+    },
+    {
+      "id": "reward",
+      "type": "reward_once",
+      "items": [
+        {
+          "id": "minecraft:gold_ingot",
+          "count": 8
+        }
+      ],
+      "next": "complete"
+    },
+    {
+      "id": "complete",
+      "type": "complete"
+    },
+    {
+      "id": "end_no_contract",
+      "type": "abort"
+    }
+  ],
+  "constraints": {
+    "serverAuthority": true,
+    "preventDuplicateRewards": true,
+    "buildPermissionRequired": true
+  },
+  "note": "Blueprint e blocos ainda nao existem; exemplo para testar o futuro grafo."
+}
