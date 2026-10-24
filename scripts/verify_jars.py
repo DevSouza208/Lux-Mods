@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
     "lux-engine": ("lux_engine", "dev/luxmods/engine/LuxEngine.class", set()),
     "lux-discovery": ("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"}),
+    "lux-atlas": ("lux_atlas", "dev/luxmods/atlas/LuxAtlas.class", {"lux_engine"}),
 }
 
 
@@ -77,7 +78,7 @@ def main():
     except InvalidArtifact as exc:
         print(f"FALHA NA VERIFICAÇÃO: {exc}", file=sys.stderr)
         return 1
-    print("Os dois JARs parecem bem formados; ainda precisam de teste no jogo.")
+    print("Os tres JARs parecem bem formados; ainda precisam de teste no jogo.")
     return 0
 
 

@@ -57,7 +57,7 @@ subprojects {
 
     def metadataValues = [
         mod_id: project.name.replace('-', '_'),
-        mod_name: project.name == 'lux-engine' ? 'Lux Engine' : 'Lux Discovery',
+        mod_name: ['lux-engine':'Lux Engine', 'lux-discovery':'Lux Discovery', 'lux-atlas':'Lux Atlas'].get(project.name),
         mod_version: project.version,
         mod_license: 'All Rights Reserved',
         minecraft_version_range: rootProject.property('minecraft_version_range'),
@@ -119,13 +119,25 @@ project(':lux-discovery') {
 }
 
  
-// A single task packages both development JARs in one isolated mods directory.
+project(':lux-atlas').evaluationDependsOn(':lux-engine')
+project(':lux-atlas') {
+    dependencies { implementation project(':lux-engine') }
+    neoForge {
+        mods {
+            lux_engine { sourceSet project(':lux-engine').sourceSets.main }
+        }
+        unitTest { loadedMods = [mods.lux_atlas, mods.lux_engine] }
+    }
+}
+
+// A single task packages the three development JARs in one isolated mods directory.
 // This does NOT download the Minecraft client or change a user's .minecraft.
 tasks.register('assembleTestPack', Sync) {
     group = 'lux mods'
-    description = 'Build and copy Lux Engine + Discovery jars for a clean Minecraft test instance.'
-    dependsOn ':lux-engine:build', ':lux-discovery:build'
+    description = 'Build and copy Lux Engine + Discovery + Atlas jars for a clean Minecraft test instance.'
+    dependsOn ':lux-engine:build', ':lux-discovery:build', ':lux-atlas:build'
     into(layout.buildDirectory.dir('lux-testpack/mods'))
     from(project(':lux-engine').tasks.named('jar'))
     from(project(':lux-discovery').tasks.named('jar'))
+    from(project(':lux-atlas').tasks.named('jar'))
 }
