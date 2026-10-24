@@ -1,37 +1,31 @@
-# Implementação — estado verificável
+# Lux Mods — Estado verificável da implementação
 
-Atualização: 2026-10-24, PR #14, branch `feat/engine-discovery-bootstrap`.
+**Atualizado:** 24/10/2026 • PR #14 • branch `feat/engine-discovery-bootstrap` (DRAFT).
 
-## Código publicado
-- Workspace Gradle multi-project para NeoForge 1.21.1 / JDK 21, com dois módulos independentes (`lux_engine` e `lux_discovery`).
-- Lux Engine: catálogo de módulos detectados, config, registro tipado de serviços e **barramento tipado de eventos** com unsubscribe e isolamento de erros de observers.
-- Lux Discovery: título de bioma vanilla client-side, debounce/cooldown e salvamento de histórico por jogador via NeoForge attachment (Codec + copyOnDeath).
-- No momento de salvar uma descoberta nova, Discovery envia um evento `lux_discovery:first_biome` no servidor; outros módulos podem assinar sem depender da implementação interna.
-- Payload NeoForge servidor→cliente envia somente o bioma ao jogador que descobriu.
-- Scripts `scripts/smoke-pure-java.sh` e `.bat` e PowerShell de diagnóstico; JUnit em ambos projetos; CI com jobs separados.
+## 5 módulos no código (Minecraft 1.21.1 / NeoForge 21.1.264)
 
-## Evidências positivas
-- Em 2026-10-24 foi executada **compilação javac --release 21 e execução Java 21 de classes de lógica isoladas** (serviços, debouncer, ledger, event bus e event type/payload), com saída `LUX SMOKE PASSOU`.
-- Teste separado `EventSmoke`: registro, 2 listeners, unsubscribe, contrato incompatível — `LUX EVENTS PASSOU`.
-- Teste separado `FailureSmoke`: listener lança RuntimeException de propósito, evento registra erro, próximo listener continua — `LUX FAILURE ISOLATION PASSOU`.
+| Mod | Funcionalidade | Evidência |
+|---|---|---|
+| Lux Engine | serviços/eventos/tema visual compartilhado | carregou no Minecraft do usuário; lógica pura testada antes |
+| Lux Discovery | anúncio de biomas, persistência por jogador | **validado em singleplayer**: primeiro anúncio, relog sem duplicar, novo bioma com anúncio |
+| Lux Atlas | bússola com N/L/S/O e estilo Clean Fantasy v2 | **validado visualmente** em singleplayer; ainda falta giro 360° e escalas |
+| Lux HUD | skin, barras de vida/fome/XP, quadro de missões, efeitos opcionais, cartões dos colegas reais | **carregamento e visual v2 aprovados** em screenshots; efeitos/multiplayer não exercitados ainda |
+| Lux Menu | menus título/pausa + botões simples em opções/mundos/multiplayer | **código publicado; NÃO compilado nem testado in-game após adicionar quinto mod** |
 
-## Ainda NÃO validado
-- **Nenhum build completo Gradle/NeoForge ainda foi executado com êxito.** Este ambiente não possui acesso de rede ao Maven/NeoForge; o GitHub Actions continua sem iniciar jobs (`startup_failure`, issue #15).
-- Recursos NeoForge (config, event listeners, attachments, networking, mod metadata) ainda precisam de compilação e execução no jogo real.
-- Falta confirmar loading de dois JARs na mesma instância, dedicated server, relog e morte, tradução/render em Minecraft real.
-- API pública de eventos e serviços é pré-release, sujeita a ajustes.
+## Estado do build / entrega
 
-## Validar no Windows
-Na raiz do repositório após selecionar branch:
+- A instalação automática do **pacote de 4 mods** funcionou em 24/10/2026, com `BUILD SUCCESSFUL` comprovado pelo usuário e screenshots in-game.
+- Após criar Lux Menu, `settings.gradle`, `build.gradle`, `assembleTestPack`, `scripts/install-to-sklauncher.ps1` e `scripts/verify_jars.py` foram adaptados para **5 JARs**, mas **nenhum build real da revisão com 5 mods foi confirmado**.
+- GitHub Actions teve incidentes `startup_failure` sem jobs (issue #15); não presumir CI verde.
+- Não alterar `main`, não concluir PR #14, não publicar release antes do teste integrado e dedicated server.
+- O usuário prefere **fazer todos os testes em uma sessão posterior**, não solicitar teste em cada nova atualização.
+- O **checklist único de 70 verificações** está em `docs/30-CHECKLIST-DE-TESTES.md`. Há também scripts locais `scripts/TESTAR-PACOTE-LUX.bat` e `scripts/reunir-evidencias.ps1` que inventariam os JARs sem alterar o mundo ou enviar logs.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-environment.ps1
-```
+## Próximas fases
 
-Se Gradle compilar, validar JARs em instância NeoForge isolada, nunca em save pessoal sem backup. Não mesclar a PR ou anunciar release antes de testes de client/dedicated.
+1. Revisar compatibilidade compile/API do Lux Menu e dos botões temáticos; teste conjunto dos cinco módulos quando o usuário estiver disponível.
+2. Estudar modificação **segura e isolável** da tela vermelha de inicialização do NeoForge (boot antecipado); não tratá-la como `TitleScreen`.
+3. Concluir Lux Atlas Mapa `M` e depois Lux Quests, conectando dados verdadeiros ao quadro de missões; respeitar módulos independentes.
+4. Dedicated server e testes multiplayer com time scoreboard (aproximação do sistema futuro Lux Party).
 
-## Referências
-- `docs/17-VALIDACAO-BUILD.md`
-- `docs/16-DISCOVERY-PERSISTENTE.md`
-- `docs/18-EVENTOS-LUX-ENGINE.md`
-- Issues #1, #2, #3, #15, #16 e PR #14.
+**Nota:** a imagem-conceito aprovada do Lux HUD é referência de design, não comprovação de recursos ainda ausentes como missões reais ou Lux Party completo.
