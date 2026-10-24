@@ -47,6 +47,19 @@ class JarValidatorTests(unittest.TestCase):
                               "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"})
         self.assertEqual("lux_discovery", result["mod_id"])
 
+    def test_valid_atlas(self):
+        self.fixture("lux_atlas", "dev/luxmods/atlas/LuxAtlas.class",
+                     ("minecraft", "neoforge", "lux_engine"))
+        result = validate_jar(self.path, "lux_atlas",
+                              "dev/luxmods/atlas/LuxAtlas.class", {"lux_engine"})
+        self.assertEqual("lux_atlas", result["mod_id"])
+
+    def test_atlas_must_require_engine(self):
+        self.fixture("lux_atlas", "dev/luxmods/atlas/LuxAtlas.class")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_atlas",
+                         "dev/luxmods/atlas/LuxAtlas.class", {"lux_engine"})
+
     def test_missing_dependency(self):
         self.fixture("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class")
         with self.assertRaises(InvalidArtifact):

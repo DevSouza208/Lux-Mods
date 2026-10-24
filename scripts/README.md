@@ -1,21 +1,40 @@
-# Verificações locais do Lux Mods
+# Lux Mods — compilação e instalação
 
-Windows: abrir PowerShell na raiz do projeto e executar:
+## Instalação fácil no SKlauncher
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-environment.ps1
+No Windows, com JDK 21 e a instância `teste` fechada, use o atalho **Atualizar Lux Mods.bat**.
+Ele faz `git pull` e chama `scripts/install-to-sklauncher.ps1`, que roda `assembleTestPack` e
+copia **Lux Engine, Lux Discovery e Lux Atlas** para `%APPDATA%\.sklauncher\instances\teste\mods`
+somente se o build e a verificação dos JARs passarem. Faz backup externo em
+`%APPDATA%\.sklauncher\instances\teste\lux-mods-backup`.
 
-O script verifica Java/Javac, wrapper, faz o teste de lógica sem internet, tenta compilar os dois módulos por Gradle e imprime os arquivos JAR.
+Manual no PowerShell:
 
-Etapas individuais no Windows:
+```powershell
+cd "$env:USERPROFILE\LuxModsDev"
+git pull --ff-only
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-to-sklauncher.ps1
+```
 
-    scripts\smoke-pure-java.bat
-    .\gradlew.bat :lux-engine:build :lux-discovery:build --no-daemon --stacktrace
+## Testes individuais
+
+Windows:
+
+```powershell
+scripts\smoke-pure-java.bat
+.\gradlew.bat assembleTestPack --no-daemon
+python scripts/verify_jars.py
+```
 
 Linux/macOS:
 
-    bash scripts/smoke-pure-java.sh
-    ./gradlew :lux-engine:build :lux-discovery:build --no-daemon --stacktrace
+```bash
+bash scripts/smoke-pure-java.sh
+./gradlew assembleTestPack --no-daemon
+python3 scripts/verify_jars.py
+```
 
-Não instala os mods na pasta do usuário e não altera mundos. Para ver Discovery em ação, depois do build use uma instância isolada Minecraft Java 1.21.1 NeoForge com os dois JARs em mods/.
+Smoke Java testa lógica pura, mas **não comprova** renderização de GUI NeoForge. A bússola do Atlas
+precisa ser testada dentro do cliente e o carregamento em servidor dedicado permanece pendente.
 
-GitHub Actions apresenta startup_failure com zero jobs neste repositório; isso não equivale a um build Gradle reprovado. Ver issue #15.
+O GitHub Actions apresentou `startup_failure` com zero jobs; ver issue #15.
