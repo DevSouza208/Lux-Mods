@@ -1,41 +1,37 @@
 # Implementação — estado verificável
 
-Atualização: 2026-10-24, PR #14, branch feat/engine-discovery-bootstrap.
+Atualização: 2026-10-24, PR #14, branch `feat/engine-discovery-bootstrap`.
 
-## Código presente
-- Gradle multi-project NeoForge 1.21.1 com JDK 21 (configuração importada/adaptada do MDK oficial).
-- Dois módulos JAR: Lux Engine e Lux Discovery.
-- Engine: log de módulos conhecidos instalados, config e API mínima de serviço tipado e opcional.
-- Discovery: títulos vanilla de biomas com debounce, cooldown, fallback de nome e pt-BR; **agora com histórico persistido no servidor por personagem** usando attachment com Codec, copyOnDeath e notificação S→C somente àquele jogador.
-- A lógica de deduplicação foi separada em `DiscoveryLedger`, testável com Java puro; registro tipado de serviços do Engine continua modular.
-- O cliente apenas desenha títulos recebidos do servidor. Não solicita ou autoriza descobertas; o servidor observa biomas e salva o histórico.
-- Smoke test Java puro (sem JUnit/Gradle): scripts/smoke-pure-java.bat e scripts/smoke-pure-java.sh.
-- Testes JUnit para catálogo, registro de serviços, debouncer.
+## Código publicado
+- Workspace Gradle multi-project para NeoForge 1.21.1 / JDK 21, com dois módulos independentes (`lux_engine` e `lux_discovery`).
+- Lux Engine: catálogo de módulos detectados, config, registro tipado de serviços e **barramento tipado de eventos** com unsubscribe e isolamento de erros de observers.
+- Lux Discovery: título de bioma vanilla client-side, debounce/cooldown e salvamento de histórico por jogador via NeoForge attachment (Codec + copyOnDeath).
+- No momento de salvar uma descoberta nova, Discovery envia um evento `lux_discovery:first_biome` no servidor; outros módulos podem assinar sem depender da implementação interna.
+- Payload NeoForge servidor→cliente envia somente o bioma ao jogador que descobriu.
+- Scripts `scripts/smoke-pure-java.sh` e `.bat` e PowerShell de diagnóstico; JUnit em ambos projetos; CI com jobs separados.
 
-## O que foi ou não foi testado
-- Em 2026-10-24, a lógica Java pura foi **compilada com javac de Java 21 e executada em um teste isolado** usando cópia equivalente das classes e runner versionados no repositório: passou para registro de serviço, antirrepetição, cooldown e separação de dimensões. Isso não executa Gradle, NeoForge ou Minecraft.
-- Os scripts versionados `scripts/smoke-pure-java.bat` e `.sh` permitem repetir o teste no checkout real; execução deles no checkout ainda é pendente.
-- **Build NeoForge completo e execução em Minecraft ainda pendentes.** Não chamar release jogável antes da compilação e validação real.
-- GitHub Actions registrou startup_failure sem jobs; status documentado na issue #15.
-- **Implementação de persistência escrita, MAS NÃO VALIDADA em runtime**: é necessário build NeoForge e teste real de relog, multiplayer, morte e cross-dimension para confirmar funcionamento.
-- API de serviços é ponto de extensão inicial, não barramento completo de eventos.
+## Evidências positivas
+- Em 2026-10-24 foi executada **compilação javac --release 21 e execução Java 21 de classes de lógica isoladas** (serviços, debouncer, ledger, event bus e event type/payload), com saída `LUX SMOKE PASSOU`.
+- Teste separado `EventSmoke`: registro, 2 listeners, unsubscribe, contrato incompatível — `LUX EVENTS PASSOU`.
+- Teste separado `FailureSmoke`: listener lança RuntimeException de propósito, evento registra erro, próximo listener continua — `LUX FAILURE ISOLATION PASSOU`.
 
-## Testar agora
-No Windows, raiz do repositório:
-~~~powershell
-scripts\smoke-pure-java.bat
-gradlew.bat build --stacktrace
-~~~
-Se o build passar: colocar os dois JARs na pasta mods de uma instância NeoForge 1.21.1 ou usar runClient do subprojeto e confirmar presença dos dois módulos. Iniciar servidor dedicado também.
+## Ainda NÃO validado
+- **Nenhum build completo Gradle/NeoForge ainda foi executado com êxito.** Este ambiente não possui acesso de rede ao Maven/NeoForge; o GitHub Actions continua sem iniciar jobs (`startup_failure`, issue #15).
+- Recursos NeoForge (config, event listeners, attachments, networking, mod metadata) ainda precisam de compilação e execução no jogo real.
+- Falta confirmar loading de dois JARs na mesma instância, dedicated server, relog e morte, tradução/render em Minecraft real.
+- API pública de eventos e serviços é pré-release, sujeita a ajustes.
 
-## Checklist antes de merge
-- [ ] Compilar Gradle completo, depuração de event listener/translations se necessário.
-- [ ] Testar módulos independentemente e em conjunto.
-- [ ] Testar persistência real (sair/entrar, trocar dimensão, morrer, novo jogador).
-- [ ] Testar cliente + dedicated server.
-- [ ] Fechar GH Actions #15 ou anexar build local reprodutível.
-- [ ] Atualizar GDD/roadmap com requisitos efetivamente validados.
+## Validar no Windows
+Na raiz do repositório após selecionar branch:
 
-## Atualização — Discovery persistente proposto
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-environment.ps1
+```
 
-Implementação preliminar em `docs/16-DISCOVERY-PERSISTENTE.md`. O código depende de registradores de attachments e networking do NeoForge. O teste de Java puro foi executado, mas a API de integração e o carregamento client/servidor aguardam build real. **Não marcar a issue #16 como concluída antes desse teste.**
+Se Gradle compilar, validar JARs em instância NeoForge isolada, nunca em save pessoal sem backup. Não mesclar a PR ou anunciar release antes de testes de client/dedicated.
+
+## Referências
+- `docs/17-VALIDACO-BUILD.md` (note grafia correta do arquivo: `docs/17-VALIDACAO-BUILD.md`)
+- `docs/16-DISCOVERY-PERSISTENTE.md`
+- `docs/18-EVENTOS-LUX-ENGINE.md`
+- Issues #1, #2, #3, #15, #16 e PR #14.

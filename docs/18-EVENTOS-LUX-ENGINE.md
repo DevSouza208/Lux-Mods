@@ -1,41 +1,33 @@
 # Eventos entre módulos Lux — contrato mínimo 0.1
 
-**Estado:** implementado em código Java puro nesta branch, ainda aguardando compilação NeoForge e runtime dedicado. Não há garantia de compatibilidade estável até o primeiro release.
+**Estado:** implementação em código Java puro, teste isolado JDK 21 executado; ainda aguardando compilação NeoForge e runtime dedicado.
 
 ## Para que serve
-O Lux Engine mantém um barramento local de eventos **tipados e com ID namespaced**. Um módulo publica um fato após confirmação server-side; outros módulos opcionais se inscrevem sem forçar o jogador a instalar todos.
+O Lux Engine mantém um barramento local de eventos tipados com ID namespaced. Um módulo publica um fato **depois de persistido pelo servidor**; outros módulos opcionais se inscrevem sem exigir que o jogador instale todo o ecossistema.
 
-Exemplo real de integração escrito: quando Discovery grava um bioma novo no attachment do jogador, publica `lux_discovery:first_biome` com `(UUID jogador, dimensão, bioma)`. Atlas poderá usar a mesma informação para futuras marcações; Quests pode usá-la como condição.
+Exemplo em código: quando Discovery grava bioma novo no attachment do jogador, emite `lux_discovery:first_biome` com `(UUID jogador, dimensão, bioma)`. Atlas poderá marcar locais; Quests poderá acompanhar objetivos opcionais.
 
-## APIs
+## API
 
 ```java
-var key = LuxDiscoveryEvents.FIRST_BIOME;
-var subscription = LuxEngine.EVENTS.subscribe(key, event -> {
-    // evento contém playerId(), dimensionId(), biomeId()
+var type = LuxDiscoveryEvents.FIRST_BIOME;
+var subscription = LuxEngine.EVENTS.subscribe(type, event -> {
+    // event.playerId(), event.dimensionId(), event.biomeId()
 });
-
-// Fechar no unload / quando serviço não for mais necessário:
-subscription.close();
+subscription.close(); // desinscrever quando não for mais necessário
 ```
 
-- `LuxEventType<T>`: ID de evento + classe de payload; rejeita IDs incorretos.
-- `LuxEventBus#subscribe`: devolve `Subscription` AutoCloseable.
-- `LuxEventBus#publish`: retorna quantidade de listeners executados.
-- Dois contratos Java diferentes com o mesmo ID são tratados como erro.
-- Ausência de listeners não é erro. Listeners podem ser removidos e registrados dinamicamente.
+- `LuxEventType<T>`: ID e classe de payload; tipo e namespace validados.
+- `LuxEventBus#subscribe`: devolve Subscription AutoCloseable.
+- `LuxEventBus#publish`: devolve a quantidade de listeners executados **com sucesso**.
+- ID igual com contrato diferente é erro de programação, nunca converte silenciosamente.
+- Sem inscritos? Publicar retorna zero.
+- Falha em callback? O Engine **registra o erro e continua chamando os demais**; um addon defeituoso não impede a notificação visual nem derruba a transação após salvar. Não captura `Error` de JVM.
 
-## Regras importantes
+## Limites
+Este barramento é **síncrono e local**. Não transmite pela rede: o payload NeoForge é separado. A assinatura de eventos tem que ocorrer no lado lógico certo (tipicamente servidor). Callbacks devem ser curtos, não iniciar tick loops e não criar requisições externas. Não usar isso como sistema de transação, permissão ou rollback; o estado do servidor é a autoridade. A lista de contratos públicos evoluirá com versões.
 
-- É um barramento **local e síncrono** no processo atual. NÃO sincroniza servidor/cliente automaticamente. Eventos de gameplay devem ser publicados no thread correto do servidor.
-- O servidor continua sendo a fonte de verdade; um evento não concede direitos/autorizações.
-- O evento é emitido **depois** de atualizar o attachment persistente e **antes** da mensagem visual enviada ao cliente.
-- Exceção em listener interrompe a publicação e é propagada: consumidores precisam ser seguros; a política de tolerância/falha poderá ser revista antes do release.
-- Mod IDs e interfaces públicas têm que ser versionados em futuras releases. Não importar classes de UI/client no barramento.
-- Eventos não são mecanismo de transação nem substituem eventos de lifecycle do NeoForge.
+## Verificação
+Testado em Java 21 isolado: inscrição e cancelamento, múltiplos assinantes, conflito de tipo, publicação sem assinantes e observador que lança exceção seguido de outro observador. Testes JUnit equivalentes estão no código para rodar quando Gradle funcionar.
 
-## Qualidade
-
-Foi compilado e executado um teste de lógica Java 21 isolado contendo `LuxEventType`, `LuxEventBus` e payload de `LuxDiscoveryEvents`. Testou evento sem inscrito, dois inscritos, remoção de um, contrato incompatível. O script smoke do repositório agora cobre o barramento também.
-
-**Falta:** validar build real NeoForge, anexar logs client/dedicated e comparar as APIs modded compiladas. Docs: `docs/17-VALIDACAO-BUILD.md`.
+**Falta:** compilar e rodar Minecraft 1.21.1/NeoForge com ambos os mods, testar cliente e servidor dedicado. Veja docs/17-VALIDACAO-BUILD.md.

@@ -37,4 +37,16 @@ class LuxEventBusTest {
         assertThrows(IllegalArgumentException.class, () ->
                 new LuxEventType<>("INVALID NAME", Found.class));
     }
+
+    @Test
+    void failingObserverDoesNotPreventOtherObservers() {
+        var bus = new LuxEventBus();
+        var type = new LuxEventType<>("lux_engine:sample", String.class);
+        bus.subscribe(type, payload -> { throw new IllegalStateException("Falha simulada"); });
+        AtomicInteger successful = new AtomicInteger();
+        bus.subscribe(type, payload -> successful.incrementAndGet());
+
+        assertEquals(1, bus.publish(type, "ola"));
+        assertEquals(1, successful.get());
+    }
 }
