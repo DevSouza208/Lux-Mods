@@ -6,8 +6,9 @@ Atualização: 2026-10-24, PR #14, branch feat/engine-discovery-bootstrap.
 - Gradle multi-project NeoForge 1.21.1 com JDK 21 (configuração importada/adaptada do MDK oficial).
 - Dois módulos JAR: Lux Engine e Lux Discovery.
 - Engine: log de módulos conhecidos instalados, config e API mínima de serviço tipado e opcional.
-- Discovery: título vanilla no primeiro contato com um bioma por sessão e dimensão, debounce, cooldown, fallback de nome, pt-BR.
-- Client agora monitora a sessão por conexão, sem resetar descobertas ao cruzar dimensões.
+- Discovery: títulos vanilla de biomas com debounce, cooldown, fallback de nome e pt-BR; **agora com histórico persistido no servidor por personagem** usando attachment com Codec, copyOnDeath e notificação S→C somente àquele jogador.
+- A lógica de deduplicação foi separada em `DiscoveryLedger`, testável com Java puro; registro tipado de serviços do Engine continua modular.
+- O cliente apenas desenha títulos recebidos do servidor. Não solicita ou autoriza descobertas; o servidor observa biomas e salva o histórico.
 - Smoke test Java puro (sem JUnit/Gradle): scripts/smoke-pure-java.bat e scripts/smoke-pure-java.sh.
 - Testes JUnit para catálogo, registro de serviços, debouncer.
 
@@ -16,7 +17,7 @@ Atualização: 2026-10-24, PR #14, branch feat/engine-discovery-bootstrap.
 - Os scripts versionados `scripts/smoke-pure-java.bat` e `.sh` permitem repetir o teste no checkout real; execução deles no checkout ainda é pendente.
 - **Build NeoForge completo e execução em Minecraft ainda pendentes.** Não chamar release jogável antes da compilação e validação real.
 - GitHub Actions registrou startup_failure sem jobs; status documentado na issue #15.
-- Persistência de descoberta APÓS desconectar continua **não implementada**; o controle é por sessão.
+- **Implementação de persistência escrita, MAS NÃO VALIDADA em runtime**: é necessário build NeoForge e teste real de relog, multiplayer, morte e cross-dimension para confirmar funcionamento.
 - API de serviços é ponto de extensão inicial, não barramento completo de eventos.
 
 ## Testar agora
@@ -30,6 +31,11 @@ Se o build passar: colocar os dois JARs na pasta mods de uma instância NeoForge
 ## Checklist antes de merge
 - [ ] Compilar Gradle completo, depuração de event listener/translations se necessário.
 - [ ] Testar módulos independentemente e em conjunto.
+- [ ] Testar persistência real (sair/entrar, trocar dimensão, morrer, novo jogador).
 - [ ] Testar cliente + dedicated server.
 - [ ] Fechar GH Actions #15 ou anexar build local reprodutível.
 - [ ] Atualizar GDD/roadmap com requisitos efetivamente validados.
+
+## Atualização — Discovery persistente proposto
+
+Implementação preliminar em `docs/16-DISCOVERY-PERSISTENTE.md`. O código depende de registradores de attachments e networking do NeoForge. O teste de Java puro foi executado, mas a API de integração e o carregamento client/servidor aguardam build real. **Não marcar a issue #16 como concluída antes desse teste.**
