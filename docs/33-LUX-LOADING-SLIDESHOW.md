@@ -1,39 +1,27 @@
-# Lux Loading Slideshow — fotos e animação
+# Lux Loading — Slideshow de imagens aleatórias v2
 
-**Minecraft:** Java 1.21.1, NeoForge 21.1.264; quinto mod `lux_menu` (depende só de Lux Engine). **Estado:** código publicado na PR #14 (draft). O usuário ainda não enviou as fotos; não há build/playtest NeoForge comprovado desta revisão.
+**Status:** Java de descoberta aleatória publicado; ZIP `Lux_Mods_Slideshow_Aleatorio_v2.zip` gerado para adicionar imagens. Ainda sem build NeoForge + playtest desta versão. PR #14 draft.
 
-## O que realmente funciona (quando compilar e instalar)
+## Comportamento solicitado
 
-Durante telas normais de loading de mundos, como `LevelLoadingScreen`, `ReceivingLevelScreen` e `ProgressScreen`, o Lux Menu procura de 1 a 8 fotos sob:
+- Sem limite de **oito** imagens: o Lux Menu procura dinamicamente todos os recursos `lux_menu:textures/gui/loading/slide_<numero>.png` presentes no mod. O upload renomeia imagens para `slide_0001.png`, `slide_0002.png`, …
+- Antes de cada carregamento normal de mundo, embaralha uma lista de todas as imagens disponíveis e as reproduz uma vez cada, sem repetir na mesma rodada.
+- Prepara antecipadamente a ordem da próxima rodada e evita imagens idênticas na fronteira entre rodadas. A última foto faz crossfade sem corte para a primeira da próxima rodada.
+- Por padrão, a imagem aparece por 5 segundos e faz fade de 1,2 segundo. Se o mundo carregar antes, o Minecraft fecha a tela e o slideshow para **imediatamente**.
+- `CARREGANDO...` anima os pontos a cada 500ms sem inventar porcentagens de progresso.
+- Fotos dimensionadas proporcionalmente a qualquer janela, com recorte central se necessário; com zero imagens, mantém carregamento vanilla.
+- Configuração CLIENT: `loadingSlideshow = true`, `slideSeconds = 5`, `fadeMillis = 1200`.
 
-`modules/lux-menu/src/main/resources/assets/lux_menu/textures/gui/loading/`
+## Onde aparece de verdade
 
-Nomes esperados, sempre PNG com 1920×1080 pixels: `slide_01.png`, `slide_02.png`…`slide_08.png`. O sistema exibe a foto inteira com recorte central proporcional à resolução, mantém a imagem 5 segundos e faz crossfade **de 1,2s** para a próxima. Um ícone discreto em forma de diamante e `CARREGANDO`, `CARREGANDO.`, `CARREGANDO..`, `CARREGANDO...` aparecem no rodapé. A duração mede o tempo de exibição **e não é porcentagem real de carregamento**. Com zero fotos, preserva a tela vanilla.
+O módulo Lux Menu atual cobre **telas `Screen` de carregamento de mundo**: `LevelLoadingScreen`, `ReceivingLevelScreen`, `ProgressScreen`. Outras etapas (tela vermelha FancyModLoader/FML, Mojang LoadingOverlay, reload de resource pack, transição de dimensão/respawn sem Screen de loading) são processos distintos e **NÃO estão garantidos** pelo mesmo handler. Isso não significa que estão impossíveis; significa que exigem integrações adicionais. Ver `docs/34-LUX-LOADING-TODAS-AS-ETAPAS.md`.
 
-**Limitação essencial:** isto NÃO altera a tela vermelha de inicialização NeoForge/FML, que aparece antes do carregamento dos mods, nem o Mojang `LoadingOverlay` que não é `Screen`. Não prometer que o slide será visto na primeira abertura do jogo; aparecerá ao entrar/criar/carregar mundos quando uma tela compatível for renderizada e houver ao menos uma foto.
+## Pacote de upload v2
 
-## Kit ZIP com instalador Windows
+Baixe `Lux_Mods_Slideshow_Aleatorio_v2.zip`, extraia e coloque quaisquer fotos JPG/JPEG/PNG em `FOTOS-AQUI/`. `PREVIA-FOTOS.html` simula a galeria no navegador (ordem aleatória sem repetição); `ENVIAR-FOTOS-GITHUB.bat` organiza, converte para PNG 1920x1080 e só envia após confirmação `S`. O arquivo `ENVIAR-FOTOS.ps1` não altera fotos originais, saves nem outros JARs; trabalha na branch `feat/engine-discovery-bootstrap`.
 
-`Lux_Mods_Slideshow_Fotos_e_Upload_v1.zip` inclui:
+**Atenção ao desempenho:** ausência de um limite numérico não significa memória infinita. Fotos a 1920x1080 podem ocupar cerca de 8MB cada decodificadas em RGBA na GPU; muitas dezenas podem pressionar VRAM e aumentar o tamanho do JAR. Recomendação de início: 15–30 imagens, observar o consumo e ajustar. O mod não mantém o mundo esperando para completar a lista.
 
-- `FOTOS-AQUI/` para o usuário colocar as fotos (a pasta começa sem fotos).
-- `ENVIAR-FOTOS-GITHUB.bat` — clicar duas vezes.
-- `ENVIAR-FOTOS.ps1` — organização e envio seguro, confirmação explícita.
-- `PREVIA-FOTOS.html` — apresentação local no navegador sem comunicação com servidor.
-- `LEIA-ME-PRIMEIRO.txt` — instruções rápidas.
+## Testes
 
-Fluxo: o usuário extrai o ZIP; coloca 1–8 imagens PNG/JPG/JPEG em `FOTOS-AQUI`, em ordem alfabética (usar `01-...`, `02-...` etc. para controlar). O PowerShell prepara cópias 1920×1080 com recorte central; renomeia `slide_01.png`…; confirma `S`; atualiza `feat/engine-discovery-bootstrap`, troca somente slides gerenciados nessa pasta e faz commit/push. Não envia automaticamente ao abrir o script e não modifica a imagem original. Se há alteração Git local pendente, aborta. Depende de Git for Windows autenticado e de `%USERPROFILE%\LuxModsDev` já clonado.
-
-**Não subir o ZIP fechado no repositório:** o mod só descobre os PNGs depois que eles estiverem na pasta de resources. Após enviar fotos, com Minecraft fechado, o usuário executa seu atualizador habitual que recompila e copia os JARs.
-
-## Configuração opcional
-
-Arquivo do cliente: `config/lux_menu-client.toml`: `loadingSlideshow = true`, `slideSeconds = 5`, `fadeMillis = 1200`. A opção `enabled = false` também desativa o tema Lux inteiro, preservando as telas vanilla.
-
-## Checklist para sessão futura
-
-Revisar 12 itens em `docs/30-CHECKLIST-DE-TESTES.md`, grupo `6B`, com imagens de dia/noite, 1 e 8 fotos, zoom de GUI, sem fotos e multiplayer. O cálculo `SlideTiming.java` passou smoke Java 21 isolado em 24/10; JUnit foi adicionado para rodar durante o Gradle, sem alegar aprovação dele antes da compilação.
-
-## Próximo passo: tela vermelha inicial
-
-Fora do escopo dessa feature. Só será possível com solução de carregamento antecipado compatível com FancyModLoader 1.21.1, distribuída separadamente e com rollback; `docs/32-LUX-BOOT-CARREGAMENTO.md` descreve o estudo.
+Smoke isolado Java 21 executado em 24/10/2026: 250 fotos em 500 rodadas, sem repetição por rodada/fronteira. Ainda não confirma compatibilidade integral com a API NeoForge ou rendering de textura. Checklist completo em `docs/30-CHECKLIST-DE-TESTES.md`.

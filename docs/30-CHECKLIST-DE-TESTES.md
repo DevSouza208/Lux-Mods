@@ -110,20 +110,25 @@
 
 ## 6B — Lux Loading Slideshow (FOTOS DO USUÁRIO, NOVO / NÃO TESTADO EM JOGO)
 
-- [ ] 06B.01 Extrair `Lux_Mods_Slideshow_Fotos_e_Upload_v1.zip` e colocar 1–8 JPG/PNG em `FOTOS-AQUI`.
+- [ ] 06B.01 Extrair `Lux_Mods_Slideshow_Aleatorio_v2.zip` e colocar fotos JPG/PNG em `FOTOS-AQUI` (sem teto fixo; medir uso de memória com muitas imagens).
 - [ ] 06B.02 Abrir `PREVIA-FOTOS.html`, selecionar fotos e conferir crossfade e `CARREGANDO...` animado.
-- [ ] 06B.03 Executar `ENVIAR-FOTOS-GITHUB.bat`, conferir ordem, autorizar `S` e confirmar push na branch de desenvolvimento.
-- [ ] 06B.04 Conferir no GitHub `modules/lux-menu/src/main/resources/assets/lux_menu/textures/gui/loading/slide_01.png` até o último slide enviado.
+- [ ] 06B.03 Executar `ENVIAR-FOTOS-GITHUB.bat`, verificar conversão `slide_0001.png` em diante, autorizar `S` e confirmar push na branch de desenvolvimento.
+- [ ] 06B.04 Conferir no GitHub `modules/lux-menu/src/main/resources/assets/lux_menu/textures/gui/loading/slide_0001.png` até o último slide enviado.
 - [ ] 06B.05 Rodar atalho de atualização com Minecraft fechado; Gradle build SUCCESSFUL e 5 JARs sem duplicação.
-- [ ] 06B.06 Entrar/criar mundo: crossfade de 1,2s após 5s por foto, sem travamentos na imagem.
+- [ ] 06B.06 Entrar/criar mundo: crossfade de 1,2s após 5s por foto, transição suave também do último slide para o primeiro da próxima rodada.
 - [ ] 06B.07 Animar `CARREGANDO`, `CARREGANDO.`, `CARREGANDO..`, `CARREGANDO...`; não mostrar progresso numérico fictício.
 - [ ] 06B.08 Tela de carregamento de mundo sem fotos mantém vanilla intacta e evita quadriculado roxo/preto.
 - [ ] 06B.09 Em partida multiplayer, confirmar que não encobre um botão essencial, erro de conexão ou confirmação importante.
 - [ ] 06B.10 Mudar `loadingSlideshow=false` em `lux_menu-client.toml`: voltar às telas vanilla durante o loading de mundos.
 - [ ] 06B.11 Abrir Minecraft do zero: tela vermelha inicial NeoForge e Mojang LoadingOverlay continuam originais (não foram tematizadas).
-- [ ] 06B.12 Testar com 1, 2 e 8 imagens; proporção 16:9 e janela 16:10; sem imagem esticada.
+- [ ] 06B.12 Testar com 1, 2, 8 e 20+ imagens; proporção 16:9 e janela 16:10; sem imagem esticada ou consumo excessivo de memória.
 
-**Evidência adicional:** o cálculo de transição e reticências em `SlideTiming.java` passou teste Java 21 isolado em 24/10/2026, mas este teste NÃO valida o render NeoForge nem PowerShell do upload no Windows.
+- [ ] 06B.13 Em três carregamentos, a ordem das fotos muda e nenhuma foto repete antes de todas as outras aparecerem.
+- [ ] 06B.14 Confirmar que o slideshow termina IMEDIATAMENTE quando o mundo entra, sem esperar acabar uma rodada.
+- [ ] 06B.15 Testar a troca de pacotes de recursos: se não houver tela Screen padrão, manter vanilla e não deixar overlay quebrado.
+- [ ] 06B.16 Verificar, após instalar o mod early-loading opcional em ambiente isolado, se a tela vermelha é substituída e o rollback funciona.
+
+**Evidência adicional:** `SlideTiming.java` e `SlideShuffle.java` passaram testes isolados Java 21 (250 imagens, 500 rodadas; sem repetição de borda). NÃO validam o render NeoForge nem PowerShell do upload no Windows.
 
 ## 7 — Testes de resiliência, entrega e fechamento
 

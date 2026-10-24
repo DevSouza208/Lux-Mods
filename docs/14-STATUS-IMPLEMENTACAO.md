@@ -33,8 +33,8 @@
 
 - Lux Menu agora contém `LuxLoadingSlideshow`, `SlideTiming` e opções `loadingSlideshow`, `slideSeconds`, `fadeMillis`.
 - Carregamento de mundos via telas normais (`LevelLoadingScreen`, `ReceivingLevelScreen`, `ProgressScreen`); **NÃO** altera tela vermelha inicial do FML nem `LoadingOverlay` da Mojang.
-- Até 8 fotos opcionais em `assets/lux_menu/textures/gui/loading/slide_01.png`…`slide_08.png`; falta usuário subir fotos pelo pacote ZIP.
-- Transição suave e `CARREGANDO...` animado; sem porcentagem fictícia. A matemática foi exercitada em Java 21 isoladamente, **não** compilada nem testada no NeoForge 1.21.1.
+- Fotos opcionais ilimitadas por descoberta em `assets/lux_menu/textures/gui/loading/slide_01.png`…`slide_08.png`; falta usuário subir fotos pelo pacote ZIP.
+- Transição suave e `CARREGANDO...` animado; agora randomização sem repetição até completar rodadas. A matemática de embaralhamento foi exercitada em Java 21 isoladamente, **não** compilada nem testada no NeoForge 1.21.1.
 - Guia: `docs/33-LUX-LOADING-SLIDESHOW.md`; checklist estendido em `docs/30-CHECKLIST-DE-TESTES.md`.
 
 ## Próximas fases
@@ -45,3 +45,7 @@
 4. Dedicated server e testes multiplayer com time scoreboard (aproximação do sistema futuro Lux Party).
 
 **Nota:** a imagem-conceito aprovada do Lux HUD é referência de design, não comprovação de recursos ainda ausentes como missões reais ou Lux Party completo.
+
+## Próxima arquitetura — tela vermelha FML e todos os loadings
+
+Ver `docs/34-LUX-LOADING-TODAS-AS-ETAPAS.md`. Existe um mod de provedor inicial compatível com 1.21.1, mas não foi instalado nem conectado ao nosso slideshow. A janela vermelha inicial e overlay Mojang ainda não foram substituídos. Kit de fotos V2 aceita quantidade sem limite numérico fixo, mas a RAM/VRAM seguem limitadas.
