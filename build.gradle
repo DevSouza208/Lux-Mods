@@ -51,7 +51,7 @@ subprojects {
     neoForge {
         unitTest {
             enable()
-            testedMod = mods."\${project.name.replace('-', '_')}"
+            testedMod = mods."${project.name.replace('-', '_')}"
         }
     }
 
