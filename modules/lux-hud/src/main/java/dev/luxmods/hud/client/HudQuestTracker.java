@@ -21,6 +21,17 @@ public final class HudQuestTracker {
 
     private HudQuestTracker() { }
 
+    /** Called exclusively from the server snapshot; no fabricated client quests. */
+    public static void updateStage(int stage, int progress) {
+        if (stage <= 0) {
+            track("Primeiros troncos", "Coletar madeira", progress, 16);
+        } else if (stage == 1) {
+            track("Pedras para construir", "Coletar pedra", progress, 16);
+        } else {
+            track("Primeiros passos", "2 missões concluídas", 2, 2);
+        }
+    }
+
     public static void track(String title, String objective, int done, int total) {
         tracked = new Quest(title, objective, done, total);
     }
