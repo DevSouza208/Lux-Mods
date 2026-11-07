@@ -153,6 +153,18 @@ project(':lux-menu') {
     }
 }
 
+
+project(':lux-dialogues').evaluationDependsOn(':lux-engine')
+project(':lux-dialogues') {
+    dependencies { implementation project(':lux-engine') }
+    neoForge {
+        mods {
+            lux_engine { sourceSet project(':lux-engine').sourceSets.main }
+        }
+        unitTest { loadedMods = [mods.lux_dialogues, mods.lux_engine] }
+    }
+}
+
 // A single task packages the seven development JARs in one isolated mods directory.
 // This does NOT download the Minecraft client or change a user's .minecraft.
 tasks.register('assembleTestPack', Sync) {
