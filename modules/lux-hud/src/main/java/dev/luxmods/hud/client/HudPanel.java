@@ -32,7 +32,12 @@ public final class HudPanel {
         Minecraft mc = Minecraft.getInstance();
         if (!shouldDraw(mc)) return;
         var player = mc.player;
+        double scale = HudConfig.HUD_SCALE.get();
+        int virtualWidth = (int) Math.floor(g.guiWidth() / scale);
         int x = LEFT, y = TOP;
+        g.pose().pushPose();
+        g.pose().scale((float) scale, (float) scale, 1f);
+        try {
 
         LuxGuiStyle.panel(g, x, y, WIDTH, HEIGHT);
 
@@ -64,13 +69,16 @@ public final class HudPanel {
                 player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE, true);
 
         if (HudConfig.SHOW_EFFECTS.get()) {
-            drawEffects(g, mc, x + WIDTH + 9, y + 2, WIDTH);
+            drawEffects(g, mc, x + WIDTH + 9, y + 2, virtualWidth);
         }
         if (HudConfig.SHOW_TEAMMATES.get()) {
             HudPartyClientState.render(g, mc, x, y + HEIGHT + 7, WIDTH);
         }
         if (HudConfig.SHOW_QUESTS.get()) {
-            HudQuestTracker.render(g, mc, x + WIDTH + 14, y);
+            HudQuestTracker.render(g, mc, x + WIDTH + 14, y, virtualWidth);
+        }
+        } finally {
+            g.pose().popPose();
         }
     }
 
@@ -86,14 +94,14 @@ public final class HudPanel {
         g.drawString(mc.font, amount, bx + 6, y + 1, 0xFFFFFFFF, true);
     }
 
-    private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int panelWidth) {
+    private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int virtualWidth) {
         var effects = mc.player.getActiveEffects().stream()
                 .filter(MobEffectInstance::showIcon)
                 .sorted(Comparator.comparing(MobEffectInstance::getDescriptionId))
                 .limit(4).toList();
         if (effects.isEmpty()) return;
 
-        int available = mc.getWindow().getGuiScaledWidth() - 212 - x;
+        int available = virtualWidth - 212 - x;
         int count = Math.min(effects.size(), Math.max(0, (available - 8) / 25));
         if (count == 0) return;
 
