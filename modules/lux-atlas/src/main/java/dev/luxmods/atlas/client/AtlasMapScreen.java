@@ -310,5 +310,11 @@ public final class AtlasMapScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
     }
 
+    // Atlas paints a full opaque background itself. Prevent vanilla screen blur
+    // from applying AFTER the map has been rendered but before the buttons.
+    @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // No blur: our render() draws the atlas background, terrain, and side panels.
+    }
+
     @Override public boolean isPauseScreen() { return false; }
 }
