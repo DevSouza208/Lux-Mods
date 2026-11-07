@@ -1,6 +1,9 @@
 package dev.luxmods.discovery;
 
 import dev.luxmods.discovery.network.DiscoveryNetwork;
+import dev.luxmods.discovery.client.DiscoveryOverlay;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import dev.luxmods.discovery.server.DiscoveryServerEvents;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -24,6 +27,10 @@ public final class LuxDiscovery {
         container.registerConfig(ModConfig.Type.SERVER, DiscoveryServerConfig.SPEC);
 
         NeoForge.EVENT_BUS.register(new DiscoveryServerEvents());
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            NeoForge.EVENT_BUS.addListener(DiscoveryOverlay::onTick);
+            NeoForge.EVENT_BUS.addListener(DiscoveryOverlay::onRender);
+        }
         LOGGER.info("Lux Discovery carregado (histórico persistente por personagem).");
     }
 }
