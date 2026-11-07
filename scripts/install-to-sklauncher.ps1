@@ -46,7 +46,7 @@ finally {
 }
 
 $files = @()
-foreach ($pattern in @('lux-engine-*.jar', 'lux-discovery-*.jar', 'lux-atlas-*.jar', 'lux-hud-*.jar', 'lux-menu-*.jar', 'lux-borderless-*.jar')) {
+foreach ($pattern in @('lux-engine-*.jar', 'lux-discovery-*.jar', 'lux-atlas-*.jar', 'lux-hud-*.jar', 'lux-menu-*.jar', 'lux-borderless-*.jar', 'lux-dialogues-*.jar')) {
     $found = @(Get-ChildItem $pack -Filter $pattern -File -ErrorAction Stop |
         Where-Object { $_.Name -notmatch '-(sources|javadoc)\.jar$' })
     if ($found.Count -ne 1 -or $found[0].Length -le 0) {
@@ -77,7 +77,8 @@ $old = @(Get-ChildItem $mods -Filter 'lux-engine-*.jar' -File) +
        @(Get-ChildItem $mods -Filter 'lux-atlas-*.jar' -File) +
        @(Get-ChildItem $mods -Filter 'lux-hud-*.jar' -File) +
        @(Get-ChildItem $mods -Filter 'lux-menu-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-borderless-*.jar' -File)
+       @(Get-ChildItem $mods -Filter 'lux-borderless-*.jar' -File) +
+       @(Get-ChildItem $mods -Filter 'lux-dialogues-*.jar' -File)
 $backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 if ($old.Count -gt 0) {
     New-Item -ItemType Directory -Force -Path $backup | Out-Null
@@ -101,5 +102,5 @@ catch {
     }
     throw
 }
-Write-Host "Pronto! Lux Engine + Discovery + Atlas + HUD + Menu + Borderless instalados somente em $mods" -ForegroundColor Green
+Write-Host "Pronto! Lux Engine + Discovery + Atlas + HUD + Menu + Borderless + Dialogues instalados somente em $mods" -ForegroundColor Green
 explorer.exe $mods
