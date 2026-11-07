@@ -57,7 +57,7 @@ subprojects {
 
     def metadataValues = [
         mod_id: project.name.replace('-', '_'),
-        mod_name: ['lux-engine':'Lux Engine', 'lux-discovery':'Lux Discovery', 'lux-atlas':'Lux Atlas', 'lux-hud':'Lux HUD', 'lux-menu':'Lux Menu', 'lux-borderless':'Lux Borderless'].get(project.name),
+        mod_name: ['lux-engine':'Lux Engine', 'lux-discovery':'Lux Discovery', 'lux-atlas':'Lux Atlas', 'lux-hud':'Lux HUD', 'lux-menu':'Lux Menu', 'lux-borderless':'Lux Borderless', 'lux-dialogues':'Lux Dialogues'].get(project.name),
         mod_version: project.version,
         mod_license: 'All Rights Reserved',
         minecraft_version_range: rootProject.property('minecraft_version_range'),
@@ -153,12 +153,12 @@ project(':lux-menu') {
     }
 }
 
-// A single task packages the six development JARs in one isolated mods directory.
+// A single task packages the seven development JARs in one isolated mods directory.
 // This does NOT download the Minecraft client or change a user's .minecraft.
 tasks.register('assembleTestPack', Sync) {
     group = 'lux mods'
-    description = 'Build and copy Lux Engine + Discovery + Atlas + HUD + Menu + Borderless jars for a clean Minecraft test instance.'
-    dependsOn ':lux-engine:build', ':lux-discovery:build', ':lux-atlas:build', ':lux-hud:build', ':lux-menu:build', ':lux-borderless:build'
+    description = 'Build and copy Lux Engine + Discovery + Atlas + HUD + Menu + Borderless + Dialogues jars for a clean Minecraft test instance.'
+    dependsOn ':lux-engine:build', ':lux-discovery:build', ':lux-atlas:build', ':lux-hud:build', ':lux-menu:build', ':lux-borderless:build', ':lux-dialogues:build'
     into(layout.buildDirectory.dir('lux-testpack/mods'))
     from(project(':lux-engine').tasks.named('jar'))
     from(project(':lux-discovery').tasks.named('jar'))
@@ -166,4 +166,5 @@ tasks.register('assembleTestPack', Sync) {
     from(project(':lux-hud').tasks.named('jar'))
     from(project(':lux-menu').tasks.named('jar'))
     from(project(':lux-borderless').tasks.named('jar'))
+    from(project(':lux-dialogues').tasks.named('jar'))
 }
