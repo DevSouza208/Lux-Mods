@@ -16,6 +16,7 @@ public final class LuxDialogues {
     public LuxDialogues(IEventBus modBus, ModContainer container) {
         modBus.addListener(DialogueNetwork::register);
         NeoForge.EVENT_BUS.addListener(DialogueInteractions::onInteract);
+        NeoForge.EVENT_BUS.addListener(DialogueSessions::onTick);
         if (FMLEnvironment.dist == Dist.CLIENT) ClientSetup.init();
     }
 
