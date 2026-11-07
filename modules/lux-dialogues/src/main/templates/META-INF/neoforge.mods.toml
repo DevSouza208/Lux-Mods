@@ -22,3 +22,10 @@ type="required"
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.lux_dialogues]]
+modId="lux_engine"
+type="required"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
