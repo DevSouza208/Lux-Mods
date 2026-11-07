@@ -24,6 +24,18 @@ public final class HudConfig {
             .comment("Exibir icones dos efeitos ativos perto da barra de vida.")
             .define("showEffects", true);
 
+    public static final ModConfigSpec.BooleanValue HORSE_SHOULDER_CAMERA = BUILDER
+            .comment("Ao montar, trocar automaticamente para terceira pessoa sobre o ombro.")
+            .define("horseShoulderCamera", true);
+
+    public static final ModConfigSpec.BooleanValue RESTORE_HORSE_CAMERA = BUILDER
+            .comment("Ao desmontar, restaurar a perspectiva anterior.")
+            .define("restoreHorseCamera", true);
+
+    public static final ModConfigSpec.DoubleValue HORSE_SHOULDER_OFFSET = BUILDER
+            .comment("Deslocamento lateral da camera montada, em blocos.")
+            .defineInRange("horseShoulderOffset", 0.8D, 0.0D, 1.5D);
+
     public static final ModConfigSpec.BooleanValue SHOW_MOUNT = BUILDER
             .comment("Mostrar nome, retrato e vida do cavalo montado abaixo do painel do jogador.")
             .define("showMount", true);
