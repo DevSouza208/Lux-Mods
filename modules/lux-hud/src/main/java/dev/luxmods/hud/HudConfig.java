@@ -12,6 +12,10 @@ public final class HudConfig {
             .comment("CLASSIC: interface original do Minecraft; RPG: painel Lux.")
             .defineEnum("mode", Mode.RPG);
 
+    public static final ModConfigSpec.DoubleValue HUD_SCALE = BUILDER
+            .comment("Escala do painel Lux e do rastreador de missoes. F8 alterna entre 60%, 75%, 85% e 100%.")
+            .defineInRange("hudScale", 0.75D, 0.60D, 1.00D);
+
     public static final ModConfigSpec.BooleanValue REPLACE_VANILLA_BARS = BUILDER
             .comment("Ocultar barras vanilla de vida, fome e XP quando o painel RPG estiver visivel.")
             .define("replaceVanillaBars", true);
