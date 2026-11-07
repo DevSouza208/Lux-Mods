@@ -24,6 +24,10 @@ public final class HudConfig {
             .comment("Exibir icones dos efeitos ativos perto da barra de vida.")
             .define("showEffects", true);
 
+    public static final ModConfigSpec.BooleanValue SHOW_MOUNT = BUILDER
+            .comment("Mostrar nome, retrato e vida do cavalo montado abaixo do painel do jogador.")
+            .define("showMount", true);
+
     public static final ModConfigSpec.BooleanValue SHOW_TEAMMATES = BUILDER
             .comment("Mostrar somente colegas pertencentes ao mesmo time do scoreboard.")
             .define("showTeammates", true);
