@@ -1,0 +1,24 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="Lux Mods"
+description='''Alterna entre janela normal e janela sem bordas com F10. Apenas cliente.'''
+
+[[dependencies.lux_borderless]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.lux_borderless]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="CLIENT"
