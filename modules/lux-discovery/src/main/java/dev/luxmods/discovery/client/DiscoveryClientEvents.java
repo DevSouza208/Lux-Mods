@@ -29,10 +29,8 @@ public final class DiscoveryClientEvents {
         Component name = Component.translatableWithFallback(
                         "biome." + id.getNamespace() + "." + id.getPath(), humanize(id.getPath()))
                 .withStyle(ChatFormatting.GOLD);
-        mc.gui.setTimes(12, 55, 22);
-        mc.gui.setSubtitle(Component.translatable("message.lux_discovery.biome")
+        DiscoveryOverlay.show(name, Component.translatable("message.lux_discovery.biome")
                 .withStyle(ChatFormatting.GRAY));
-        mc.gui.setTitle(name);
     }
 
     private static String humanize(String path) {
