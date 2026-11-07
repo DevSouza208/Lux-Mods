@@ -1,6 +1,7 @@
 package dev.luxmods.hud;
 
 import dev.luxmods.hud.client.HudClientLayers;
+import dev.luxmods.hud.client.HudScaleKey;
 import dev.luxmods.hud.client.HudVanillaLayers;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -34,6 +35,7 @@ public final class LuxHud {
     private static final class ClientSetup {
         private static void register(IEventBus modBus) {
             modBus.addListener(HudClientLayers::register);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(HudScaleKey::onTick);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(HudVanillaLayers::onPre);
         }
     }
