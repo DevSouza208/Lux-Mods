@@ -32,6 +32,7 @@ public final class AtlasMapScreen extends Screen {
     private int selectionX, selectionZ;
     private int zoomIndex = 2;
     private boolean dragging;
+    private boolean firstOpen = true;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
     private boolean showPlayer = true;
@@ -46,9 +47,12 @@ public final class AtlasMapScreen extends Screen {
     @Override protected void init() {
         if (minecraft == null || minecraft.player == null) return;
         if (markers.isEmpty()) markers.addAll(AtlasMarkers.load(minecraft));
-        if (centerX == 0 && centerZ == 0) {
+        if (firstOpen) {
+            firstOpen = false;
             centerX = minecraft.player.getBlockX();
             centerZ = minecraft.player.getBlockZ();
+            selectionX = centerX;
+            selectionZ = centerZ;
         }
         layout();
         addControls();
