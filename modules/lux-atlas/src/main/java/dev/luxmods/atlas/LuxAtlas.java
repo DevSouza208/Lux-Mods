@@ -1,6 +1,7 @@
 package dev.luxmods.atlas;
 
 import dev.luxmods.atlas.client.AtlasClientLayers;
+import dev.luxmods.atlas.client.AtlasMapKey;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -27,6 +28,7 @@ public final class LuxAtlas {
     private static final class ClientSetup {
         private static void register(IEventBus modBus) {
             modBus.addListener(AtlasClientLayers::register);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasMapKey::onTick);
         }
     }
 }
