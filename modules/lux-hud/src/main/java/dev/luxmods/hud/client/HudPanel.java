@@ -71,8 +71,10 @@ public final class HudPanel {
         if (HudConfig.SHOW_EFFECTS.get()) {
             drawEffects(g, mc, x + WIDTH + 9, y + 2, virtualWidth);
         }
+        int mountOffset = HudConfig.SHOW_MOUNT.get() && HudMountPanel.hasMount(mc) ? HudMountPanel.HEIGHT + 6 : 0;
+        if (mountOffset > 0) HudMountPanel.render(g, mc, x, y + HEIGHT + 6, WIDTH);
         if (HudConfig.SHOW_TEAMMATES.get()) {
-            HudPartyClientState.render(g, mc, x, y + HEIGHT + 7, WIDTH);
+            HudPartyClientState.render(g, mc, x, y + HEIGHT + 7 + mountOffset, WIDTH);
         }
         if (HudConfig.SHOW_QUESTS.get()) {
             HudQuestTracker.render(g, mc, x + WIDTH + 14, y, virtualWidth);
