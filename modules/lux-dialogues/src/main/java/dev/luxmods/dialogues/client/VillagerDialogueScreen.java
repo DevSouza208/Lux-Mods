@@ -15,7 +15,6 @@ public final class VillagerDialogueScreen extends Screen {
     private final Villager villager;
     private boolean replied;
     private int closeTicks = -1;
-    private boolean requestedShop;
 
     public VillagerDialogueScreen(Villager villager) {
         super(Component.literal("Lux Dialogues"));
@@ -43,7 +42,6 @@ public final class VillagerDialogueScreen extends Screen {
             }).bounds(start + (buttonWidth + 7) * index++, buttonY, buttonWidth, 20).build());
             if (hasShop()) {
                 addRenderableWidget(Button.builder(Component.literal("Abrir loja"), b -> {
-                    requestedShop = true;
                     PacketDistributor.sendToServer(new DialogueNetwork.OpenShop(villager.getId()));
                     onClose();
                 }).bounds(start + (buttonWidth + 7) * index++, buttonY, buttonWidth, 20).build());
@@ -79,6 +77,7 @@ public final class VillagerDialogueScreen extends Screen {
 
     @Override public boolean isPauseScreen() { return false; }
     @Override public void onClose() {
+        PacketDistributor.sendToServer(new DialogueNetwork.EndDialogue(villager.getId()));
         Minecraft.getInstance().setScreen(null);
     }
 }
