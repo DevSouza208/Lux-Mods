@@ -7,7 +7,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
  * Cancel only bars already represented by the Lux HUD.
- * Preserve armor, breath, mounts, boss bars, subtitles, actionbar and hotbar.
+ * Preserve armor, breath, mount jump, boss bars, subtitles, actionbar and hotbar.
  */
 public final class HudVanillaLayers {
     private HudVanillaLayers() {
@@ -21,6 +21,13 @@ public final class HudVanillaLayers {
                 || VanillaGuiLayers.FOOD_LEVEL.equals(name)
                 || VanillaGuiLayers.EXPERIENCE_BAR.equals(name)
                 || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name))) {
+            event.setCanceled(true);
+        }
+        // The Lux mount panel already renders the horse's real health.
+        // Hide only vanilla mount hearts, leaving the jump meter and hotbar intact.
+        if (HudConfig.SHOW_MOUNT.get()
+                && HudMountPanel.hasMount(Minecraft.getInstance())
+                && VanillaGuiLayers.VEHICLE_HEALTH.equals(name)) {
             event.setCanceled(true);
         }
         // Potion effects have moved next to health. They remain vanilla
