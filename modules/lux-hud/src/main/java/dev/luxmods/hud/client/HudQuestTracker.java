@@ -34,9 +34,9 @@ public final class HudQuestTracker {
         return safe.length() <= limit ? safe : safe.substring(0, limit - 3) + "...";
     }
 
-    public static void render(GuiGraphics g, Minecraft mc, int minX, int top) {
-        int x = Math.max(minX, g.guiWidth() - WIDTH - 10);
-        int width = Math.min(WIDTH, g.guiWidth() - x - 10);
+    public static void render(GuiGraphics g, Minecraft mc, int minX, int top, int virtualWidth) {
+        int x = Math.max(minX, virtualWidth - WIDTH - 10);
+        int width = Math.min(WIDTH, virtualWidth - x - 10);
         if (width < 128) return;
         Quest current = tracked;
         int height = current == null ? 62 : 104;
