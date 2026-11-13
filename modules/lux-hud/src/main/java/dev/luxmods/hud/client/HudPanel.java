@@ -35,12 +35,12 @@ public final class HudPanel {
         double scale = HudConfig.HUD_SCALE.get();
         int virtualWidth = (int) Math.floor(g.guiWidth() / scale);
         int x = LEFT, y = TOP;
+        // Draw edge feedback in native GUI coordinates before scaling the panel.
+        HudDangerVignette.render(g, mc);
         g.pose().pushPose();
         g.pose().scale((float) scale, (float) scale, 1f);
         try {
 
-        // Screen-edge hints do not overlap the decorative hotbar or add a bar.
-        HudDangerVignette.render(g, mc);
         LuxGuiStyle.panel(g, x, y, WIDTH, HEIGHT);
 
         // Portrait height is precisely the three rows: y+24 through y+72.
