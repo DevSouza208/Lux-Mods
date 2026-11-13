@@ -22,3 +22,15 @@ O reconhecimento de assento identifica entidades cujo nome no registro contém `
 - Auditar alimentos de outros mods que apliquem efeitos de cura diretamente: a gamerule `naturalRegeneration` não bloqueia `instant_health` nem `regeneration` concedidos explicitamente por algum mod.
 
 Estado: alteração enviada ao GitHub; ainda não validada no jogo.
+
+## Sono e desmaio — Lux Rest (13/11/2026)
+- Medição no servidor em tempo **do Minecraft** (1 dia = 24.000 ticks de ciclo de dia), não horas reais; tempo desconectado não conta.
+- Antes de 48.000 ticks acordado: normal.
+- De 48.000 a 72.000: vinheta escura progressiva e três letras Z discretas no canto superior direito.
+- Aos 72.000 ticks: **um desmaio breve de 5 segundos**, com escurecimento visual, efeito de lentidão forte e cegueira curta; não causa dano e não obriga a dormir.
+- Se continuar sem dormir, um novo desmaio pode ocorrer somente após outro dia completo, não a cada tick.
+- Dormir por 80 ticks consecutivos reinicia o cansaço. Sentar na fogueira descansa a vida, mas **não** zera o sono.
+- Sem barra permanente de sono, sem exaustão por fome/sede e sem restrição cotidiana de caminhada.
+- O cliente recebe `HudSleepSnapshotPayload` periodicamente; não inventa contador baseado em tempo local.
+- Possível conflito com phantoms e outros mods de sono; testar.
+- **Pendente:** build real e teste in-game. O comportamento do tempo pulado por `/time set` também deve ser avaliado.
