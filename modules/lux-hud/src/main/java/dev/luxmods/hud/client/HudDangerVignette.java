@@ -39,6 +39,26 @@ public final class HudDangerVignette {
         if (mc.player.hurtTime > 0) {
             edge(g, 0xD6293E, Math.min(125, mc.player.hurtTime * 11));
         }
+
+        // Two Minecraft days without meaningful sleep: sleepy peripheral shade.
+        // Three days: exhaustion. No constant sleep meter or forced movement penalty.
+        int awake = HudSleepClientState.awakeTicks();
+        if (awake >= 48_000) {
+            float progress = Math.min(1F, (awake - 48_000) / 24_000F);
+            edge(g, 0x0A0D22, 40 + (int)(105 * progress));
+            int sx = g.guiWidth() - 36, sy = 13;
+            int ink = 0xFFD4C3F0;
+            g.drawString(mc.font, "Z", sx, sy, ink, true);
+            g.drawString(mc.font, "z", sx + 11, sy + 10, ink, false);
+            g.drawString(mc.font, "z", sx + 18, sy + 17, 0xFF9583BA, false);
+        }
+        if (HudSleepClientState.faintTicks() > 0) {
+            // Five-second collapse: temporary black veil, never permanent.
+            g.fill(0, 0, g.guiWidth(), g.guiHeight(), 0xE6000308);
+            String message = "EXAUSTÃO";
+            int x = (g.guiWidth() - mc.font.width(message)) / 2;
+            g.drawString(mc.font, message, x, g.guiHeight() / 2, 0xFFD8CBE4, true);
+        }
     }
 
     private static void edge(GuiGraphics g, int rgb, int alpha) {
