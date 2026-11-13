@@ -29,6 +29,8 @@ public final class LuxHud {
                 new dev.luxmods.hud.server.HudPartyServerEvents());
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(
                 new dev.luxmods.hud.server.HudQuestServerEvents());
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(
+                new dev.luxmods.hud.server.HudRestServerEvents());
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientSetup.register(modBus);
         }
