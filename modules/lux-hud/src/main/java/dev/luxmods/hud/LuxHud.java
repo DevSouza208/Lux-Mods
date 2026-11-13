@@ -24,6 +24,7 @@ public final class LuxHud {
 
     public LuxHud(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, HudConfig.SPEC);
+        container.registerConfig(ModConfig.Type.SERVER, HudServerConfig.SPEC);
         dev.luxmods.hud.server.HudHealingItems.ITEMS.register(modBus);
         modBus.addListener(dev.luxmods.hud.network.HudNetwork::register);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(
