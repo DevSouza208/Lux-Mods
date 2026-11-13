@@ -2,6 +2,8 @@ package dev.luxmods.hud.client;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 
 /**
  * Optional, client-only compatibility with Thirst Was Taken.
@@ -22,10 +24,22 @@ public final class HudThirstCompat {
     private static volatile boolean lookedUp;
     private static Field thirstField;
     private static Method thirstGetter;
+    private static ClientLevel lastLevel;
+    private static int warmupTicks;
 
     private HudThirstCompat() {}
 
     public static Integer readThirst() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return null;
+        if (mc.level != lastLevel) {
+            lastLevel = mc.level;
+            // Allow the original mod's overlay to initialize its cached
+            // thirst reference when joining or switching worlds.
+            warmupTicks = mc.player.tickCount + 60;
+            thirstGetter = null;
+        }
+        if (mc.player.tickCount < warmupTicks) return null;
         if (!lookedUp) resolve();
         if (thirstField == null) return null;
         try {
