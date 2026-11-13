@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 
 /**
  * Optional, client-only compatibility with Thirst Was Taken.
@@ -25,6 +26,7 @@ public final class HudThirstCompat {
     private static Field thirstField;
     private static Method thirstGetter;
     private static ClientLevel lastLevel;
+    private static LocalPlayer lastPlayer;
     private static int warmupTicks;
 
     private HudThirstCompat() {}
@@ -32,8 +34,9 @@ public final class HudThirstCompat {
     public static Integer readThirst() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return null;
-        if (mc.level != lastLevel) {
+        if (mc.level != lastLevel || mc.player != lastPlayer) {
             lastLevel = mc.level;
+            lastPlayer = mc.player;
             // Allow the original mod's overlay to initialize its cached
             // thirst reference when joining or switching worlds.
             warmupTicks = mc.player.tickCount + 60;
