@@ -21,14 +21,18 @@ public final class AtlasTerrainCache {
 
     private AtlasTerrainCache() {}
 
-    private static Path path(Minecraft mc, Level level) {
+    private static Path path(Minecraft mc, Level level, String kind) {
         String world = AtlasMarkers.worldKey(mc);
         String dimension = AtlasMarkers.dimension(level).replaceAll("[^a-zA-Z0-9._-]", "_");
-        return mc.gameDirectory.toPath().resolve("lux-atlas").resolve(world + "_" + dimension + ".bin.gz");
+        return mc.gameDirectory.toPath().resolve("lux-atlas").resolve(world + "_" + dimension + "_" + kind + ".bin.gz");
     }
 
     public static void load(Minecraft mc, Level level, Map<Long, Integer> target) {
-        Path p = path(mc, level);
+        load(mc, level, target, "map");
+    }
+
+    public static void load(Minecraft mc, Level level, Map<Long, Integer> target, String kind) {
+        Path p = path(mc, level, kind);
         if (!Files.isRegularFile(p)) return;
         try (DataInputStream in = new DataInputStream(new GZIPInputStream(Files.newInputStream(p)))) {
             if (in.readInt() != MAGIC) return;
@@ -44,6 +48,10 @@ public final class AtlasTerrainCache {
     }
 
     public static void save(Minecraft mc, Level level, Map<Long, Integer> tiles) {
+        save(mc, level, tiles, "map");
+    }
+
+    public static void save(Minecraft mc, Level level, Map<Long, Integer> tiles, String kind) {
         if (tiles.isEmpty()) return;
         try {
             Path p = path(mc, level);
