@@ -78,6 +78,9 @@ public final class HudSleepServerEvents {
             }
         } else {
             // Ignore very short bed interactions; meaningful sleep resets fully.
+            // A night skipped by sleeping advances world dayTime, but must not
+            // count as time spent awake after the player got out of bed.
+            if (data.getInt(SLEEPING) >= VALID_SLEEP) delta = 0L;
             data.remove(SLEEPING);
             if (!player.isCreative() && !player.isSpectator()) {
                 int awake = (int) Math.min(FAINT_AT + DAY * 10L, data.getInt(AWAKE) + delta);
