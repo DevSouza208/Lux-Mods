@@ -74,6 +74,7 @@ public final class AtlasWalkDiscovery {
             }
         }
         if (added > 0) sinceSave += 40;
-        if (sinceSave >= 400) flush();
+        // Persist more frequently to avoid losing a short exploration session.
+        if (sinceSave >= 80) flush();
     }
 }
