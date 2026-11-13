@@ -55,7 +55,11 @@ public final class AtlasMapScreen extends Screen {
         if (markers.isEmpty()) markers.addAll(AtlasMarkers.load(minecraft));
         if (!terrainLoaded && minecraft.level != null) {
             terrainLoaded = true;
+            AtlasWalkDiscovery.flush();
             AtlasTerrainCache.load(minecraft, minecraft.level, tiles);
+            Map<Long, Integer> fromWalking = new LinkedHashMap<>();
+            AtlasTerrainCache.load(minecraft, minecraft.level, fromWalking, "walk");
+            tiles.putAll(fromWalking);
         }
         if (firstOpen) {
             firstOpen = false;
@@ -199,7 +203,7 @@ public final class AtlasMapScreen extends Screen {
         return super.mouseScrolled(x, y, horizontal, vertical);
     }
 
-    private static long key(int x, int z, int sampleStep) {
+    static long key(int x, int z, int sampleStep) {
         long a = ((long) x & 0xFFFFFFFL);
         long b = ((long) z & 0xFFFFFFFL);
         return (a << 36) ^ (b << 8) ^ sampleStep;
