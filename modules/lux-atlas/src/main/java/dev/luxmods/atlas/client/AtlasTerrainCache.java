@@ -54,7 +54,7 @@ public final class AtlasTerrainCache {
     public static void save(Minecraft mc, Level level, Map<Long, Integer> tiles, String kind) {
         if (tiles.isEmpty()) return;
         try {
-            Path p = path(mc, level);
+            Path p = path(mc, level, kind);
             Files.createDirectories(p.getParent());
             try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(Files.newOutputStream(p)))) {
                 out.writeInt(MAGIC);
