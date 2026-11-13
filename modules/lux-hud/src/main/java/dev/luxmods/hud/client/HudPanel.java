@@ -78,9 +78,12 @@ public final class HudPanel {
         }
 
         if (HudConfig.SHOW_EFFECTS.get()) {
-            // Place readable condition cards BELOW the quests, not in their header.
+            // Align active conditions with the right-side quests panel.
+            // Placing them below its maximum 104px height prevents overlap
+            // on narrower resolutions where the quest panel shifts left.
             int virtualHeight = (int) Math.floor(g.guiHeight() / scale);
-            drawEffects(g, mc, x + WIDTH + 14, y + 106, virtualWidth, virtualHeight);
+            int effectsX = virtualWidth - 170;
+            drawEffects(g, mc, effectsX, y + 113, virtualWidth, virtualHeight);
         }
         int mountOffset = HudConfig.SHOW_MOUNT.get() && HudMountPanel.hasMount(mc) ? HudMountPanel.HEIGHT + 6 : 0;
         if (mountOffset > 0) HudMountPanel.render(g, mc, x, y + HEIGHT + 6, WIDTH);
@@ -125,7 +128,7 @@ public final class HudPanel {
                 .sorted(Comparator.comparing(MobEffectInstance::getDescriptionId))
                 .limit(4).toList();
         int maxCards = Math.max(0, (virtualHeight - y - 30) / 34);
-        if (effects.isEmpty() || x + 158 > virtualWidth || maxCards == 0) return;
+        if (effects.isEmpty() || x < 8 || x + 158 > virtualWidth || maxCards == 0) return;
 
         for (int i = 0; i < Math.min(effects.size(), maxCards); i++) {
             MobEffectInstance effect = effects.get(i);
