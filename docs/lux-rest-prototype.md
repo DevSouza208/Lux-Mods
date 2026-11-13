@@ -1,26 +1,17 @@
-# Lux Rest — Protótipo 0.1 (Minecraft 1.21.1 / NeoForge)
+# Lux Rest — regras após testes in-game (Minecraft 1.21.1 / NeoForge)
 
-## Experiência aprovada
-- Comida restaura a fome, não a vida; usar `/gamerule naturalRegeneration false` para testar até que Lux Healing controle isso com segurança.
-- Dormir por tempo suficiente (mínimo de 80 ticks de sono) e acordar restaura toda a vida. A estamina deve ser restaurada quando existir o módulo.
-- Fogueira acesa a até 4 blocos: +0,5 coração a cada 6 segundos.
-- Sentado por entidade de assento (não montarias vivas): +0,5 coração a cada 4 segundos.
-- Sentado perto de fogueira: +0,5 coração a cada 3 segundos.
-- Fome zero bloqueia a recuperação gradual. A cama recupera a vida integralmente.
-- Poções continuam funcionando. Sem fraturas, doenças, sede ou outras penalidades.
+## Regra confirmada
+- Comida recupera fome/saturação, **não** vida. Para impedir a regeneração vanilla enquanto Lux Healing não controla a regra, use `/gamerule naturalRegeneration false` em cada mundo de teste.
+- Curativos/medicamentos devem ser o meio principal de cura. O item de curativo **ainda não foi implementado**.
+- Dormir por pelo menos 80 ticks e acordar restaura 100% da vida (código no Lux HUD).
+- **Sentar, ficar parado e ficar próximo de fogueira NÃO regeneram vida.**
+- Futuramente, sentar e fogueira acelerarão somente a recuperação de estamina.
+- Poções e outros efeitos específicos de cura continuam funcionando.
+- Sem fraturas, doenças, sede extra ou lesões complexas.
 
-## Atenção à compatibilidade com Sit
-Essa primeira implementação reconhece apenas assentos que transformam o jogador em passageiro de uma entidade não viva.
-Mods que só executam animação de sentar **não** são detectados nesta versão. Quando o nome e a versão
-exata do mod Sit estiverem disponíveis, implementar integração opcional e testar no jogo.
+## Próximas etapas
+1. Implementar curativo, testar cura vanilla e possíveis mods que concedem regeneração adicional.
+2. Implementar Lux Stamina com estado server-side, sincronização e regeneração contextual.
+3. Integrar ao mod de assento instalado e ao Lux HUD sem sobrepor a hotbar.
 
-## Estamina (próximo desenvolvimento)
-- Caminhar não gasta; correr, nadar, saltar e combate gastam.
-- Caminhar/parar recupera; sentar e fogueira aceleram; dormir restaura 100%.
-- Estamina baixa causa lentidão e bloqueia corrida; fome baixa não causa lentidão diretamente.
-- Não criar HUD fictício antes de implementar rede, estado persistente e eventos no servidor.
-
-## Segurança
-- Não altera automaticamente game rules dos mundos existentes.
-- Não impõe regeneração nem efeitos em jogadores no criativo ou espectador.
-- A lógica ainda precisa de compilação Gradle e teste no jogo; não deve ser anunciada como validada.
+Status: correção de Lux Rest enviada ao GitHub; compilação e teste in-game ainda pendentes.
