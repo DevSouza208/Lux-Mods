@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,14 +23,18 @@ public final class AtlasMapScreen extends Screen {
     private static final int BG = 0xF0171425;
     private static final int DARK = 0xED242032;
     private static final int EDGE = 0xFFB88BDD;
-    private final Map<Long, Integer> tiles = new HashMap<>();
+    private final Map<Long, Integer> tiles = new LinkedHashMap<>(4096, 0.75F, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
+            return size() > 120_000;
+        }
+    };
     private final List<AtlasMarkers.Marker> markers = new ArrayList<>();
 
     private int centerX, centerZ;
-    private int step = 4;
+    private int step = 2;
     private int mapX, mapY, mapW, mapH;
     private int selectionX, selectionZ;
-    private int zoomIndex = 2;
+    private int zoomIndex = 3;
     private boolean dragging;
     private double panRemainderX, panRemainderZ;
     private boolean firstOpen = true;
@@ -211,8 +215,13 @@ public final class AtlasMapScreen extends Screen {
         var state = level.getBlockState(pos);
         int color = state.getMapColor(level, pos).col;
         if (color == 0) color = 0x576C52;
-        int shade = Math.max(-25, Math.min(35, (y - 72) / 3));
-        if (state.is(Blocks.WATER)) shade = -17;
+        // Directional relief shading gives mountain ridges clearer contours
+        // without adding any textures, world generation or new GUI overlays.
+        int northY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1);
+        int westY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz);
+        int relief = (y - northY) * 5 + (y - westY) * 3;
+        int shade = Math.max(-37, Math.min(42, (y - 72) / 4 + relief));
+        if (state.is(Blocks.WATER)) shade = -12;
         int red = Math.max(0, Math.min(255, ((color >> 16) & 255) + shade));
         int green = Math.max(0, Math.min(255, ((color >> 8) & 255) + shade));
         int blue = Math.max(0, Math.min(255, (color & 255) + shade));
@@ -230,10 +239,7 @@ public final class AtlasMapScreen extends Screen {
         int startZ = centerZ - cellsY * step / 2;
         // Preserve sampled terrain while panning. Limit memory rather than
         // forcing a complete redraw on every camera movement.
-        if (tiles.size() > 120000) {
-            AtlasTerrainCache.save(minecraft, minecraft.level, tiles);
-            tiles.clear();
-        }
+        // Bounded LRU cache keeps recently explored regions without clearing them.
         lastStartX = startX;
         lastStartZ = startZ;
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
