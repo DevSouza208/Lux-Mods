@@ -30,6 +30,21 @@ public final class HudNetwork {
                     }
                 }
         );
+        registrar.playToClient(
+                HudSleepSnapshotPayload.TYPE,
+                HudSleepSnapshotPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        SleepClientHandler.receive(payload.awakeTicks(), payload.faintTicks());
+                    }
+                }
+        );
+    }
+
+    private static final class SleepClientHandler {
+        private static void receive(int awakeTicks, int faintTicks) {
+            dev.luxmods.hud.client.HudSleepClientState.receive(awakeTicks, faintTicks);
+        }
     }
 
     private static final class QuestClientHandler {
