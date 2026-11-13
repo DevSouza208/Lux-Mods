@@ -23,3 +23,16 @@
 4. Verificar vinhetas no limiar de vida, fome e ar. Verificar cartões dos efeitos em 60%/75%/100%.
 5. Coletar tronco, largar, recolher: não deve avançar a missão novamente.
 6. Testar lanterna na mão: comparação com o First Person Model desativado, depois Punchy, em cópia da instância. No Curios manter por enquanto.
+
+## Rodada adicional
+- Cache Atlas: corrigido erro no caminho de salvamento com parâmetro `kind`.
+- Coordenadas Atlas: a grade usa células de 2 pixels. Conversões de clique, arraste, posição do jogador e marcadores agora aplicam `step / 2` corretamente. A discrepância anterior era a causa principal da aparente movimentação de marcadores.
+- Persistência passiva: grava a cada ~4 segundos de descoberta, reduzindo perda em sessões curtas.
+- Cartões de efeitos: quantidade calculada pela altura disponível conforme escala F8 para não ultrapassar a tela.
+- CI: compilação separada do job `pure-java`; o GitHub Actions ainda falha imediatamente sem registrar etapas, portanto continua sem prova de build.
+- Sede opcional experimental: leitura reflexiva e somente de leitura do objeto `ThirstBarRenderer.PLAYER_THIRST` e `getThirst()` com janela de inicialização por mundo. Se o port NeoForge 1.21.1 conservar essa API, terceira barra vira sede e overlay `thirst:*` é cancelado. Se não, mantemos XP na terceira barra e a barra original do Thirst Was Taken intacta. Não supor que esta integração esteja validada.
+- Lanterna na mão: continua dependente de identificar qual mod altera a transformação de item; não alterar code da câmera aprovada nem desinstalar mods automaticamente.
+
+### Observações sobre a próxima compilação
+Sem runners ativos e sem fontes NeoForge completas locais nesta sessão, as mudanças não passaram por um build verificado.
+Conferir especificamente: importações / assinaturas das classes opcionais; novo item `lux_hud:bandage`; cache Atlas; HUD de efeitos; troca da barra sede/XP após 3 segundos de mundo carregado.
