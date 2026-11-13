@@ -24,6 +24,14 @@ public final class HudVanillaLayers {
         if (!HudPanel.shouldDraw(Minecraft.getInstance())) return;
 
         var name = event.getName();
+        // Third-party thirst indicator is hidden ONLY after reading a real
+        // hydration value. Until then it stays visible for player safety.
+        if ("thirst".equals(name.getNamespace())
+                && name.getPath().contains("thirst")
+                && HudThirstCompat.readThirst() != null) {
+            event.setCanceled(true);
+            return;
+        }
         if (VanillaGuiLayers.PLAYER_HEALTH.equals(name)
                 || VanillaGuiLayers.ARMOR_LEVEL.equals(name)
                 || VanillaGuiLayers.FOOD_LEVEL.equals(name)
