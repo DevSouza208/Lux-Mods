@@ -32,6 +32,7 @@ public final class AtlasMapScreen extends Screen {
     private int selectionX, selectionZ;
     private int zoomIndex = 2;
     private boolean dragging;
+    private double panRemainderX, panRemainderZ;
     private boolean firstOpen = true;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
@@ -91,14 +92,13 @@ public final class AtlasMapScreen extends Screen {
         centerZ = minecraft.player.getBlockZ();
         selectionX = centerX;
         selectionZ = centerZ;
-        tiles.clear();
         status = "Centralizado no jogador";
     }
 
     private void setZoom(int value) {
         zoomIndex = Math.max(0, Math.min(5, value));
         step = new int[]{16, 8, 4, 2, 1, 1}[zoomIndex];
-        tiles.clear();
+        // Tiles are keyed by world coordinates and zoom; zooming need not erase discoveries.
     }
 
     private boolean inMap(double x, double y) {
@@ -141,6 +141,8 @@ public final class AtlasMapScreen extends Screen {
             selectionX = worldX(x);
             selectionZ = worldZ(y);
             dragging = button == 0;
+            panRemainderX = 0;
+            panRemainderZ = 0;
             return true;
         }
         if (button == 0 && x < mapX && y > 90 && y < 175) {
@@ -159,8 +161,14 @@ public final class AtlasMapScreen extends Screen {
 
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
         if (dragging && button == 0) {
-            centerX -= (int) Math.round(dx * step);
-            centerZ -= (int) Math.round(dy * step);
+            panRemainderX += dx * step;
+            panRemainderZ += dy * step;
+            int moveX = (int) panRemainderX;
+            int moveZ = (int) panRemainderZ;
+            centerX -= moveX;
+            centerZ -= moveZ;
+            panRemainderX -= moveX;
+            panRemainderZ -= moveZ;
             return true;
         }
         return super.mouseDragged(x, y, button, dx, dy);
@@ -168,6 +176,8 @@ public final class AtlasMapScreen extends Screen {
 
     @Override public boolean mouseReleased(double x, double y, int button) {
         dragging = false;
+        panRemainderX = 0;
+        panRemainderZ = 0;
         return super.mouseReleased(x, y, button);
     }
 
@@ -212,11 +222,11 @@ public final class AtlasMapScreen extends Screen {
         int drawSize = 2;
         int startX = centerX - cellsX * step / 2;
         int startZ = centerZ - cellsY * step / 2;
-        if (Math.abs(startX - lastStartX) > step * 8 || Math.abs(startZ - lastStartZ) > step * 8) {
-            if (tiles.size() > 120000) tiles.clear();
-            lastStartX = startX;
-            lastStartZ = startZ;
-        }
+        // Preserve sampled terrain while panning. Limit memory rather than
+        // forcing a complete redraw on every camera movement.
+        if (tiles.size() > 120000) tiles.clear();
+        lastStartX = startX;
+        lastStartZ = startZ;
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
         try {
             if (showTerrain) {
@@ -228,7 +238,12 @@ public final class AtlasMapScreen extends Screen {
                         int wz = startZ + py * step;
                         long id = key(wx, wz, step);
                         Integer color = tiles.get(id);
-                        if (color == null && budget-- > 0) {
+                        if (color == null && budget > 0 && minecraft != null
+                                && minecraft.level != null
+                                && minecraft.level.getChunkSource().hasChunk(wx >> 4, wz >> 4)) {
+                            // Do not cache unloaded regions as empty terrain:
+                            // when the player explores them later they can be sampled.
+                            budget--;
                             color = sample(wx, wz);
                             tiles.put(id, color);
                         }
