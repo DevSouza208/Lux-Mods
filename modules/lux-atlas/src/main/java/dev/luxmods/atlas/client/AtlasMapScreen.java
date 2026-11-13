@@ -118,8 +118,9 @@ public final class AtlasMapScreen extends Screen {
         return x >= mapX && x < mapX + mapW && y >= mapY && y < mapY + mapH;
     }
 
-    private int worldX(double px) { return centerX + (int) Math.floor((px - mapX - mapW / 2.0) * step); }
-    private int worldZ(double py) { return centerZ + (int) Math.floor((py - mapY - mapH / 2.0) * step); }
+    // Each 2-pixel terrain cell corresponds to 'step' world blocks.
+    private int worldX(double px) { return centerX + (int) Math.floor((px - mapX - mapW / 2.0) * step / 2.0); }
+    private int worldZ(double py) { return centerZ + (int) Math.floor((py - mapY - mapH / 2.0) * step / 2.0); }
 
     private void addMarker() {
         if (minecraft == null || minecraft.level == null) return;
@@ -175,8 +176,8 @@ public final class AtlasMapScreen extends Screen {
 
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
         if (dragging && button == 1) {
-            panRemainderX += dx * step;
-            panRemainderZ += dy * step;
+            panRemainderX += dx * step / 2.0;
+            panRemainderZ += dy * step / 2.0;
             int moveX = (int) panRemainderX;
             int moveZ = (int) panRemainderZ;
             centerX -= moveX;
@@ -282,8 +283,8 @@ public final class AtlasMapScreen extends Screen {
                 String dim = AtlasMarkers.dimension(minecraft.level);
                 for (var marker : markers) {
                     if (!marker.dimension().equals(dim)) continue;
-                    int mx = (int) Math.floor(mapX + mapW / 2.0 + (marker.x() - centerX) / (double) step);
-                    int my = (int) Math.floor(mapY + mapH / 2.0 + (marker.z() - centerZ) / (double) step);
+                    int mx = (int) Math.round(mapX + mapW / 2.0 + (marker.x() - centerX) * 2.0 / step);
+                    int my = (int) Math.round(mapY + mapH / 2.0 + (marker.z() - centerZ) * 2.0 / step);
                     if (mx < mapX || mx >= mapX + mapW || my < mapY || my >= mapY + mapH) continue;
                     // Pinned diamond: coordinates remain fixed while camera pans.
                     g.fill(mx - 4, my, mx + 5, my + 1, 0xFF33243F);
@@ -293,13 +294,13 @@ public final class AtlasMapScreen extends Screen {
                 }
             }
             if (showPlayer && minecraft.player != null) {
-                int px = mapX + mapW / 2 + (minecraft.player.getBlockX() - centerX) / step;
-                int py = mapY + mapH / 2 + (minecraft.player.getBlockZ() - centerZ) / step;
+                int px = (int) Math.round(mapX + mapW / 2.0 + (minecraft.player.getBlockX() - centerX) * 2.0 / step);
+                int py = (int) Math.round(mapY + mapH / 2.0 + (minecraft.player.getBlockZ() - centerZ) * 2.0 / step);
                 g.fill(px - 4, py - 4, px + 5, py + 5, 0xFF492A60);
                 g.fill(px - 2, py - 2, px + 3, py + 3, 0xFFFFE6A2);
             }
-            int sx = mapX + mapW / 2 + (selectionX - centerX) / step;
-            int sy = mapY + mapH / 2 + (selectionZ - centerZ) / step;
+            int sx = (int) Math.round(mapX + mapW / 2.0 + (selectionX - centerX) * 2.0 / step);
+            int sy = (int) Math.round(mapY + mapH / 2.0 + (selectionZ - centerZ) * 2.0 / step);
             g.fill(sx - 5, sy, sx + 6, sy + 1, 0xFFDEACF8);
             g.fill(sx, sy - 5, sx + 1, sy + 6, 0xFFDEACF8);
         } finally {
