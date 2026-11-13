@@ -34,6 +34,7 @@ public final class AtlasMapScreen extends Screen {
     private boolean dragging;
     private double panRemainderX, panRemainderZ;
     private boolean firstOpen = true;
+    private boolean terrainLoaded;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
     private boolean showPlayer = true;
@@ -48,6 +49,10 @@ public final class AtlasMapScreen extends Screen {
     @Override protected void init() {
         if (minecraft == null || minecraft.player == null) return;
         if (markers.isEmpty()) markers.addAll(AtlasMarkers.load(minecraft));
+        if (!terrainLoaded && minecraft.level != null) {
+            terrainLoaded = true;
+            AtlasTerrainCache.load(minecraft, minecraft.level, tiles);
+        }
         if (firstOpen) {
             firstOpen = false;
             centerX = minecraft.player.getBlockX();
@@ -113,7 +118,7 @@ public final class AtlasMapScreen extends Screen {
         markers.add(new AtlasMarkers.Marker("Marcador " + (markers.size() + 1), selectionX, selectionZ,
                 AtlasMarkers.dimension(minecraft.level)));
         AtlasMarkers.save(minecraft, markers);
-        status = "Marcador adicionado em " + selectionX + ", " + selectionZ;
+        status = "Marcador fixado: " + selectionX + ", " + selectionZ;
     }
 
     private void removeMarker() {
@@ -140,7 +145,8 @@ public final class AtlasMapScreen extends Screen {
         if (inMap(x, y)) {
             selectionX = worldX(x);
             selectionZ = worldZ(y);
-            dragging = button == 0;
+            // Left click selects a coordinate; only right click pans the map.
+            dragging = button == 1;
             panRemainderX = 0;
             panRemainderZ = 0;
             return true;
@@ -160,7 +166,7 @@ public final class AtlasMapScreen extends Screen {
     }
 
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
-        if (dragging && button == 0) {
+        if (dragging && button == 1) {
             panRemainderX += dx * step;
             panRemainderZ += dy * step;
             int moveX = (int) panRemainderX;
@@ -224,7 +230,10 @@ public final class AtlasMapScreen extends Screen {
         int startZ = centerZ - cellsY * step / 2;
         // Preserve sampled terrain while panning. Limit memory rather than
         // forcing a complete redraw on every camera movement.
-        if (tiles.size() > 120000) tiles.clear();
+        if (tiles.size() > 120000) {
+            AtlasTerrainCache.save(minecraft, minecraft.level, tiles);
+            tiles.clear();
+        }
         lastStartX = startX;
         lastStartZ = startZ;
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
@@ -263,11 +272,14 @@ public final class AtlasMapScreen extends Screen {
                 String dim = AtlasMarkers.dimension(minecraft.level);
                 for (var marker : markers) {
                     if (!marker.dimension().equals(dim)) continue;
-                    int mx = mapX + mapW / 2 + (marker.x() - centerX) / step;
-                    int my = mapY + mapH / 2 + (marker.z() - centerZ) / step;
+                    int mx = (int) Math.floor(mapX + mapW / 2.0 + (marker.x() - centerX) / (double) step);
+                    int my = (int) Math.floor(mapY + mapH / 2.0 + (marker.z() - centerZ) / (double) step);
                     if (mx < mapX || mx >= mapX + mapW || my < mapY || my >= mapY + mapH) continue;
-                    g.fill(mx - 3, my - 3, mx + 4, my + 4, 0xFFD9A8FB);
-                    g.fill(mx - 1, my - 1, mx + 2, my + 2, 0xFF5A287A);
+                    // Pinned diamond: coordinates remain fixed while camera pans.
+                    g.fill(mx - 4, my, mx + 5, my + 1, 0xFF33243F);
+                    g.fill(mx, my - 4, mx + 1, my + 5, 0xFF33243F);
+                    g.fill(mx - 2, my, mx + 3, my + 1, 0xFFEBC17A);
+                    g.fill(mx, my - 2, mx + 1, my + 3, 0xFFEBC17A);
                 }
             }
             if (showPlayer && minecraft.player != null) {
@@ -329,6 +341,13 @@ public final class AtlasMapScreen extends Screen {
     // from applying AFTER the map has been rendered but before the buttons.
     @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         // No blur: our render() draws the atlas background, terrain, and side panels.
+    }
+
+    @Override public void onClose() {
+        if (minecraft != null && minecraft.level != null) {
+            AtlasTerrainCache.save(minecraft, minecraft.level, tiles);
+        }
+        super.onClose();
     }
 
     @Override public boolean isPauseScreen() { return false; }
