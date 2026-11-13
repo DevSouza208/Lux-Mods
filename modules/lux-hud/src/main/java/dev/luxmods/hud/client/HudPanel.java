@@ -67,8 +67,15 @@ public final class HudPanel {
                 player.getMaxHealth(), LuxGuiStyle.HEALTH, false);
         drawStat(g, mc, x + 63, y + 43, "stat_hunger",
                 player.getFoodData().getFoodLevel(), 20f, LuxGuiStyle.HUNGER, false);
-        drawStat(g, mc, x + 63, y + 61, "stat_xp",
-                player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE, true);
+        Integer hydration = HudThirstCompat.readThirst();
+        if (hydration != null) {
+            drawThirst(g, mc, x + 63, y + 61, hydration);
+        } else {
+            // The 1.21.1 thirst API may differ between releases. Never
+            // show invented hydration or hide the real third-party overlay.
+            drawStat(g, mc, x + 63, y + 61, "stat_xp",
+                    player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE, true);
+        }
 
         if (HudConfig.SHOW_EFFECTS.get()) {
             // Place readable condition cards BELOW the quests, not in their header.
@@ -98,6 +105,18 @@ public final class HudPanel {
                 : Math.round(value) + "/" + Math.round(max);
         // Keep the numeric value readable even when the fill is empty.
         g.drawString(mc.font, amount, bx + 6, y + 1, 0xFFFFFFFF, true);
+    }
+
+    private static void drawThirst(GuiGraphics g, Minecraft mc, int x, int y, int hydration) {
+        // A tiny procedural water-drop silhouette, no extra texture pack needed.
+        int blue = 0xFF63B5E1;
+        g.fill(x + 5, y, x + 7, y + 2, blue);
+        g.fill(x + 4, y + 2, x + 8, y + 5, blue);
+        g.fill(x + 3, y + 5, x + 9, y + 9, blue);
+        g.fill(x + 4, y + 9, x + 8, y + 11, blue);
+        g.fill(x + 5, y + 11, x + 7, y + 12, blue);
+        LuxGuiStyle.bar(g, x + 17, y, 143, 11, hydration, 20f, blue);
+        g.drawString(mc.font, hydration + "/20", x + 23, y + 1, 0xFFFFFFFF, true);
     }
 
     private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int virtualWidth, int virtualHeight) {
