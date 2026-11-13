@@ -19,7 +19,7 @@ public final class AtlasMarkers {
     public record Marker(String label, int x, int z, String dimension) { }
     private AtlasMarkers() {}
 
-    private static String worldKey(Minecraft mc) {
+    static String worldKey(Minecraft mc) {
         String key;
         if (mc.getCurrentServer() != null) key = mc.getCurrentServer().ip;
         else if (mc.getSingleplayerServer() != null) key = mc.getSingleplayerServer().getWorldData().getLevelName();
