@@ -12,7 +12,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /** Two permanent introductory quests: gather 16 logs, then 16 stone blocks.
- *  Actual pickup events count; progress persists in server player NBT.
+ *  Tracks the highest number held during pickup, preventing drop/pickup loops.
  */
 public final class HudQuestServerEvents {
     private static final String STAGE = "lux_quest_stage";
@@ -32,13 +32,21 @@ public final class HudQuestServerEvents {
         int stage = data.getInt(STAGE);
         if (stage >= 2) return;
         ItemStack picked = event.getOriginalStack();
-        int amount = Math.max(0, picked.getCount() - event.getCurrentStack().getCount());
-        if (amount <= 0) return;
         boolean matches = stage == 0 ? picked.is(ItemTags.LOGS) :
                 picked.is(Items.COBBLESTONE) || picked.is(Items.COBBLED_DEEPSLATE)
                 || picked.is(Items.STONE);
         if (!matches) return;
-        int progress = Math.min(TARGET, data.getInt(PROGRESS) + amount);
+
+        // Track the highest actual inventory quantity, not cumulative pickup
+        // events: dropping and re-picking the same logs cannot farm progress.
+        int held = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            boolean relevant = stage == 0 ? stack.is(ItemTags.LOGS) :
+                    stack.is(Items.COBBLESTONE) || stack.is(Items.COBBLED_DEEPSLATE)
+                    || stack.is(Items.STONE);
+            if (relevant) held += stack.getCount();
+        }
+        int progress = Math.min(TARGET, Math.max(data.getInt(PROGRESS), held));
         if (progress == TARGET) {
             data.putInt(STAGE, stage + 1);
             data.putInt(PROGRESS, 0);
