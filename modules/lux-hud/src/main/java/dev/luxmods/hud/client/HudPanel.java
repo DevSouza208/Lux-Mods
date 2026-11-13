@@ -72,7 +72,8 @@ public final class HudPanel {
 
         if (HudConfig.SHOW_EFFECTS.get()) {
             // Place readable condition cards BELOW the quests, not in their header.
-            drawEffects(g, mc, x + WIDTH + 14, y + 106, virtualWidth);
+            int virtualHeight = (int) Math.floor(g.guiHeight() / scale);
+            drawEffects(g, mc, x + WIDTH + 14, y + 106, virtualWidth, virtualHeight);
         }
         int mountOffset = HudConfig.SHOW_MOUNT.get() && HudMountPanel.hasMount(mc) ? HudMountPanel.HEIGHT + 6 : 0;
         if (mountOffset > 0) HudMountPanel.render(g, mc, x, y + HEIGHT + 6, WIDTH);
@@ -99,14 +100,15 @@ public final class HudPanel {
         g.drawString(mc.font, amount, bx + 6, y + 1, 0xFFFFFFFF, true);
     }
 
-    private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int virtualWidth) {
+    private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int virtualWidth, int virtualHeight) {
         var effects = mc.player.getActiveEffects().stream()
                 .filter(MobEffectInstance::showIcon)
                 .sorted(Comparator.comparing(MobEffectInstance::getDescriptionId))
                 .limit(4).toList();
-        if (effects.isEmpty() || x + 158 > virtualWidth) return;
+        int maxCards = Math.max(0, (virtualHeight - y - 30) / 34);
+        if (effects.isEmpty() || x + 158 > virtualWidth || maxCards == 0) return;
 
-        for (int i = 0; i < effects.size(); i++) {
+        for (int i = 0; i < Math.min(effects.size(), maxCards); i++) {
             MobEffectInstance effect = effects.get(i);
             int cy = y + i * 34;
             LuxGuiStyle.panel(g, x, cy, 158, 31);
