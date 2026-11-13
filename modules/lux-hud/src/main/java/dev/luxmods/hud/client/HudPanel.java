@@ -39,6 +39,8 @@ public final class HudPanel {
         g.pose().scale((float) scale, (float) scale, 1f);
         try {
 
+        // Screen-edge hints do not overlap the decorative hotbar or add a bar.
+        HudDangerVignette.render(g, mc);
         LuxGuiStyle.panel(g, x, y, WIDTH, HEIGHT);
 
         // Portrait height is precisely the three rows: y+24 through y+72.
@@ -69,7 +71,8 @@ public final class HudPanel {
                 player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE, true);
 
         if (HudConfig.SHOW_EFFECTS.get()) {
-            drawEffects(g, mc, x + WIDTH + 9, y + 2, virtualWidth);
+            // Place readable condition cards BELOW the quests, not in their header.
+            drawEffects(g, mc, x + WIDTH + 14, y + 106, virtualWidth);
         }
         int mountOffset = HudConfig.SHOW_MOUNT.get() && HudMountPanel.hasMount(mc) ? HudMountPanel.HEIGHT + 6 : 0;
         if (mountOffset > 0) HudMountPanel.render(g, mc, x, y + HEIGHT + 6, WIDTH);
@@ -101,24 +104,24 @@ public final class HudPanel {
                 .filter(MobEffectInstance::showIcon)
                 .sorted(Comparator.comparing(MobEffectInstance::getDescriptionId))
                 .limit(4).toList();
-        if (effects.isEmpty()) return;
+        if (effects.isEmpty() || x + 158 > virtualWidth) return;
 
-        int available = virtualWidth - 212 - x;
-        int count = Math.min(effects.size(), Math.max(0, (available - 8) / 25));
-        if (count == 0) return;
-
-        LuxGuiStyle.panel(g, x, y, count * 25 + 9, 36);
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < effects.size(); i++) {
             MobEffectInstance effect = effects.get(i);
-            int slotX = x + 6 + i * 25;
-            g.fill(slotX - 1, y + 4, slotX + 18, y + 23, 0xFF292334);
-            LuxGuiStyle.icon(g, "effect_slot", slotX, y + 5, 16, 16);
-            g.blit(slotX, y + 5, 0, 16, 16,
+            int cy = y + i * 34;
+            LuxGuiStyle.panel(g, x, cy, 158, 31);
+            g.fill(x + 5, cy + 6, x + 25, cy + 26, 0xFF292334);
+            LuxGuiStyle.icon(g, "effect_slot", x + 6, cy + 7, 18, 18);
+            g.blit(x + 7, cy + 8, 0, 16, 16,
                     mc.getMobEffectTextures().get(effect.getEffect()));
 
+            String name = effect.getEffect().value().getDisplayName().getString();
+            if (name.length() > 17) name = name.substring(0, 16) + "…";
+            if (effect.getAmplifier() > 0) name += " " + (effect.getAmplifier() + 1);
+            g.drawString(mc.font, name, x + 30, cy + 6, LuxGuiStyle.FOREGROUND, false);
             int seconds = Math.max(0, effect.getDuration() / 20);
             String time = seconds / 60 + ":" + String.format("%02d", seconds % 60);
-            g.drawString(mc.font, time, slotX - 1, y + 25, LuxGuiStyle.MUTED_TEXT, false);
+            g.drawString(mc.font, time, x + 30, cy + 18, LuxGuiStyle.MUTED_TEXT, false);
         }
     }
 }
