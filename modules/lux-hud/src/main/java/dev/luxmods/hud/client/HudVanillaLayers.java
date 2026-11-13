@@ -6,8 +6,15 @@ import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
- * Cancel only bars already represented by the Lux HUD.
- * Preserve armor, breath, mount jump, boss bars, subtitles, actionbar and hotbar.
+ * RPG HUD owns the player's status indicators. The lower center of the screen
+ * belongs exclusively to the decorated hotbar: no stray vanilla status icons.
+ *
+ * Hide vanilla status layers independently of the legacy replaceVanillaBars
+ * switch: an old client config with that switch disabled must not leak hunger
+ * or other stats beside the hotbar.
+ *
+ * Keep the hotbar itself, crosshair, chat, action bar, boss bars and overlays.
+ * CLASSIC mode retains the vanilla HUD as advertised.
  */
 public final class HudVanillaLayers {
     private HudVanillaLayers() {
@@ -15,23 +22,22 @@ public final class HudVanillaLayers {
 
     public static void onPre(RenderGuiLayerEvent.Pre event) {
         if (!HudPanel.shouldDraw(Minecraft.getInstance())) return;
+
         var name = event.getName();
-        if (HudConfig.REPLACE_VANILLA_BARS.get()
-                && (VanillaGuiLayers.PLAYER_HEALTH.equals(name)
+        if (VanillaGuiLayers.PLAYER_HEALTH.equals(name)
+                || VanillaGuiLayers.ARMOR_LEVEL.equals(name)
                 || VanillaGuiLayers.FOOD_LEVEL.equals(name)
+                || VanillaGuiLayers.AIR_LEVEL.equals(name)
                 || VanillaGuiLayers.EXPERIENCE_BAR.equals(name)
-                || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name))) {
+                || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name)
+                || VanillaGuiLayers.VEHICLE_HEALTH.equals(name)
+                || VanillaGuiLayers.JUMP_METER.equals(name)
+                || VanillaGuiLayers.SELECTED_ITEM_NAME.equals(name)) {
             event.setCanceled(true);
+            return;
         }
-        // The Lux mount panel already renders the horse's real health.
-        // Hide only vanilla mount hearts, leaving the jump meter and hotbar intact.
-        if (HudConfig.SHOW_MOUNT.get()
-                && HudMountPanel.hasMount(Minecraft.getInstance())
-                && VanillaGuiLayers.VEHICLE_HEALTH.equals(name)) {
-            event.setCanceled(true);
-        }
-        // Potion effects have moved next to health. They remain vanilla
-        // if the optional effects section is disabled.
+
+        // Active status effects are represented in the Lux panel when enabled.
         if (HudConfig.SHOW_EFFECTS.get() && VanillaGuiLayers.EFFECTS.equals(name)) {
             event.setCanceled(true);
         }
