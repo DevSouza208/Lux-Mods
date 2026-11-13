@@ -17,15 +17,27 @@ public final class HudDangerVignette {
         int maxAir = mc.player.getMaxAirSupply();
         float air = maxAir <= 0 ? 1F : (float) mc.player.getAirSupply() / maxAir;
 
+        // Persistent warnings grow gradually as the underlying need becomes critical.
+        // Hydration is optional: never guess thirst when the third-party API
+        // is unavailable, and never hide the original thirst meter in that case.
+        Integer thirst = HudThirstCompat.readThirst();
+        if (thirst != null && thirst < 5) {
+            edge(g, 0x164D7A, (int) (85 * (5 - thirst) / 5.0F));
+        }
         if (hp < 0.35F) {
-            edge(g, 0xCE2835, (int) (105 * (0.35F - hp) / 0.35F));
+            edge(g, 0x8E1524, (int) (115 * (0.35F - hp) / 0.35F));
         }
         if (hunger < 0.25F) {
-            edge(g, 0xB28A29, (int) (75 * (0.25F - hunger) / 0.25F));
+            edge(g, 0xC16C19, (int) (85 * (0.25F - hunger) / 0.25F));
         }
-        // Dark edges only during submersion or active lack of breathable air.
+        // No redundant air bar. Black edges appear only when air is low.
         if (air < 0.35F && mc.player.isUnderWater()) {
-            edge(g, 0x04080D, (int) (160 * (0.35F - Math.max(0,air)) / 0.35F));
+            edge(g, 0x04080D, (int) (160 * (0.35F - Math.max(0, air)) / 0.35F));
+        }
+        // Brief red flash when hit. Relies on the vanilla hit animation timer,
+        // avoiding network packets or a new game mechanic.
+        if (mc.player.hurtTime > 0) {
+            edge(g, 0xD6293E, Math.min(125, mc.player.hurtTime * 11));
         }
     }
 
