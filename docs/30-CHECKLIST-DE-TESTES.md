@@ -1,0 +1,193 @@
+# Lux Mods — Checklist integrado do próximo playtest
+
+> **Teste concentrado — NÃO executar agora.** Atualizado em 24/10/2026. Instância exclusiva `teste` do SKlauncher: Minecraft Java **1.21.1**, NeoForge **21.1.264**, JDK **21**.
+>
+> A PR #14 é **DRAFT**. Marque `[x]` apenas após comprovar o resultado em build/log/screenshot/jogo. *Código publicado* não é *feature validada*.
+
+## Legenda de evidência
+
+- ✅ [x] — resultado já confirmado pelo usuário em sessão anterior, com ressalvas específicas.
+- ☐ [ ] — pendente de teste, mesmo que já exista código.
+- ⚠️ Falhou — registrar erro e log, **não marcar [x]**.
+
+## 0 — Build, integridade e rollback (PRIORIDADE CRÍTICA)
+
+- [ ] 00.01 Fechar o Minecraft antes de instalar.
+- [ ] 00.02 Abrir o `Atualizar Lux Mods.bat` já existente na área de trabalho e conferir `BUILD SUCCESSFUL`.
+- [ ] 00.03 Confirmar **cinco** JARs na instância `teste/mods`: Engine, Discovery, Atlas, HUD e **Menu**; sem JAR antigo duplicado.
+- [ ] 00.04 Abrir `scripts/reunir-evidencias.ps1` ou `scripts/TESTAR-PACOTE-LUX.bat` (gera inventário SHA256 local; não envia arquivos).
+- [ ] 00.05 Abrir Minecraft e confirmar 5 mods no menu Mods, todos `State: loaded`.
+- [ ] 00.06 Confirmar nenhum crash durante loading, render, abertura de mundo ou retorno ao título.
+- [ ] 00.07 Verificar configurações CLIENT nos arquivos `lux_hud-client.toml`, `lux_atlas-client.toml`, `lux_menu-client.toml`.
+- [ ] 00.08 Conferir existência do backup em `%APPDATA%\.sklauncher\instances\teste\lux-mods-backup` caso precise reverter.
+- [ ] 00.09 Confirmar que o script de instalação não tocou em outra instância nem no save pessoal.
+
+## 1 — Lux Engine (infraestrutura)
+
+- [x] 01.01 Carregamento do `lux_engine` no cliente confirmado em 24/10, com screenshot do menu Mods (build anterior).
+- [ ] 01.02 Carregamento do `lux_engine` na versão atual de 5 JARs.
+- [ ] 01.03 Nenhuma textura de quadrado roxo/preto (missing texture) no HUD, menu ou bússola.
+- [ ] 01.04 Recompilar com algum asset opcional ausente em instância separada: sem crash, layout base ainda legível (teste técnico opcional).
+
+## 2 — Lux Discovery
+
+- [x] 02.01 Anúncio `LOCATION DISCOVERED` ao entrar pela primeira vez em bioma (Savana), comprovado por screenshot.
+- [x] 02.02 Sair e reentrar no save não repete anúncio no mesmo bioma; confirmado pelo usuário.
+- [x] 02.03 Visitar bioma novo anuncia e retornar ao antigo não repete; confirmado pelo usuário.
+- [ ] 02.04 Persistência continua funcionando com todos os 5 JARs após atualização.
+- [ ] 02.05 Morrer e renascer preserva dados de descoberta, conforme política de attachment.
+- [ ] 02.06 Criar segundo mundo não herda descobertas do primeiro.
+- [ ] 02.07 Verificar traduções PT-BR e EN-US, legibilidade em resoluções variadas.
+- [ ] 02.08 Validar Discovery e Engine em servidor dedicado (sem crash / classe de cliente carregada no lado servidor).
+
+## 3 — Lux Atlas (bússola)
+
+- [x] 03.01 HUD da bússola funciona no singleplayer e aparece junto da hotbar (print do usuário de 24/10).
+- [x] 03.02 Clean Fantasy v2 carregado visualmente, molduras em PNG e ponteiro visíveis (print de 24/10).
+- [ ] 03.03 Girar 360º: N, L, S, O correspondem ao rumo verdadeiro; conferir especialmente transição Norte.
+- [ ] 03.04 `snapToHotbar=true` fica corretamente próximo da hotbar após alternar escala da GUI.
+- [ ] 03.05 `snapToHotbar=false` respeita `distanceFromBottom`.
+- [ ] 03.06 F1 oculta bússola e F1 novamente restaura.
+- [ ] 03.07 Bússola não sobrepõe legendas, ação, hotbar ou interface em 16:9, 16:10 e janela reduzida.
+- [ ] 03.08 Atlas funciona sem Discovery e sem HUD (somente Engine + Atlas, instância separada).
+
+## 4 — Lux HUD (status do jogador, poções, colegas e missões)
+
+- [x] 04.01 Painel da própria skin, barras VIDA/FOME/XP e quadro de missões na direita funcionam (print do usuário).
+- [x] 04.02 Visual Clean Fantasy v2 com molduras/ícones/bússola aprovado pelo usuário (print de 24/10).
+- [ ] 04.03 Perder vida e se curar atualiza preenchimento e valor numérico corretamente.
+- [ ] 04.04 Comer e ficar com fome atualiza barra e valor real.
+- [ ] 04.05 Ganhar XP e avançar de nível atualiza barra e nível.
+- [ ] 04.06 Poções: ícones vanilla em bandeja externa, duração diminui e expirados desaparecem.
+- [ ] 04.07 Cinco ou mais efeitos não encobrem quadro de missões ou HUD; sem corte de texto.
+- [ ] 04.08 F1, chat, inventário e pausa não sofrem sobreposição.
+- [ ] 04.09 Modo `CLASSIC` restaura barras vanilla; modo `RPG` volta a exibir HUD Lux.
+- [ ] 04.10 Em um time de scoreboard com dois jogadores, colega aparece **menor abaixo** com skin e HP reais.
+- [ ] 04.11 Jogador fora do grupo não aparece; sair do time limpa cartões na próxima atualização.
+- [ ] 04.12 Quadro de missões diz 'Nenhuma missão acompanhada' sem Quest real — não inventar objetivos.
+- [ ] 04.13 Verificar visual em baixa resolução/escala automática e com nome de jogador longo.
+- [ ] 04.14 HUD e sincronização com clientes multiplayer + servidor dedicado (servidor não carrega GUI).
+
+
+## 4B — HUD Clean Fantasy v3 e hotbar (implementações aguardando playtest)
+
+- [ ] 04B.01 Retrato do personagem alinhado verticalmente ao conjunto de **três** barras, sem cortes da skin.
+- [ ] 04B.02 Barras na ordem Vida, Fome, XP; todas com o mesmo alinhamento, tamanho e intervalo.
+- [ ] 04B.03 Textos VIDA/FOME/XP removidos; ícones corretos continuam legíveis com os valores reais.
+- [ ] 04B.04 Vida/fome/XP alteram valores e comprimentos corretamente ao sofrer dano, comer e ganhar experiência.
+- [ ] 04B.05 MISSÕES com ícone pergaminho, margem interna ampliada e descrição sem tocar na moldura.
+- [ ] 04B.06 Se houver quest real, título/objetivo/contador continuam visíveis sem corte.
+- [ ] 04B.07 Hotbar exibe acabamento roxo e champagne, nove divisões legíveis e contorno de slot selecionado.
+- [ ] 04B.08 Mudar de slot com 1–9 ou scroll acompanha a seleção; itens, contagens, durabilidade e teclas vanilla continuam intactos.
+- [ ] 04B.09 Bússola fica acima da hotbar personalizada sem sobreposição, também em escalas de GUI diferentes.
+- [ ] 04B.10 Inventário offhand, espectador, F1 e outras GUIs continuam vanilla quando necessário.
+- [ ] 04B.11 `decorateHotbar=false` ou `mode=CLASSIC` restaura a barra original sem ornamentos.
+- [ ] 04B.12 No menu principal, o botão Mods deve ter o mesmo estilo sem perder clique, foco ou tooltip.
+- [ ] 04B.13 Conferir os assets novos `quest_scroll.png`, `lux_hotbar_trim.png` e `lux_hotbar_selected.png` nos JARs finais.
+
+## 5 — Lux Menu (primeiro print real do menu recebido em 24/10/2026)
+
+- [ ] 05.01 O quinto mod `lux_menu` aparece como Loaded sem afetar os quatro existentes.
+- [x] 05.00 Print de 24/10/2026 comprova menu principal aberto sem crash, botões roxos em Singleplayer/Multiplayer/Realms/Options/Quit Game, assinatura Lux Mods no topo direito, rodapé Lux e logo vanilla preservado. **Botão Mods ainda cinza**; não comprova clique, hover, loading nem 5 módulos individualmente.
+- [ ] 05.00a Verificar a razão de `Mods` permanecer cinza (widget NeoForge próprio) e aplicar estilo sem interceptar ação, foco ou tooltip; revalidar depois.
+- [ ] 05.02 Tela principal: botões gráficos grafite/roxo, hover lilás, logo Minecraft e panorama preservados.
+- [ ] 05.03 `Singleplayer`, `Multiplayer`, `Mods`, `Options`, `Quit Game` continuam acionando destinos corretos.
+- [ ] 05.04 Abrir mundo, apertar ESC: `Resume Game`, `Options`, `Save and Quit to Title` funcionam normalmente.
+- [ ] 05.05 `Options`: somente botões simples estilizados; sliders, teclas, acessibilidade e opções continuam utilizáveis.
+- [ ] 05.06 `Select World`: navegar lista, selecionar save, cancelar, criar mundo, editar/excluir só em save DESCARTÁVEL, com confirmação.
+- [ ] 05.07 `Multiplayer`: navegar servidores, atualizar lista, abrir Direct Connection e cancelar sem alterar dados.
+- [ ] 05.08 Navegação por TAB, ENTER, ESC e teclado; foco visível e narração/acessibilidade não regrediram.
+- [ ] 05.09 Hover e botão desabilitado aparecem distintos; texto atualizado acompanha estado vanilla.
+- [ ] 05.10 `config/lux_menu-client.toml`: desligar `styleSubmenus` preserva título/pausa sem modificar submenus.
+- [ ] 05.11 `enabled=false` volta todos os menus ao padrão; `enabled=true` restaura visual.
+- [ ] 05.12 `showBranding=false` remove assinatura sem desativar botões.
+- [ ] 05.13 Testar escalas GUI 2, 3, Auto; garantir que logo e assinatura não cobrem widgets.
+- [ ] 05.14 Testar com outros mods UI de terceiros e comparar comportamento sem Lux Menu.
+- [ ] 05.15 Sem crash após sair de mundo e voltar ao menu principal repetidamente.
+
+## 6 — Tela vermelha de loading / UI Shell futuro (NÃO IMPLEMENTADO)
+
+- [ ] 06.01 Verificar ponto de extensão específico do NeoForge 21.1.264, sem tocar no boot atual.
+- [ ] 06.02 Preparar tema de loading em módulo/pacote isolável; exigir plano de rollback caso impeça iniciar.
+- [ ] 06.03 Testar loading sem trocar `game assets` da UI em tempo de boot.
+- [ ] 06.04 Depois: apenas se estável, personalizar telas de opções internas/inventário/diálogo (escopos futuros).
+
+- [ ] 06.05 Ler o guia `docs/32-LUX-BOOT-CARREGAMENTO.md` sobre incompatibilidade entre FancyModLoader main e versão 1.21.1.
+- [ ] 06.06 Rodar `scripts/lux-boot-theme.ps1 -Action Preview` e confirmar que não modifica a instância.
+- [ ] 06.07 (Opcional; somente com jogo fechado) `-Action Apply` grava **apenas** darkMojangStudiosBackground em options.txt, guarda backup, preserva earlyWindowControl e não troca JARs.
+- [ ] 06.08 Verificar se o jogo inicia com o modo escuro **sem perder as barras reais de carregamento FML** (o script agora não altera fml.toml).
+- [ ] 06.09 `-Action Restore` recupera **apenas** a opção de fundo anterior, preservando outras configurações feitas depois; confirmar que a opção volta ao estado original.
+- [ ] 06.10 **NÃO MARCAR** tema Lux completo como pronto: ainda falta implementação de provedor próprio e teste isolado.
+
+- [ ] 06.11 Se o modo escuro for testado, confirmar que o Minecraft permanece encerrável e inicializável mesmo após voltar do menu principal.
+- [ ] 06.12 Confirmar que `Apply` repetido não cria backups extras e que o backup permanece fora das pastas `mods` e `config`.
+
+- [ ] 06.13 Abrir `experimental/lux-boot-preview/index.html` no navegador (fora do Minecraft) e verificar layout na largura desktop e mobile.
+- [ ] 06.14 Clicar nos controles Reiniciar/Pausar e confirmar que o progresso indica **SIMULADO** permanentemente.
+- [ ] 06.15 Conferir que o protótipo HTML/JS não foi instalado na pasta mods nem incluído em nenhum JAR NeoForge.
+
+
+## 6B — Lux Loading Slideshow (primeiro carregamento real confirmado por print em 24/10/2026)
+
+- [ ] 06B.01 Extrair `Lux_Mods_Slideshow_Aleatorio_v2.zip` e colocar fotos JPG/PNG em `FOTOS-AQUI` (sem teto fixo; medir uso de memória com muitas imagens).
+- [ ] 06B.02 Abrir `PREVIA-FOTOS.html`, selecionar fotos e conferir crossfade e `CARREGANDO...` animado.
+- [ ] 06B.03 Executar `ENVIAR-FOTOS-GITHUB.bat`, verificar conversão `slide_0001.png` em diante, autorizar `S` e confirmar push na branch de desenvolvimento.
+- [ ] 06B.04 Conferir no GitHub `modules/lux-menu/src/main/resources/assets/lux_menu/textures/gui/loading/slide_0001.png` até o último slide enviado.
+- [ ] 06B.05 Rodar atalho de atualização com Minecraft fechado; Gradle build SUCCESSFUL e 5 JARs sem duplicação.
+- [x] 06B.00 Primeira confirmação em jogo: tela de loading de mundo apresenta arte personalizada de pôr do sol, sobreposição `CARREGANDO` no canto inferior direito e cobertura da janela, conforme print do usuário em 24/10/2026 (sem comprovar transição ou ordem aleatória).
+- [ ] 06B.00a Ajustar a posição/apresentação da porcentagem vanilla: `0%` branco aparece solto no centro da arte. Preservar **progresso verdadeiro**, sem mostrar porcentagem inventada.
+- [ ] 06B.06 Entrar/criar mundo: crossfade de 1,2s após 5s por foto, transição suave também do último slide para o primeiro da próxima rodada.
+- [ ] 06B.07 Animar `CARREGANDO`, `CARREGANDO.`, `CARREGANDO..`, `CARREGANDO...`; não mostrar progresso numérico fictício.
+- [ ] 06B.08 Tela de carregamento de mundo sem fotos mantém vanilla intacta e evita quadriculado roxo/preto.
+- [ ] 06B.09 Em partida multiplayer, confirmar que não encobre um botão essencial, erro de conexão ou confirmação importante.
+- [ ] 06B.10 Mudar `loadingSlideshow=false` em `lux_menu-client.toml`: voltar às telas vanilla durante o loading de mundos.
+- [ ] 06B.11 Abrir Minecraft do zero: tela vermelha inicial NeoForge e Mojang LoadingOverlay continuam originais (não foram tematizadas).
+- [ ] 06B.12 Testar com 1, 2, 8 e 20+ imagens; proporção 16:9 e janela 16:10; sem imagem esticada ou consumo excessivo de memória.
+
+- [ ] 06B.13 Em três carregamentos, a ordem das fotos muda e nenhuma foto repete antes de todas as outras aparecerem.
+- [ ] 06B.14 Confirmar que o slideshow termina IMEDIATAMENTE quando o mundo entra, sem esperar acabar uma rodada.
+- [ ] 06B.15 Testar a troca de pacotes de recursos: se não houver tela Screen padrão, manter vanilla e não deixar overlay quebrado.
+- [ ] 06B.16 Verificar, após instalar o mod early-loading opcional em ambiente isolado, se a tela vermelha é substituída e o rollback funciona.
+
+**Evidência adicional:** `SlideTiming.java` e `SlideShuffle.java` passaram testes isolados Java 21 (250 imagens, 500 rodadas; sem repetição de borda). NÃO validam o render NeoForge nem PowerShell do upload no Windows.
+
+## 6C — Saída do mundo e preparação de recursos (NOVO, SEM PLAYTEST)
+
+- [ ] 06C.01 Sair de um mundo de testes pelo menu ESC: a tela "Saving world" usa foto do Lux em vez do panorama desfocado e da caixa preta.
+- [ ] 06C.02 Enquanto salva, o canto inferior mostra "SALVANDO MUNDO" com reticências animadas, sem falsificar porcentagem.
+- [ ] 06C.03 Ao entrar/criar mundo, "Preparing Resources..." usa as fotos e "PREPARANDO RECURSOS" enquanto houver uma GenericMessageScreen.
+- [ ] 06C.04 Depois de salvar, chegar ao menu principal sem qualquer atraso/loop criado pelo slideshow; reabrir o mundo e conferir integridade do save.
+- [ ] 06C.05 Simular ou encontrar tela de falha/erro e confirmar que Lux **não** a encobre.
+- [ ] 06C.06 Desativar `loadingSlideshow=false` e verificar retorno ao visual vanilla das mensagens.
+- [ ] 06C.07 Após uma troca de resource pack, garantir que a lista de fotos é reindexada e que não há textura ausente ou crash.
+- [ ] 06C.08 Verificar se overlay de outra camada do jogo ainda escapa ao ScreenEvent: somente integração específica poderá substituí-lo (não assumir "todos" prontos).
+
+**Nota:** a classe `GenericMessageScreen` foi verificada na API Minecraft 1.21.1 e as chaves de tradução usadas são restritas; a associação com as telas exatas dos dois prints ainda precisa do teste real.
+
+## 7 — Testes de resiliência, entrega e fechamento
+
+- [ ] 07.01 Rodar `scripts/smoke-pure-java.bat` (lógica isolada), registrar sucesso real.
+- [ ] 07.02 Rodar `gradlew.bat assembleTestPack --no-daemon` (se não for pelo atalho), registrar build completo.
+- [ ] 07.03 Se Python 3.11+ disponível, rodar `python scripts/verify_jars.py`.
+- [ ] 07.04 Confirmar sem erros graves novos em `logs/latest.log`; revisar qualquer relatório de crash.
+- [ ] 07.05 Tirar screenshots: tela inicial, opções, mundos, multiplayer, ESC, HUD/Atlas com poção.
+- [ ] 07.06 Testar servidor dedicado NeoForge com cinco mods (ou apenas Engine + módulos comuns).
+- [ ] 07.07 Comparar screenshots com mockup e registrar ajustes necessários, sem mudar identidade.
+- [ ] 07.08 Quando os testes críticos passarem, atualizar PR #14 para review; NÃO fazer merge automático.
+
+## Registro de testes
+
+| Sessão | Data/hora | Instância | Commit GitHub | Resultado | Evidências / erro |
+|---|---|---|---|---|---|
+| Prévia Engine + Discovery | 24/10/2026 | teste, singleplayer | versão anterior | parcial ✅ | prints e confirmação usuário |
+| Prévia Atlas + HUD v2 | 24/10/2026 | teste, singleplayer | versão anterior | visual aprovado ✅ | print do usuário |
+| Pacote 5 mods / menu principal | 24/10/2026 | teste, menu inicial | commit exato a confirmar | visual do menu parcial ✅ | print do usuário: tema roxo aplicado; Mods cinza |
+| Loading de mundo personalizado | 24/10/2026 | teste, carregamento de mundo | commit exato a confirmar | arte + texto renderizados ✅ | print do usuário: pôr do sol, `CARREGANDO` no canto; `0%` vanilla sobreposto; fade/aleatoriedade não confirmados |
+
+### Em caso de erro no Lux Menu
+
+**Rollback rápido sem tocar em mundos:** fechar Minecraft; mover apenas `lux-menu-0.1.0-SNAPSHOT.jar` para fora de `mods`; abrir novamente com os quatro mods previamente aprovados. Não remover Engine. Se o build falhar, o instalador não instala novos JARs.
+
+### Privacidade
+
+Os logs brutos podem conter nome de usuário, URLs de servidor, caminhos locais e outras informações. **Não publicar automaticamente**; revisar e ocultar dados antes de compartilhar. O script de inventário não copia nem envia logs brutos.

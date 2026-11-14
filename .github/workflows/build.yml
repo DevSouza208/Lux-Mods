@@ -1,0 +1,56 @@
+name: Lux Mods CI
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Many small development commits can arrive before the NeoForge build
+# finishes. Keep only the newest run of each branch or pull request.
+concurrency:
+  group: lux-mods-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pure-java:
+    name: Testes de lógica sem Minecraft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verificar configuração offline
+        run: python3 scripts/preflight.py
+      - name: Executar smoke Java isolado
+        run: bash scripts/smoke-pure-java.sh
+
+  build:
+    name: Compilar JARs NeoForge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build do pacote Lux Mods
+        run: ./gradlew assembleTestPack --no-daemon --stacktrace
+      - name: Verificar JARs produzidos
+        run: python3 -m unittest discover -s scripts -p "test_verify_jars.py" -v && python3 scripts/verify_jars.py
+      # Publish exactly the package assembled by assembleTestPack, rather than
+      # an unrelated glob over individual module build directories.
+      - name: Guardar pacote unificado para teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: lux-mods-neoforge-1.21.1-testpack
+          path: build/lux-testpack/mods/*.jar
+          if-no-files-found: error
+          retention-days: 14

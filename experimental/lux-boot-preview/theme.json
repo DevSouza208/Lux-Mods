@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "lux-clean-fantasy-boot-preview",
+  "target": "Minecraft Java 1.21.1, NeoForge 21.1.264",
+  "status": "visual prototype, not an FML provider",
+  "logicalSize": {
+    "width": 854,
+    "height": 480
+  },
+  "colors": {
+    "background": "#121019",
+    "panel": "#1c1929",
+    "border": "#76558e",
+    "accent": "#af84ee",
+    "champagne": "#f4ce87",
+    "text": "#f7f1ff",
+    "muted": "#c9c0d4",
+    "progress": "#8c61c7"
+  },
+  "progress": "SIMULATED_ONLY",
+  "fonts": "system monospaced fallback; no shipped font",
+  "implementation": "Standalone HTML/CSS/JS; never bundled with Minecraft modpack"
+}

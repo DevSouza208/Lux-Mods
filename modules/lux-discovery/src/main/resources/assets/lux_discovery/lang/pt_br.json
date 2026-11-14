@@ -1,0 +1,20 @@
+{
+  "message.lux_discovery.biome": "LOCAL DESCOBERTO",
+  "biome.minecraft.plains": "Planícies",
+  "biome.minecraft.forest": "Floresta",
+  "biome.minecraft.desert": "Deserto",
+  "biome.minecraft.savanna": "Savana",
+  "biome.minecraft.taiga": "Taiga",
+  "biome.minecraft.snowy_plains": "Planícies Nevadas",
+  "biome.minecraft.swamp": "Pântano",
+  "biome.minecraft.mangrove_swamp": "Manguezal",
+  "biome.minecraft.jungle": "Selva",
+  "biome.minecraft.cherry_grove": "Bosque de Cerejeiras",
+  "biome.minecraft.badlands": "Terras Áridas",
+  "biome.minecraft.meadow": "Prado",
+  "biome.minecraft.birch_forest": "Floresta de Bétulas",
+  "biome.minecraft.ocean": "Oceano",
+  "biome.minecraft.deep_ocean": "Oceano Profundo",
+  "biome.minecraft.nether_wastes": "Terras Devastadas do Nether",
+  "biome.minecraft.the_end": "O Fim"
+}

@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="https://github.com/DevSouza208/Lux-Mods/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="Lux Mods"
+description='''Bússola horizontal de exploração na HUD, independente do Discovery.'''
+
+[[dependencies.lux_atlas]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.lux_atlas]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.lux_atlas]]
+modId="lux_engine"
+type="required"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
