@@ -49,6 +49,13 @@ public final class DialogueClient {
         }
     }
 
+    public static void onDeliveryResult(DialogueNetwork.ContractDeliveryResult result) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof VillagerDialogueScreen screen) {
+            screen.receiveDeliveryResult(result);
+        }
+    }
+
     /** Restore only server-owned quests, never locally inferred acceptance. */
     public static void onQuestLedgerSync(DialogueNetwork.QuestLedgerSync packet) {
         LuxQuestTracker.clear();
