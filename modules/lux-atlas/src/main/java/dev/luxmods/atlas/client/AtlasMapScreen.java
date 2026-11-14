@@ -101,6 +101,15 @@ public final class AtlasMapScreen extends Screen {
         mapH = Math.max(60, height - 88);
     }
 
+    /** Keep the mission pager below visible rows even at reduced GUI heights. */
+    private int questPageSize() {
+        return Math.max(1, Math.min(5, (height - 170) / 28));
+    }
+
+    private int questPagerY() {
+        return 105 + questPageSize() * 28;
+    }
+
     private void addControls() {
         clearWidgets();
         addButton(width / 2 - 174, 12, 105, "Missões", b -> {
@@ -115,14 +124,14 @@ public final class AtlasMapScreen extends Screen {
         });
         addButton(width / 2 + 70, 12, 105, "Upgrades", b -> status = "Upgrades: em desenvolvimento");
         if (questsTab) {
-            addButton(12, 182, 38, "◀", b -> {
+            addButton(12, questPagerY(), 38, "◀", b -> {
                 questPage = Math.max(0, questPage - 1);
             });
-            addButton(56, 182, 38, "▶", b -> {
+            addButton(56, questPagerY(), 38, "▶", b -> {
                 if (minecraft == null || minecraft.level == null || minecraft.player == null) return;
                 int count = LuxQuestTracker.inDimension(
                         minecraft.level.dimension().location().toString()).size();
-                questPage = Math.min(LuxQuestPage.pages(count, 5) - 1, questPage + 1);
+                questPage = Math.min(LuxQuestPage.pages(count, questPageSize()) - 1, questPage + 1);
             });
         }
         addButton(Math.max(mapX + 7, mapX + mapW - 184), mapY + 7, 88, "+ Marcador", b -> addMarker());
@@ -240,8 +249,8 @@ public final class AtlasMapScreen extends Screen {
             var active = LuxQuestTracker.nearest(minecraft.level.dimension().location().toString(),
                             minecraft.player.getBlockX(), minecraft.player.getBlockZ());
             int index = ((int) y - 100) / 28;
-            var page = LuxQuestPage.slice(active, questPage, 5);
-            if (index >= 0 && index < page.size() && index < 5) {
+            var page = LuxQuestPage.slice(active, questPage, questPageSize());
+            if (index >= 0 && index < page.size() && index < questPageSize()) {
                 var quest = page.get(index);
                 centerX = quest.x();
                 centerZ = quest.z();
@@ -558,11 +567,11 @@ public final class AtlasMapScreen extends Screen {
                     : LuxQuestTracker.nearest(minecraft.level.dimension().location().toString(),
                             minecraft.player.getBlockX(), minecraft.player.getBlockZ());
             if (quests.isEmpty()) label(g, "Nenhuma conhecida", 14, 99, LuxGuiStyle.MUTED_TEXT);
-            questPage = LuxQuestPage.clamp(questPage, quests.size(), 5);
-            int totalPages = LuxQuestPage.pages(quests.size(), 5);
-            label(g, (questPage + 1) + "/" + totalPages, 15, 172, LuxGuiStyle.AMBER);
+            questPage = LuxQuestPage.clamp(questPage, quests.size(), questPageSize());
+            int totalPages = LuxQuestPage.pages(quests.size(), questPageSize());
+            label(g, "Página " + (questPage + 1) + "/" + totalPages, 14, 83, LuxGuiStyle.AMBER);
             int line = 0;
-            for (var quest : LuxQuestPage.slice(quests, questPage, 5)) {
+            for (var quest : LuxQuestPage.slice(quests, questPage, questPageSize())) {
                 String item = switch (quest.objective()) {
                     case "minecraft:coal" -> "Carvão";
                     case "minecraft:bread" -> "Pão";
