@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * A short, cinematic, top-centered RPG discovery title.
@@ -16,6 +18,8 @@ public final class DiscoveryOverlay {
     private static Component title;
     private static Component subtitle;
     private static int remaining;
+    private record Notice(Component name, Component detail) {}
+    private static final Deque<Notice> QUEUED = new ArrayDeque<>();
     private static final int DURATION = 110;
     private static final int FADE_IN = 13;
     private static final int FADE_OUT = 23;
@@ -23,6 +27,12 @@ public final class DiscoveryOverlay {
     private DiscoveryOverlay() {}
 
     public static void show(Component discovered, Component detail) {
+        if (remaining > 0) {
+            // A village/ruin discovered moments after a biome must not erase
+            // its notification; keep a short bounded visual queue.
+            if (QUEUED.size() < 6) QUEUED.addLast(new Notice(discovered, detail));
+            return;
+        }
         title = discovered;
         subtitle = detail;
         remaining = DURATION;
@@ -30,6 +40,12 @@ public final class DiscoveryOverlay {
 
     public static void onTick(ClientTickEvent.Post event) {
         if (remaining > 0) remaining--;
+        if (remaining <= 0 && !QUEUED.isEmpty()) {
+            Notice next = QUEUED.removeFirst();
+            title = next.name();
+            subtitle = next.detail();
+            remaining = DURATION;
+        }
     }
 
     public static void onRender(RenderGuiEvent.Post event) {
