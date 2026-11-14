@@ -10,12 +10,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.CRC32;
 
 /**
@@ -29,6 +29,7 @@ public final class AtlasWriteJournal {
     private static final int MAGIC = 0x4c584a31; // LXJ1
     private static final int MAX_SAMPLES = 4_000_000;
     private static final String EXT = ".lxj";
+    private static final AtomicLong SERIAL = new AtomicLong();
 
     private AtlasWriteJournal() {}
 
@@ -39,8 +40,8 @@ public final class AtlasWriteJournal {
             throw new IOException("Invalid Atlas journal batch");
         Path directory = folder(scope);
         Files.createDirectories(directory);
-        String filename = String.format("%013d-%s%s",
-                System.currentTimeMillis(), UUID.randomUUID(), EXT);
+        String filename = String.format("%013d-%016d-%s%s",
+                System.currentTimeMillis(), SERIAL.incrementAndGet(), UUID.randomUUID(), EXT);
         Path target = directory.resolve(filename);
         Path temp = Files.createTempFile(directory, "pending-", ".tmp");
         try {
@@ -69,7 +70,7 @@ public final class AtlasWriteJournal {
             } catch (AtomicMoveNotSupportedException unsupported) {
                 Files.move(temp, target);
             }
-            // Best effort directory metadata sync (not portable to all OSes).
+            syncDirectory(directory); // best effort across filesystems
             return target;
         } finally {
             Files.deleteIfExists(temp);
@@ -112,5 +113,15 @@ public final class AtlasWriteJournal {
 
     public static void complete(Path file) throws IOException {
         Files.delete(file);
+        syncDirectory(file.getParent());
+    }
+
+    /** Directory fsync is unsupported on some platforms (notably Windows). */
+    private static void syncDirectory(Path directory) {
+        try (FileChannel channel = FileChannel.open(directory, StandardOpenOption.READ)) {
+            channel.force(true);
+        } catch (IOException | UnsupportedOperationException ignored) {
+            // The data file was forced already; directory durability is best effort.
+        }
     }
 }
