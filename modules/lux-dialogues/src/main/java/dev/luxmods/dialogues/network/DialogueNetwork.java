@@ -7,6 +7,7 @@ import dev.luxmods.dialogues.GuardDialogueSessions;
 import dev.luxmods.dialogues.NpcContractLifecycle;
 import dev.luxmods.dialogues.NpcContractStorage;
 import dev.luxmods.dialogues.NpcContractDelivery;
+import dev.luxmods.dialogues.PlayerQuestLedger;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.network.FriendlyByteBuf;
@@ -78,6 +79,7 @@ public final class DialogueNetwork {
             sendContractSnapshot(villager, player);
             return;
         }
+        PlayerQuestLedger.record(player, villager, updated);
         player.sendSystemMessage(Component.literal("Contrato aceito: entregar "
                 + updated.quantity() + " de " + updated.objective()
                 + ". Volte ao aldeão quando reunir os itens."));
@@ -154,6 +156,49 @@ public final class DialogueNetwork {
                 dev.luxmods.dialogues.client.DialogueClient.onContractSnapshot(snapshot));
     }
 
+    /** A bounded, server-authored list of accepted contracts for reconnection. */
+    public record QuestLedgerSync(java.util.List<PlayerQuestLedger.Entry> entries)
+            implements CustomPacketPayload {
+        public static final Type<QuestLedgerSync> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "quest_ledger_sync"));
+        public static final StreamCodec<FriendlyByteBuf, QuestLedgerSync> CODEC =
+                StreamCodec.of((buf, payload) -> {
+                    buf.writeVarInt(payload.entries().size());
+                    for (var quest : payload.entries()) {
+                        buf.writeUUID(quest.npc());
+                        buf.writeUtf(quest.dimension(), 128);
+                        buf.writeInt(quest.x());
+                        buf.writeInt(quest.z());
+                        buf.writeUtf(quest.objective(), 64);
+                        buf.writeVarInt(quest.quantity());
+                        buf.writeVarLong(quest.expiresDay());
+                        buf.writeVarInt(quest.status());
+                    }
+                }, buf -> {
+                    int count = buf.readVarInt();
+                    if (count < 0 || count > 128)
+                        throw new IllegalArgumentException("Too many quest entries");
+                    var entries = new java.util.ArrayList<PlayerQuestLedger.Entry>(count);
+                    for (int i = 0; i < count; i++) {
+                        entries.add(new PlayerQuestLedger.Entry(buf.readUUID(), buf.readUtf(128),
+                                buf.readInt(), buf.readInt(), buf.readUtf(64),
+                                buf.readVarInt(), buf.readVarLong(), buf.readVarInt()));
+                    }
+                    return new QuestLedgerSync(java.util.List.copyOf(entries));
+                });
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public static void sendQuestLedger(ServerPlayer player) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                player, new QuestLedgerSync(PlayerQuestLedger.read(player)));
+    }
+
+    private static void receiveQuestLedger(QuestLedgerSync payload, IPayloadContext context) {
+        context.enqueueWork(() ->
+                dev.luxmods.dialogues.client.DialogueClient.onQuestLedgerSync(payload));
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(OpenShop.TYPE, OpenShop.CODEC, DialogueNetwork::openShop);
@@ -162,6 +207,7 @@ public final class DialogueNetwork {
         registrar.playToServer(DeliverContract.TYPE, DeliverContract.CODEC, DialogueNetwork::deliverContract);
         registrar.playToServer(RequestContract.TYPE, RequestContract.CODEC, DialogueNetwork::requestContract);
         registrar.playToClient(ContractSnapshot.TYPE, ContractSnapshot.CODEC, DialogueNetwork::receiveContractSnapshot);
+        registrar.playToClient(QuestLedgerSync.TYPE, QuestLedgerSync.CODEC, DialogueNetwork::receiveQuestLedger);
     }
 
     private static void endDialogue(EndDialogue payload, IPayloadContext context) {
