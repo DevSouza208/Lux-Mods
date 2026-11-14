@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
+import java.nio.file.Path;
 
 /**
  * Functional terrain map: reads only client-loaded chunks and never fabricates
@@ -35,6 +36,7 @@ public final class AtlasMapScreen extends Screen {
     private final Map<Long, Integer> failedRegionRetry = new LinkedHashMap<>();
     private int screenTicks;
     private final Map<Long, Integer> unsavedTiles = new LinkedHashMap<>();
+    private Path openedScope;
     private final List<AtlasMarkers.Marker> markers = new ArrayList<>();
 
     private int centerX, centerZ;
@@ -65,6 +67,7 @@ public final class AtlasMapScreen extends Screen {
         if (minecraft == null || minecraft.player == null) return;
         if (markers.isEmpty()) markers.addAll(AtlasMarkers.load(minecraft));
         if (!terrainLoaded && minecraft.level != null) {
+            openedScope = AtlasTerrainCache.scope(minecraft, minecraft.level);
             terrainLoaded = true;
             AtlasWalkDiscovery.flush();
             AtlasTerrainCache.migrate(minecraft, minecraft.level);
@@ -275,7 +278,8 @@ public final class AtlasMapScreen extends Screen {
      *  At most six region files per rendered frame; no full-world RAM preload.
      */
     private void loadVisibleRegions(int startX, int startZ) {
-        if (minecraft == null || minecraft.level == null) return;
+        if (minecraft == null || minecraft.level == null || openedScope == null
+                || !openedScope.equals(AtlasTerrainCache.scope(minecraft, minecraft.level))) return;
         int endX = startX + Math.max(1, mapW / 2) * step;
         int endZ = startZ + Math.max(1, mapH / 2) * step;
         int minRx = AtlasTerrainCache.region(startX);
@@ -534,22 +538,19 @@ public final class AtlasMapScreen extends Screen {
     }
 
     private void submitDirtyTiles() {
-        if (minecraft == null || minecraft.level == null || unsavedTiles.isEmpty()) return;
-        if (AtlasWriteQueue.enqueue(AtlasTerrainCache.scope(minecraft, minecraft.level), unsavedTiles))
+        if (openedScope == null || unsavedTiles.isEmpty()) return;
+        if (AtlasWriteQueue.enqueue(openedScope, unsavedTiles))
             unsavedTiles.clear();
     }
 
     @Override public void onClose() {
-        if (minecraft != null && minecraft.level != null) {
-            AtlasWalkDiscovery.flush();
-            submitDirtyTiles();
-            if (!unsavedTiles.isEmpty()) {
-                // The screen will be destroyed. Do not silently discard a
-                // failed journal write with the screen's dirty in-memory map.
-                AtlasWalkDiscovery.keepUnsubmitted(
-                        AtlasTerrainCache.scope(minecraft, minecraft.level), unsavedTiles);
-                unsavedTiles.clear();
-            }
+        AtlasWalkDiscovery.flush();
+        submitDirtyTiles();
+        if (!unsavedTiles.isEmpty() && openedScope != null) {
+            // The screen will be destroyed. Preserve data under the ORIGINAL
+            // world path even if Minecraft changed level before closing it.
+            AtlasWalkDiscovery.keepUnsubmitted(openedScope, unsavedTiles);
+            unsavedTiles.clear();
         }
         super.onClose();
     }
