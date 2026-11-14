@@ -23,6 +23,9 @@ public final class LuxContractUiSmoke {
         check(ContractUiState.description("minecraft:bread", 12, 15, 0, false)
                 .contains("dia 15"));
         check(ContractUiState.statusLabel(2, true, 15).equals("Concluído"));
+        check(ContractUiState.deliveryMessage(true).contains("Entrega concluída"));
+        check(ContractUiState.deliveryMessage(false).contains("Não foi possível"));
+        check(!ContractUiState.canDeliver(4, true));
         System.out.println("Lux contract UI smoke OK");
     }
 }
