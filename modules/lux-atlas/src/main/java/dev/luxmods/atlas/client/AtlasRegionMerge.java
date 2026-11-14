@@ -10,6 +10,24 @@ import java.util.Objects;
 public final class AtlasRegionMerge {
     private AtlasRegionMerge() {}
 
+    /**
+     * Restore historical samples into holes only. Never replace terrain from
+     * a newer scan with an older LXT1 import.
+     */
+    public static boolean mergeMissing(Map<Long, Integer> stored,
+                                       Map<Long, Integer> legacy) {
+        Objects.requireNonNull(stored, "stored");
+        Objects.requireNonNull(legacy, "legacy");
+        boolean changed = false;
+        for (var entry : legacy.entrySet()) {
+            if (!stored.containsKey(entry.getKey())) {
+                stored.put(entry.getKey(), entry.getValue());
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
     public static boolean merge(Map<Long, Integer> stored, Map<Long, Integer> updates) {
         Objects.requireNonNull(stored, "stored");
         Objects.requireNonNull(updates, "updates");
