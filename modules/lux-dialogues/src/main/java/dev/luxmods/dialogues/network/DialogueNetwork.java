@@ -106,12 +106,32 @@ public final class DialogueNetwork {
         if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
         Entity entity = player.level().getEntity(payload.entityId());
         if (entity instanceof Villager villager) {
-            NpcContractDelivery.deliver(villager, player);
+            boolean success = NpcContractDelivery.deliver(villager, player);
             if (villager.isAlive() && villager.distanceToSqr(player) <= 64.0D) {
                 sendContractSnapshot(villager, player);
                 sendQuestLedger(player);
+                // Send AFTER the refreshed snapshot, so the result stays visible.
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                        player, new ContractDeliveryResult(villager.getId(), success));
             }
         }
+    }
+
+    /** Explicit result of a delivery, distinct from the NPC's next offer. */
+    public record ContractDeliveryResult(int entityId, boolean success) implements CustomPacketPayload {
+        public static final Type<ContractDeliveryResult> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "contract_delivery_result"));
+        public static final StreamCodec<FriendlyByteBuf, ContractDeliveryResult> CODEC =
+                StreamCodec.of((buf, p) -> {
+                    buf.writeVarInt(p.entityId());
+                    buf.writeBoolean(p.success());
+                }, buf -> new ContractDeliveryResult(buf.readVarInt(), buf.readBoolean()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    private static void receiveDeliveryResult(ContractDeliveryResult result, IPayloadContext context) {
+        context.enqueueWork(() ->
+                dev.luxmods.dialogues.client.DialogueClient.onDeliveryResult(result));
     }
 
     /** Read-only contract query; the server sends the authoritative snapshot. */
@@ -233,6 +253,7 @@ public final class DialogueNetwork {
         registrar.playToServer(DeliverContract.TYPE, DeliverContract.CODEC, DialogueNetwork::deliverContract);
         registrar.playToServer(RequestContract.TYPE, RequestContract.CODEC, DialogueNetwork::requestContract);
         registrar.playToClient(ContractSnapshot.TYPE, ContractSnapshot.CODEC, DialogueNetwork::receiveContractSnapshot);
+        registrar.playToClient(ContractDeliveryResult.TYPE, ContractDeliveryResult.CODEC, DialogueNetwork::receiveDeliveryResult);
         registrar.playToClient(QuestLedgerSync.TYPE, QuestLedgerSync.CODEC, DialogueNetwork::receiveQuestLedger);
         registrar.playToServer(RequestQuestLedger.TYPE, RequestQuestLedger.CODEC, DialogueNetwork::requestQuestLedger);
     }
