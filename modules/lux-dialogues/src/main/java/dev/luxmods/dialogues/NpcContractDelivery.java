@@ -41,32 +41,46 @@ public final class NpcContractDelivery {
             return;
         }
 
-        // Count every storage slot, including offhand and armor where applicable.
-        int owned = 0;
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+        // Snapshot only matching items. Do not mark COMPLETED unless a plan
+        // exists for the entire amount, including split stacks.
+        int size = player.getInventory().getContainerSize();
+        int[] counts = new int[size];
+        for (int slot = 0; slot < size; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.is(item)) owned += stack.getCount();
+            counts[slot] = stack.is(item) ? stack.getCount() : 0;
         }
-        if (owned < offer.quantity()) {
+        int[] removal = ContractInventoryPlan.forCounts(counts, offer.quantity());
+        if (removal == null) {
+            int owned = 0;
+            for (int count : counts) owned += count;
             player.sendSystemMessage(Component.literal("Faltam "
-                    + (offer.quantity() - owned) + " itens para concluir o contrato."));
+                    + Math.max(0, offer.quantity() - owned)
+                    + " itens para concluir o contrato."));
+            return;
+        }
+
+        // Validate that quantities still match the plan before writing NBT.
+        int[] current = new int[size];
+        for (int slot = 0; slot < size; slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            current[slot] = stack.is(item) ? stack.getCount() : 0;
+        }
+        if (!ContractInventoryPlan.canApply(current, removal, offer.quantity())) {
+            player.sendSystemMessage(Component.literal("Inventário alterado. Tente novamente."));
             return;
         }
 
         var completed = NpcContractLifecycle.complete(offer, player.getUUID(), true);
-        // Guard against repeated requests and stale offers before changing inventory.
+        // The server thread serializes requests; comparing the expected state
+        // rejects a second delivery. Crash safety still requires a durable
+        // cross-entity transaction journal in a future pass.
         if (!NpcContractStorage.store(villager, offer, completed)) {
             player.sendSystemMessage(Component.literal("Contrato alterado; tente novamente."));
             return;
         }
 
-        int remaining = offer.quantity();
-        for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.is(item)) continue;
-            int used = Math.min(stack.getCount(), remaining);
-            stack.shrink(used);
-            remaining -= used;
+        for (int slot = 0; slot < size; slot++) {
+            if (removal[slot] > 0) player.getInventory().getItem(slot).shrink(removal[slot]);
         }
         player.getInventory().setChanged();
 
