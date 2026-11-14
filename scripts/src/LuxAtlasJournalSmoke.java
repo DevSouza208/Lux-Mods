@@ -17,6 +17,19 @@ public final class LuxAtlasJournalSmoke {
             var original = Map.of(one, 0xff123456, two, 0xffabcdef);
             Path a = AtlasWriteJournal.create(overworld, original);
             Path b = AtlasWriteJournal.create(nether, Map.of(one, 0xff654321));
+            // Independent wire-format check: the optimized CRC writer must
+            // remain compatible with the original LXJ1 big-endian encoding.
+            byte[] wire = Files.readAllBytes(b);
+            java.nio.ByteBuffer header = java.nio.ByteBuffer.wrap(wire);
+            if (header.getInt() != 0x4c584a31 || header.getInt() != 1)
+                throw new AssertionError("LXJ1 wire header changed");
+            long storedCrc = header.getLong();
+            java.util.zip.CRC32 referenceCrc = new java.util.zip.CRC32();
+            java.nio.ByteBuffer referencePair = java.nio.ByteBuffer.allocate(12);
+            referencePair.putLong(one).putInt(0xff654321);
+            referenceCrc.update(referencePair.array());
+            if (storedCrc != referenceCrc.getValue())
+                throw new AssertionError("LXJ1 CRC encoding changed");
             if (!AtlasWriteJournal.read(a).equals(original))
                 throw new AssertionError("Journal roundtrip altered samples");
             if (AtlasWriteJournal.find(overworld).size() != 1 ||
