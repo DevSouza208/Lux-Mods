@@ -83,6 +83,7 @@ public final class NpcContractDelivery {
             player.sendSystemMessage(Component.literal("Contrato alterado; tente novamente."));
             return;
         }
+        PlayerQuestLedger.record(player, villager, settling);
 
         for (int slot = 0; slot < size; slot++) {
             if (removal[slot] > 0) player.getInventory().getItem(slot).shrink(removal[slot]);
@@ -100,6 +101,7 @@ public final class NpcContractDelivery {
                     "Pagamento entregue, mas o registro exige revisão do administrador."));
             return;
         }
+        PlayerQuestLedger.record(player, villager, completed);
         player.sendSystemMessage(Component.literal("Contrato concluído! Recompensa: "
                 + emeralds + " esmeraldas."));
     }
