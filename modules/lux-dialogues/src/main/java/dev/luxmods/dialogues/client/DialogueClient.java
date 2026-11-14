@@ -1,21 +1,24 @@
 package dev.luxmods.dialogues.client;
 
+import dev.luxmods.dialogues.DialogueNpcTypes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/** Open a local conversation only for ordinary empty-hand right-clicks. */
+/** Optional Guard Villagers and vanilla villagers share the Lux dialogue screen. */
 public final class DialogueClient {
     private DialogueClient() {}
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
-        if (!(event.getTarget() instanceof Villager villager) || event.getHand() != InteractionHand.MAIN_HAND) return;
+        if (!(event.getTarget() instanceof LivingEntity npc)
+                || !DialogueNpcTypes.supported(npc)
+                || event.getHand() != InteractionHand.MAIN_HAND) return;
         if (event.getEntity().isShiftKeyDown() || !event.getEntity().getMainHandItem().isEmpty()) return;
-        if (!event.getLevel().isClientSide()) return;
+        if (DialogueNpcTypes.guardInCombat(npc) || !event.getLevel().isClientSide()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != null) return;
-        mc.setScreen(new VillagerDialogueScreen(villager));
+        mc.setScreen(new VillagerDialogueScreen(npc));
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
