@@ -63,16 +63,19 @@ public final class DialogueNetwork {
             player.sendSystemMessage(Component.literal(old.claimant().equals(player.getUUID())
                     ? "Você já aceitou o contrato deste aldeão."
                     : "Este contrato já foi reservado por outro aventureiro."));
+            sendContractSnapshot(villager, player);
             return;
         }
         if (old.status() != NpcContractLifecycle.Status.AVAILABLE) {
             player.sendSystemMessage(Component.literal("Não há contrato disponível neste momento."));
+            sendContractSnapshot(villager, player);
             return;
         }
         NpcContractLifecycle.Offer updated =
                 NpcContractLifecycle.accept(old, player.getUUID(), day);
         if (!NpcContractStorage.store(villager, old, updated)) {
             player.sendSystemMessage(Component.literal("Contrato mudou. Converse novamente com o aldeão."));
+            sendContractSnapshot(villager, player);
             return;
         }
         player.sendSystemMessage(Component.literal("Contrato aceito: entregar "
