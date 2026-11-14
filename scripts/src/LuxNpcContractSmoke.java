@@ -24,10 +24,18 @@ public class LuxNpcContractSmoke {
 
         check(NpcContractLifecycle.accept(accepted, another, 12).equals(accepted));
         check(NpcContractLifecycle.refresh(accepted, 1000).equals(accepted));
+        check(!NpcContractLifecycle.shouldRotate(offered, offered.expiresDay() - 1));
+        check(NpcContractLifecycle.shouldRotate(offered, offered.expiresDay()));
+        check(!NpcContractLifecycle.shouldRotate(accepted, 1000));
+
         check(NpcContractLifecycle.complete(accepted, another, true).equals(accepted));
         check(NpcContractLifecycle.complete(accepted, player, false).equals(accepted));
         var completed = NpcContractLifecycle.complete(accepted, player, true);
         check(completed.status() == NpcContractLifecycle.Status.COMPLETED);
+        check(!NpcContractLifecycle.shouldRotate(completed, completed.expiresDay() - 1));
+        check(NpcContractLifecycle.shouldRotate(completed, completed.expiresDay()));
+        check(!NpcContractLifecycle.shouldRotate(completed, -1));
+
         check(NpcContractLifecycle.validTransition(accepted, completed));
         check(!NpcContractLifecycle.validTransition(completed, accepted));
         check(NpcContractLifecycle.complete(completed, player, true).equals(completed));
