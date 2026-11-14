@@ -28,7 +28,7 @@ public final class AtlasTerrainCache {
     private static final int LEGACY_MAGIC = 0x4C585431; // LXT1
     private static final int REGION_MAGIC = 0x4C585432; // LXT2
     public static final int REGION_BLOCKS = 128;
-    private static final int MAX_REGION_SAMPLES = 16384;
+    private static final int MAX_REGION_SAMPLES = 65536;
     private static final int MAX_LEGACY_SAMPLES = 400_000;
     private static final Set<Path> MIGRATED_THIS_SESSION = new HashSet<>();
 
