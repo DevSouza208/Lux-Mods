@@ -52,6 +52,26 @@ public final class NpcContractLifecycle {
                 current.objective(), current.quantity(), Status.ACCEPTED, player);
     }
 
+    /**
+     * Only accept the two state transitions used by the server's compare-and-store.
+     * Never permit changing objectives, quantities, deadlines, NPCs or claimants
+     * by accidentally passing an unrelated Offer to the persistence layer.
+     */
+    public static boolean validTransition(Offer before, Offer after) {
+        if (before == null || after == null
+                || !before.npcId().equals(after.npcId())
+                || before.issuedDay() != after.issuedDay()
+                || before.expiresDay() != after.expiresDay()
+                || !before.objective().equals(after.objective())
+                || before.quantity() != after.quantity()) return false;
+        if (before.status() == Status.AVAILABLE) {
+            return after.status() == Status.ACCEPTED && after.claimant() != null;
+        }
+        return before.status() == Status.ACCEPTED
+                && after.status() == Status.COMPLETED
+                && before.claimant().equals(after.claimant());
+    }
+
     /** Call ONLY after a server-authoritative inventory transfer has succeeded. */
     public static Offer complete(Offer offer, UUID player, boolean itemsConsumed) {
         if (!itemsConsumed || player == null || offer.status() != Status.ACCEPTED
