@@ -498,6 +498,15 @@ public final class AtlasMapScreen extends Screen {
         for (int i = 0; i < 4; i++) {
             label(g, (enabled[i] ? "[x] " : "[ ] ") + options[i], 14, 99 + i * 22, LuxGuiStyle.MUTED_TEXT);
         }
+        // Explain partial pixels so a single explored point is never mistaken
+        // for an entirely surveyed regional cell.
+        if (height >= 255 && mapX >= 120) {
+            label(g, "EXPLORACAO", 14, height - 101, LuxGuiStyle.FOREGROUND);
+            g.fill(15, height - 87, 23, height - 79, 0xFF78B891);
+            label(g, "Completa", 28, height - 86, LuxGuiStyle.MUTED_TEXT);
+            g.fill(15, height - 70, 19, height - 66, 0xFF78B891);
+            label(g, "Parcial", 28, height - 71, LuxGuiStyle.MUTED_TEXT);
+        }
         label(g, "Escala: " + step + " blocos", 14, height - 59, LuxGuiStyle.AMBER);
         if (minecraft != null && minecraft.player != null && width >= 790) {
             int rx = mapX + mapW + 12;
