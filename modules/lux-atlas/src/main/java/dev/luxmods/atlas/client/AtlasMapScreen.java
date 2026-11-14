@@ -45,6 +45,7 @@ public final class AtlasMapScreen extends Screen {
     private boolean firstOpen = true;
     private boolean terrainLoaded;
     private int lastMergedTick = -1;
+    private int autosaveTicks;
     private int cachedViewportRx = Integer.MIN_VALUE, cachedViewportRz = Integer.MIN_VALUE;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
@@ -442,6 +443,16 @@ public final class AtlasMapScreen extends Screen {
             }
         }
         super.onClose();
+    }
+
+    @Override public void tick() {
+        if (++autosaveTicks >= 200) {
+            autosaveTicks = 0;
+            if (minecraft != null && minecraft.level != null && !unsavedTiles.isEmpty()
+                    && AtlasTerrainCache.save(minecraft, minecraft.level, unsavedTiles)) {
+                unsavedTiles.clear();
+            }
+        }
     }
 
     @Override public boolean isPauseScreen() { return false; }
