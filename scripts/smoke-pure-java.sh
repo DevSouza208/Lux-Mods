@@ -14,6 +14,7 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/CompassMath.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasViewport.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasTerrainColor.java \
+  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasTileLayers.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasLevelOfDetail.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasRegionMerge.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasWriteJournal.java \
@@ -23,6 +24,7 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   scripts/src/LuxCompassSmoke.java \
   scripts/src/LuxAtlasViewportSmoke.java \
   scripts/src/LuxAtlasTerrainColorSmoke.java \
+  scripts/src/LuxAtlasTileLayersSmoke.java \
   scripts/src/LuxAtlasLodSmoke.java \
   scripts/src/LuxAtlasRegionMergeSmoke.java \
   scripts/src/LuxAtlasJournalSmoke.java \
@@ -37,3 +39,4 @@ java -cp "$TMP" LuxAtlasLodSmoke
 java -cp "$TMP" LuxAtlasRegionMergeSmoke
 java -cp "$TMP" LuxAtlasJournalSmoke
 java -cp "$TMP" LuxAtlasTerrainColorSmoke
+java -cp "$TMP" LuxAtlasTileLayersSmoke
