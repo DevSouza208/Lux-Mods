@@ -70,6 +70,12 @@ public final class AtlasBiomeNetwork {
             if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
             int ox = request.originX(), oz = request.originZ();
             if (ox % REGION_BLOCKS != 0 || oz % REGION_BLOCKS != 0) return;
+            // Keep the full 512-block response inside vanilla world bounds,
+            // including its last sample. Reject malformed extreme coordinates
+            // before integer additions in the generator sampling loop.
+            if ((long) ox < -30_000_000L || (long) oz < -30_000_000L
+                    || (long) ox + REGION_BLOCKS > 30_000_000L
+                    || (long) oz + REGION_BLOCKS > 30_000_000L) return;
             // Clients can inspect their surrounding landscape, not request an
             // arbitrary world-scale seed dump from an unsuspecting server.
             if (Math.abs((long) ox - player.getBlockX()) > 8192
