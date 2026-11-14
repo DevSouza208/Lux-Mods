@@ -97,8 +97,12 @@ public final class AtlasWalkDiscovery {
         if (y <= world.getMinBuildHeight() || y >= world.getMaxBuildHeight()) return false;
         BlockPos pos = new BlockPos(wx, y - 1, wz);
         var state = world.getBlockState(pos);
-        int northY = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1);
-        int westY = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz);
+        // Height lookups at chunk borders must not request unloaded
+        // neighbors: passive exploration must never trigger world generation.
+        int northY = world.getChunkSource().hasChunk(wx >> 4, (wz - 1) >> 4)
+                ? world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1) : y;
+        int westY = world.getChunkSource().hasChunk((wx - 1) >> 4, wz >> 4)
+                ? world.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz) : y;
         int sample = AtlasTerrainColor.shade(state.getMapColor(world, pos).col,
                 y, northY, westY, state.is(Blocks.WATER));
         Integer previous = known.put(key, sample);
