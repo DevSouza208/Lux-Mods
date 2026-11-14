@@ -18,6 +18,17 @@ public final class LuxQuestTrackerSmoke {
         check(LuxQuestTracker.all().size() == 2);
         check(LuxQuestTracker.inDimension("minecraft:overworld").size() == 1);
         check(LuxQuestTracker.inDimension("minecraft:the_nether").get(0).status() == 4);
+        UUID farther = UUID.fromString("00000000-0000-0000-0000-000000000003");
+        LuxQuestTracker.observe(new LuxQuestTracker.Contract(farther, "minecraft:overworld",
+                1000, 1000, "minecraft:iron_ingot", 8, 40, 1), true);
+        check(LuxQuestTracker.nearest("minecraft:overworld", 0, 0).get(0).npc().equals(a));
+        check(LuxQuestTracker.nearest("minecraft:overworld", 900, 900).get(0).npc().equals(farther));
+        // Distances use long arithmetic; extreme world coordinates must not overflow int.
+        check(!LuxQuestTracker.nearest("minecraft:overworld",
+                Integer.MIN_VALUE, Integer.MAX_VALUE).isEmpty());
+        LuxQuestTracker.observe(new LuxQuestTracker.Contract(farther, "minecraft:overworld",
+                1000, 1000, "minecraft:iron_ingot", 8, 40, 2), true);
+
         LuxQuestTracker.observe(new LuxQuestTracker.Contract(a, "minecraft:overworld", 10, -20,
                 "minecraft:coal", 24, 30, 2), true);
         check(LuxQuestTracker.all().size() == 1);
