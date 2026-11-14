@@ -59,8 +59,10 @@ public final class AtlasBiomeClient {
         long highX = Math.min(Math.min((long) maxX, px + 8192L - AtlasBiomeNetwork.REGION_BLOCKS), 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
         long highZ = Math.min(Math.min((long) maxZ, pz + 8192L - AtlasBiomeNetwork.REGION_BLOCKS), 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
         if (lowX > highX || lowZ > highZ) return;
-        int startX = (int) Math.floorDiv(lowX, AtlasBiomeNetwork.REGION_BLOCKS);
-        int startZ = (int) Math.floorDiv(lowZ, AtlasBiomeNetwork.REGION_BLOCKS);
+        // The server validates region ORIGINS, not intersecting cells.
+        // Round up the lower bound so the first request is always legal.
+        int startX = (int) -Math.floorDiv(-lowX, AtlasBiomeNetwork.REGION_BLOCKS);
+        int startZ = (int) -Math.floorDiv(-lowZ, AtlasBiomeNetwork.REGION_BLOCKS);
         int endX = (int) Math.floorDiv(highX, AtlasBiomeNetwork.REGION_BLOCKS);
         int endZ = (int) Math.floorDiv(highZ, AtlasBiomeNetwork.REGION_BLOCKS);
         // Only one request every 12 client ticks. A server can throttle as well.
