@@ -8,6 +8,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 import java.util.LinkedHashMap;
+import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -24,6 +26,8 @@ public final class AtlasWalkDiscovery {
     };
     private static int sinceSave;
     private static int scanCursor;
+    private static Path saveScope;
+    private static final Map<Path, Map<Long, Integer>> RETRY = new LinkedHashMap<>();
     private static final Map<Long, Integer> pending = new LinkedHashMap<>();
 
     private AtlasWalkDiscovery() {}
@@ -34,13 +38,36 @@ public final class AtlasWalkDiscovery {
     }
 
     public static void flush() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.level == world && !pending.isEmpty()) {
-            if (AtlasTerrainCache.save(mc, world, pending)) {
+        if (!pending.isEmpty() && saveScope != null) {
+            if (AtlasTerrainCache.saveToScope(saveScope, pending)) {
                 pending.clear();
                 sinceSave = 0;
             }
         }
+        var iterator = RETRY.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var item = iterator.next();
+            if (AtlasTerrainCache.saveToScope(item.getKey(), item.getValue())) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private static void rotateWorld() {
+        // Files are always written to the captured source-world folder.
+        // Unsuccessful writes survive in RETRY instead of contaminating
+        // the destination dimension or silently disappearing.
+        flush();
+        if (!pending.isEmpty() && saveScope != null) {
+            RETRY.computeIfAbsent(saveScope, ignored -> new LinkedHashMap<>())
+                    .putAll(pending);
+        }
+        pending.clear();
+        known.clear();
+        world = null;
+        saveScope = null;
+        sinceSave = 0;
+        scanCursor = 0;
     }
 
     private static boolean sampleOne(int wx, int wz) {
@@ -72,21 +99,15 @@ public final class AtlasWalkDiscovery {
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) {
-            // Preserve pending samples if the save cannot be written yet.
-            world = null;
-            known.clear();
-            pending.clear();
-            sinceSave = 0;
-            scanCursor = 0;
+            if (world != null) rotateWorld();
             return;
         }
         if (world != mc.level) {
+            if (world != null) rotateWorld();
             world = mc.level;
-            known.clear();
-            pending.clear();
             AtlasTerrainCache.migrate(mc, world);
-            sinceSave = 0;
-            scanCursor = 0;
+            saveScope = AtlasTerrainCache.scope(mc, world);
+            flush(); // retry writes from older worlds without mixing paths
         }
 
         if (mc.player.tickCount % 40 != 0) return;
