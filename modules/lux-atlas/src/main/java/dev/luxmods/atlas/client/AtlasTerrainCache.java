@@ -7,6 +7,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -113,6 +115,11 @@ public final class AtlasTerrainCache {
                     out.writeLong(entry.getKey());
                     out.writeInt(entry.getValue());
                 }
+            }
+            // Ensure the compressed region is flushed before a journal can
+            // be deleted. This makes ordinary crash recovery more reliable.
+            try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.WRITE)) {
+                channel.force(true);
             }
             try {
                 Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
