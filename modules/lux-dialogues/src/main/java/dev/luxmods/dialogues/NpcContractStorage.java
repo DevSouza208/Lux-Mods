@@ -44,7 +44,8 @@ public final class NpcContractStorage {
                 || !villager.getUUID().equals(updated.npcId())) return false;
         CompoundTag root = villager.getPersistentData();
         var persisted = read(root.getCompound(KEY), villager.getUUID());
-        if (!expected.equals(persisted)) return false;
+        if (!expected.equals(persisted)
+                || !NpcContractLifecycle.validTransition(expected, updated)) return false;
         write(root, updated);
         return true;
     }
