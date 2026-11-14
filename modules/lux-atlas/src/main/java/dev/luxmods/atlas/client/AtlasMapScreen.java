@@ -241,6 +241,18 @@ public final class AtlasMapScreen extends Screen {
     @Override public boolean mouseClicked(double x, double y, int button) {
         if (super.mouseClicked(x, y, button)) return true;
         if (inMap(x, y)) {
+            if (button == 0 && showQuests && minecraft != null && minecraft.level != null) {
+                String dimension = minecraft.level.dimension().location().toString();
+                for (var quest : LuxQuestTracker.inDimension(dimension)) {
+                    int markerX = screenX(quest.x()), markerY = screenZ(quest.z());
+                    if (Math.abs(x - markerX) <= 8 && Math.abs(y - markerY) <= 8) {
+                        selectionX = quest.x();
+                        selectionZ = quest.z();
+                        status = "NPC: " + quest.quantity() + "x " + quest.objective();
+                        return true;
+                    }
+                }
+            }
             selectionX = worldX(x);
             selectionZ = worldZ(y);
             // Left click selects a coordinate; only right click pans the map.
