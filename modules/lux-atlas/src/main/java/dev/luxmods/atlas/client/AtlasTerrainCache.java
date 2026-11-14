@@ -138,11 +138,7 @@ public final class AtlasTerrainCache {
             Path path = regionPath(folder, rx, rz);
             Map<Long, Integer> contents = new HashMap<>();
             readRegion(path, rx, rz, contents);
-            boolean changed = false;
-            for (var sample : batch.getValue().entrySet()) {
-                Integer previous = contents.put(sample.getKey(), sample.getValue());
-                if (previous == null || !previous.equals(sample.getValue())) changed = true;
-            }
+            boolean changed = AtlasRegionMerge.merge(contents, batch.getValue());
             // Do not rewrite (and recompress) entire unchanged region files.
             if (!changed) continue;
             if (contents.size() > MAX_REGION_SAMPLES) throw new IOException("Atlas region overflow");
