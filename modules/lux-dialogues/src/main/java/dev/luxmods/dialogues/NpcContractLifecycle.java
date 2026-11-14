@@ -102,7 +102,7 @@ public final class NpcContractLifecycle {
 
     /** Call ONLY after a server-authoritative inventory transfer has succeeded. */
     public static Offer complete(Offer offer, UUID player, boolean itemsConsumed) {
-        if (!itemsConsumed || player == null || offer.status() != Status.ACCEPTED
+        if (!itemsConsumed || player == null || offer.status() != Status.SETTLING
                 || !player.equals(offer.claimant())) return offer;
         return new Offer(offer.npcId(), offer.issuedDay(), offer.expiresDay(),
                 offer.objective(), offer.quantity(), Status.COMPLETED, player);
