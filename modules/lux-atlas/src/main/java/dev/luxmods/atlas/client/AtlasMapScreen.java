@@ -135,8 +135,12 @@ public final class AtlasMapScreen extends Screen {
     }
 
     // Each 2-pixel terrain cell corresponds to 'step' world blocks.
-    private int worldX(double px) { return centerX + (int) Math.floor((px - mapX - mapW / 2.0) * step / 2.0); }
-    private int worldZ(double py) { return centerZ + (int) Math.floor((py - mapY - mapH / 2.0) * step / 2.0); }
+    private int startX() { return AtlasViewport.start(centerX, mapW, step); }
+    private int startZ() { return AtlasViewport.start(centerZ, mapH, step); }
+    private int worldX(double px) { return AtlasViewport.pixelToWorld(px, mapX, startX(), step); }
+    private int worldZ(double py) { return AtlasViewport.pixelToWorld(py, mapY, startZ(), step); }
+    private int screenX(int wx) { return AtlasViewport.worldToPixel(wx, mapX, startX(), step); }
+    private int screenZ(int wz) { return AtlasViewport.worldToPixel(wz, mapY, startZ(), step); }
 
     private void addMarker() {
         if (minecraft == null || minecraft.level == null) return;
@@ -256,9 +260,7 @@ public final class AtlasMapScreen extends Screen {
     }
 
     static long key(int x, int z, int sampleStep) {
-        long a = ((long) x & 0xFFFFFFFL);
-        long b = ((long) z & 0xFFFFFFFL);
-        return (a << 36) ^ (b << 8) ^ sampleStep;
+        return AtlasViewport.sampleKey(x, z, sampleStep);
     }
 
     private int sample(int wx, int wz) {
@@ -363,8 +365,8 @@ public final class AtlasMapScreen extends Screen {
         int cellsX = Math.max(1, mapW / 2);
         int cellsY = Math.max(1, mapH / 2);
         int drawSize = 2;
-        int startX = centerX - cellsX * step / 2;
-        int startZ = centerZ - cellsY * step / 2;
+        int startX = startX();
+        int startZ = startZ();
         // Keep the open map current when the player explores without closing it.
         if (minecraft != null && minecraft.player != null
                 && minecraft.player.tickCount != lastMergedTick
@@ -421,8 +423,8 @@ public final class AtlasMapScreen extends Screen {
                 String dim = AtlasMarkers.dimension(minecraft.level);
                 for (var marker : markers) {
                     if (!marker.dimension().equals(dim)) continue;
-                    int mx = (int) Math.round(mapX + mapW / 2.0 + (marker.x() - centerX) * 2.0 / step);
-                    int my = (int) Math.round(mapY + mapH / 2.0 + (marker.z() - centerZ) * 2.0 / step);
+                    int mx = screenX(marker.x());
+                    int my = screenZ(marker.z());
                     if (mx < mapX || mx >= mapX + mapW || my < mapY || my >= mapY + mapH) continue;
                     // Typed waypoint with persistent user color.
                     String glyph = markerGlyph(marker.icon());
@@ -433,13 +435,13 @@ public final class AtlasMapScreen extends Screen {
                 }
             }
             if (showPlayer && minecraft.player != null) {
-                int px = (int) Math.round(mapX + mapW / 2.0 + (minecraft.player.getBlockX() - centerX) * 2.0 / step);
-                int py = (int) Math.round(mapY + mapH / 2.0 + (minecraft.player.getBlockZ() - centerZ) * 2.0 / step);
+                int px = screenX(minecraft.player.getBlockX());
+                int py = screenZ(minecraft.player.getBlockZ());
                 g.fill(px - 4, py - 4, px + 5, py + 5, 0xFF492A60);
                 g.fill(px - 2, py - 2, px + 3, py + 3, 0xFFFFE6A2);
             }
-            int sx = (int) Math.round(mapX + mapW / 2.0 + (selectionX - centerX) * 2.0 / step);
-            int sy = (int) Math.round(mapY + mapH / 2.0 + (selectionZ - centerZ) * 2.0 / step);
+            int sx = screenX(selectionX);
+            int sy = screenZ(selectionZ);
             g.fill(sx - 5, sy, sx + 6, sy + 1, 0xFFDEACF8);
             g.fill(sx, sy - 5, sx + 1, sy + 6, 0xFFDEACF8);
         } finally {
