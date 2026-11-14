@@ -9,6 +9,7 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-engine/src/main/java/dev/luxmods/engine/api/LuxEventType.java \
   modules/lux-engine/src/main/java/dev/luxmods/engine/api/LuxEventBus.java \
   modules/lux-engine/src/main/java/dev/luxmods/engine/api/LuxQuestTracker.java \
+  modules/lux-engine/src/main/java/dev/luxmods/engine/api/LuxQuestPage.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryDebouncer.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryLedger.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/LuxDiscoveryEvents.java \
@@ -26,6 +27,7 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-hud/src/main/java/dev/luxmods/hud/HudPartyCodec.java \
   scripts/src/LuxNpcContractSmoke.java \
   scripts/src/LuxQuestTrackerSmoke.java \
+  scripts/src/LuxQuestPageSmoke.java \
   scripts/src/LuxContractInventorySmoke.java \
   scripts/src/LuxContractUiSmoke.java \
   scripts/src/LuxHudSmoke.java \
@@ -52,3 +54,4 @@ java -cp "$TMP" LuxNpcContractSmoke
 java -cp "$TMP" LuxContractUiSmoke
 java -cp "$TMP" LuxContractInventorySmoke
 java -cp "$TMP" LuxQuestTrackerSmoke
+java -cp "$TMP" LuxQuestPageSmoke
