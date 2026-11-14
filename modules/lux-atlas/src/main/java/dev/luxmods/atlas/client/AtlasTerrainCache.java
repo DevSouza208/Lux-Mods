@@ -138,7 +138,13 @@ public final class AtlasTerrainCache {
         }
     }
 
-    private static void persist(Path folder, Map<Long, Integer> updates) throws IOException {
+    private static synchronized void persist(Path folder, Map<Long, Integer> updates)
+            throws IOException {
+        persist(folder, updates, false);
+    }
+
+    private static synchronized void persist(Path folder, Map<Long, Integer> updates,
+                                             boolean missingOnly) throws IOException {
         Map<Long, Map<Long, Integer>> batches = new HashMap<>();
         for (var sample : updates.entrySet()) {
             int rx = region(unpackX(sample.getKey()));
@@ -152,7 +158,19 @@ public final class AtlasTerrainCache {
             Path path = regionPath(folder, rx, rz);
             Map<Long, Integer> contents = new HashMap<>();
             readRegion(path, rx, rz, contents);
-            boolean changed = AtlasRegionMerge.merge(contents, batch.getValue());
+            boolean changed;
+            if (missingOnly) {
+                // Legacy snapshots never replace newer samples already archived.
+                changed = false;
+                for (var entry : batch.getValue().entrySet()) {
+                    if (!contents.containsKey(entry.getKey())) {
+                        contents.put(entry.getKey(), entry.getValue());
+                        changed = true;
+                    }
+                }
+            } else {
+                changed = AtlasRegionMerge.merge(contents, batch.getValue());
+            }
             // Do not rewrite (and recompress) entire unchanged region files.
             if (!changed) continue;
             if (contents.size() > MAX_REGION_SAMPLES) throw new IOException("Atlas region overflow");
@@ -181,7 +199,7 @@ public final class AtlasTerrainCache {
         try {
             Map<Long, Integer> old = legacySnapshot(oldPath(mc, level, "map"));
             old.putAll(legacySnapshot(oldPath(mc, level, "walk")));
-            if (!old.isEmpty()) persist(folder, old);
+            if (!old.isEmpty()) persist(folder, old, true);
             Files.createDirectories(folder);
             Files.writeString(marker, "LXT1 imported");
         } catch (IOException ignored) {
