@@ -367,6 +367,33 @@ public final class AtlasMapScreen extends Screen {
         };
     }
 
+    /**
+     * At regional zoom a filled 2x2 square means all underlying blocks are
+     * documented. One to three colored pixels indicate partial exploration.
+     * Unexplored remains dark; never paints a whole cell from one sample.
+     */
+    private static void drawCoverageCell(GuiGraphics g, int x, int y,
+                                         AtlasLevelOfDetail.Cell cell) {
+        if (cell == null) return;
+        if (cell.known() >= cell.total()) {
+            g.fill(x, y, x + 2, y + 2, cell.color());
+            return;
+        }
+        int pixels = Math.max(1, (int) Math.ceil(4.0 * cell.fraction()));
+        int color = cell.color();
+        // A trace amount of exploration should not look like 25% coverage.
+        if (cell.fraction() < 0.125) {
+            int r = (((color >>> 16) & 255) + 24) / 2;
+            int green = (((color >>> 8) & 255) + 24) / 2;
+            int b = ((color & 255) + 39) / 2;
+            color = 0xff000000 | r << 16 | green << 8 | b;
+        }
+        if (pixels >= 1) g.fill(x, y, x + 1, y + 1, color);
+        if (pixels >= 2) g.fill(x + 1, y + 1, x + 2, y + 2, color);
+        if (pixels >= 3) g.fill(x + 1, y, x + 2, y + 1, color);
+        if (pixels >= 4) g.fill(x, y + 1, x + 1, y + 2, color);
+    }
+
     private void drawMap(GuiGraphics g) {
         g.fill(mapX - 4, mapY - 4, mapX + mapW + 4, mapY + mapH + 4, 0xFF705286);
         g.fill(mapX - 2, mapY - 2, mapX + mapW + 2, mapY + mapH + 2, 0xFFC7A372);
@@ -401,21 +428,22 @@ public final class AtlasMapScreen extends Screen {
                         // corner. No unknown terrain is synthesized.
                         int sampleX = wx, sampleZ = wz;
                         long id = key(sampleX, sampleZ, 1);
-                        Integer color = lod.color(wx, wz, step, tiles);
-                        if (color == null && budget > 0 && minecraft != null
+                        AtlasLevelOfDetail.Cell cell = lod.cell(wx, wz, step, tiles);
+                        if (cell == null && budget > 0 && minecraft != null
                                 && minecraft.level != null
                                 && minecraft.level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
                             // Only sample terrain already sent to the client.
                             budget--;
-                            color = sample(sampleX, sampleZ);
+                            int color = sample(sampleX, sampleZ);
                             tiles.put(id, color);
                             unsavedTiles.put(id, color);
                             lodDirty = true;
+                            cell = new AtlasLevelOfDetail.Cell(color, 1, step * step);
                         }
-                        if (color != null) {
+                        if (cell != null) {
                             int sx = mapX + px * drawSize;
                             int sy = mapY + py * drawSize;
-                            g.fill(sx, sy, sx + drawSize, sy + drawSize, color);
+                            drawCoverageCell(g, sx, sy, cell);
                         }
                     }
                 }
