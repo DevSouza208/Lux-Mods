@@ -29,14 +29,22 @@ public class LuxNpcContractSmoke {
         check(!NpcContractLifecycle.shouldRotate(accepted, 1000));
 
         check(NpcContractLifecycle.complete(accepted, another, true).equals(accepted));
-        check(NpcContractLifecycle.complete(accepted, player, false).equals(accepted));
-        var completed = NpcContractLifecycle.complete(accepted, player, true);
+        check(NpcContractLifecycle.complete(accepted, player, true).equals(accepted));
+        var settling = NpcContractLifecycle.beginSettlement(accepted, player);
+        check(settling.status() == NpcContractLifecycle.Status.SETTLING);
+        check(NpcContractLifecycle.validTransition(accepted, settling));
+        check(!NpcContractLifecycle.validTransition(accepted,
+                NpcContractLifecycle.complete(settling, player, true)));
+        check(!NpcContractLifecycle.shouldRotate(settling, 1000));
+        check(NpcContractLifecycle.beginSettlement(settling, player).equals(settling));
+        check(NpcContractLifecycle.complete(settling, player, false).equals(settling));
+        var completed = NpcContractLifecycle.complete(settling, player, true);
         check(completed.status() == NpcContractLifecycle.Status.COMPLETED);
         check(!NpcContractLifecycle.shouldRotate(completed, completed.expiresDay() - 1));
         check(NpcContractLifecycle.shouldRotate(completed, completed.expiresDay()));
         check(!NpcContractLifecycle.shouldRotate(completed, -1));
 
-        check(NpcContractLifecycle.validTransition(accepted, completed));
+        check(NpcContractLifecycle.validTransition(settling, completed));
         check(!NpcContractLifecycle.validTransition(completed, accepted));
         check(NpcContractLifecycle.complete(completed, player, true).equals(completed));
         System.out.println("Lux NPC contract lifecycle smoke OK");
