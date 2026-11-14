@@ -317,7 +317,7 @@ public final class AtlasMapScreen extends Screen {
             });
             tiles.putAll(unsavedTiles);
         }
-        int budget = 4;
+        int budget = 1; // one compressed region per client tick
         // Load from the player's camera center outward to avoid a visible
         // upper-left sweep when opening a large world map.
         int middleRx = AtlasTerrainCache.region(centerX);
