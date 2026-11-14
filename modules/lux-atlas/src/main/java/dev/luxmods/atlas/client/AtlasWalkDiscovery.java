@@ -9,7 +9,6 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 import java.util.LinkedHashMap;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -27,7 +26,6 @@ public final class AtlasWalkDiscovery {
     private static int sinceSave;
     private static int scanCursor;
     private static Path saveScope;
-    private static final Map<Path, Map<Long, Integer>> RETRY = new LinkedHashMap<>();
     private static final Map<Long, Integer> pending = new LinkedHashMap<>();
 
     private AtlasWalkDiscovery() {}
@@ -39,30 +37,17 @@ public final class AtlasWalkDiscovery {
 
     public static void flush() {
         if (!pending.isEmpty() && saveScope != null) {
-            if (AtlasTerrainCache.saveToScope(saveScope, pending)) {
-                pending.clear();
-                sinceSave = 0;
-            }
-        }
-        var iterator = RETRY.entrySet().iterator();
-        while (iterator.hasNext()) {
-            var item = iterator.next();
-            if (AtlasTerrainCache.saveToScope(item.getKey(), item.getValue())) {
-                iterator.remove();
-            }
+            // The writer keeps its own immutable-in-practice copy until the
+            // disk operation finishes; successful enqueue is NOT a disk save.
+            AtlasWriteQueue.enqueue(saveScope, pending);
+            pending.clear();
+            sinceSave = 0;
         }
     }
 
     private static void rotateWorld() {
-        // Files are always written to the captured source-world folder.
-        // Unsuccessful writes survive in RETRY instead of contaminating
-        // the destination dimension or silently disappearing.
+        // Queue entries retain their original save path across dimensions.
         flush();
-        if (!pending.isEmpty() && saveScope != null) {
-            RETRY.computeIfAbsent(saveScope, ignored -> new LinkedHashMap<>())
-                    .putAll(pending);
-        }
-        pending.clear();
         known.clear();
         world = null;
         saveScope = null;
@@ -94,6 +79,10 @@ public final class AtlasWalkDiscovery {
     /** Persist the last few seconds of exploration before leaving the server. */
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         flush();
+        if (!AtlasWriteQueue.drain(3000)) {
+            System.err.println("[Lux Atlas] Gravações pendentes ao desconectar: "
+                    + AtlasWriteQueue.status().message());
+        }
     }
 
     public static void onTick(ClientTickEvent.Post event) {
@@ -107,7 +96,7 @@ public final class AtlasWalkDiscovery {
             world = mc.level;
             AtlasTerrainCache.migrate(mc, world);
             saveScope = AtlasTerrainCache.scope(mc, world);
-            flush(); // retry writes from older worlds without mixing paths
+            AtlasWriteQueue.retry(); // retry older paths without mixing worlds
         }
 
         if (mc.player.tickCount % 40 != 0) return;
@@ -136,5 +125,6 @@ public final class AtlasWalkDiscovery {
         if (added > 0) sinceSave += 40;
         // Persist more frequently to avoid losing a short exploration session.
         if (sinceSave >= 80) flush();
+        if (mc.player.tickCount % 200 == 0) AtlasWriteQueue.retry();
     }
 }
