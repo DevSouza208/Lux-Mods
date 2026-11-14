@@ -20,10 +20,17 @@ public final class LuxDialogues {
         NeoForge.EVENT_BUS.addListener(GuardDialogueSessions::onTick);
         NeoForge.EVENT_BUS.addListener(PlayerQuestLedger::onClone);
         NeoForge.EVENT_BUS.addListener(LuxDialogues::onPlayerLogin);
+        NeoForge.EVENT_BUS.addListener(LuxDialogues::onPlayerRespawn);
         if (FMLEnvironment.dist == Dist.CLIENT) ClientSetup.init();
     }
 
     private static void onPlayerLogin(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+            DialogueNetwork.sendQuestLedger(player);
+        }
+    }
+
+    private static void onPlayerRespawn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
             DialogueNetwork.sendQuestLedger(player);
         }
