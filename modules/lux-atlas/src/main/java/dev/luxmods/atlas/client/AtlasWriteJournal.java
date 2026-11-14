@@ -3,7 +3,6 @@ package dev.luxmods.atlas.client;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -76,10 +75,9 @@ public final class AtlasWriteJournal {
         try {
             // CRC protects against torn or truncated writes.
             CRC32 crc = new CRC32();
+            byte[] pair = new byte[12];
             for (var entry : samples.entrySet()) {
-                ByteBuffer pair = ByteBuffer.allocate(12);
-                pair.putLong(entry.getKey()).putInt(entry.getValue());
-                crc.update(pair.array());
+                updateCrc(crc, pair, entry.getKey(), entry.getValue());
             }
             try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.WRITE);
                  DataOutputStream out = new DataOutputStream(
@@ -111,6 +109,7 @@ public final class AtlasWriteJournal {
     public static Map<Long, Integer> read(Path file) throws IOException {
         Map<Long, Integer> result = new HashMap<>();
         CRC32 crc = new CRC32();
+        byte[] pair = new byte[12];
         try (DataInputStream in = new DataInputStream(Files.newInputStream(file))) {
             if (in.readInt() != MAGIC) throw new IOException("Invalid Atlas journal header");
             int count = in.readInt();
@@ -126,9 +125,7 @@ public final class AtlasWriteJournal {
             for (int i = 0; i < count; i++) {
                 long key = in.readLong();
                 int value = in.readInt();
-                ByteBuffer pair = ByteBuffer.allocate(12);
-                pair.putLong(key).putInt(value);
-                crc.update(pair.array());
+                updateCrc(crc, pair, key, value);
                 if (result.put(key, value) != null)
                     throw new IOException("Duplicate Atlas journal coordinate");
             }
@@ -136,6 +133,19 @@ public final class AtlasWriteJournal {
                 throw new IOException("Damaged Atlas journal");
         }
         return result;
+    }
+
+    /** Reuse one 12-byte buffer per batch instead of allocating per sample. */
+    private static void updateCrc(CRC32 crc, byte[] pair, long key, int value) {
+        for (int i = 7; i >= 0; i--) {
+            pair[i] = (byte) key;
+            key >>>= 8;
+        }
+        for (int i = 11; i >= 8; i--) {
+            pair[i] = (byte) value;
+            value >>>= 8;
+        }
+        crc.update(pair, 0, pair.length);
     }
 
     public static List<Path> find(Path scope) throws IOException {
