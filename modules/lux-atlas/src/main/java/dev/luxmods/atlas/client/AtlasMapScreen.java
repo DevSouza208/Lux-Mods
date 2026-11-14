@@ -117,7 +117,7 @@ public final class AtlasMapScreen extends Screen {
     private void setZoom(int value) {
         zoomIndex = Math.max(0, Math.min(5, value));
         step = new int[]{16, 8, 4, 2, 1, 1}[zoomIndex];
-        // All zoom levels reuse the same world-aligned 2x2 terrain cache.
+        // Zoom changes only display resolution; archive keeps one-block detail.
     }
 
     private boolean inMap(double x, double y) {
@@ -332,12 +332,15 @@ public final class AtlasMapScreen extends Screen {
                     for (int px = 0; px < cellsX; px++) {
                         int wx = startX + px * step;
                         int wz = startZ + py * step;
-                        // Canonical 2-block cells are independent of viewport
-                        // offset and zoom; revisiting never redraws old terrain.
-                        int sampleX = Math.floorDiv(wx, 2) * 2;
-                        int sampleZ = Math.floorDiv(wz, 2) * 2;
-                        long id = key(sampleX, sampleZ, 2);
+                        // Exact one-block sample; previously archived 2x2
+                        // samples are used only as a fallback during migration.
+                        int sampleX = wx, sampleZ = wz;
+                        long id = key(sampleX, sampleZ, 1);
                         Integer color = tiles.get(id);
+                        if (color == null) {
+                            color = tiles.get(key(Math.floorDiv(wx, 2) * 2,
+                                    Math.floorDiv(wz, 2) * 2, 2));
+                        }
                         if (color == null && budget > 0 && minecraft != null
                                 && minecraft.level != null
                                 && minecraft.level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
