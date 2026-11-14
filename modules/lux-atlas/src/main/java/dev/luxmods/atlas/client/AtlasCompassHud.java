@@ -73,7 +73,8 @@ public final class AtlasCompassHud {
             boolean hostile = entity instanceof Monster monster && monster.isAlive();
             boolean ownedHorse = entity instanceof AbstractHorse horse
                     && horse.isAlive() && horse.isTamed()
-                    && player.getUUID().equals(horse.getOwnerUUID());
+                    && (player.getUUID().equals(horse.getOwnerUUID())
+                        || player.getVehicle() == horse);
             if (!hostile && !ownedHorse) continue;
             if (hostile && ++threats > 24) continue; // avoid unreadable dot clusters
             double dx = entity.getX() - player.getX();
