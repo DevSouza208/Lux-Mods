@@ -18,12 +18,17 @@ public final class AtlasWalkDiscovery {
     private static ClientLevel world;
     private static final Map<Long, Integer> known = new LinkedHashMap<>(2048, 0.75F, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
-            return size() > 120_000;
+            return size() > 400_000;
         }
     };
     private static int sinceSave;
 
     private AtlasWalkDiscovery() {}
+
+    /** Bring recently explored blocks into an already open Atlas, without disk IO. */
+    public static void mergeInto(Map<Long, Integer> target) {
+        target.putAll(known);
+    }
 
     public static void flush() {
         Minecraft mc = Minecraft.getInstance();
@@ -49,28 +54,31 @@ public final class AtlasWalkDiscovery {
         }
 
         if (mc.player.tickCount % 40 != 0) return;
-        // 9x9 samples around the player at step=2; include both sample
-        // parities so map panning does not leave alternating blank cells.
+        // Explore up to 24 blocks around the player, sampling on a stable
+        // 2x2 world-aligned grid regardless of the player position parity.
         final int step = 2;
         int px = mc.player.getBlockX();
         int pz = mc.player.getBlockZ();
         int added = 0;
-        for (int dz = -8; dz <= 8; dz += step) {
-            for (int dx = -8; dx <= 8; dx += step) {
-                for (int oz = 0; oz < 2; oz++) {
-                    for (int ox = 0; ox < 2; ox++) {
-                        int wx = px + dx + ox, wz = pz + dz + oz;
-                        long key = AtlasMapScreen.key(wx, wz, step);
-                        if (known.containsKey(key) || !world.getChunkSource().hasChunk(wx >> 4, wz >> 4)) continue;
-                        int y = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
-                        if (y <= world.getMinBuildHeight() || y >= world.getMaxBuildHeight()) continue;
-                        BlockPos pos = new BlockPos(wx, y - 1, wz);
-                        int color = world.getBlockState(pos).getMapColor(world, pos).col;
-                        if (color == 0) color = 0x576C52;
-                        known.put(key, 0xFF000000 | color);
-                        added++;
-                    }
-                }
+        int baseX = Math.floorDiv(px, step) * step;
+        int baseZ = Math.floorDiv(pz, step) * step;
+        for (int dz = -24; dz <= 24; dz += step) {
+            for (int dx = -24; dx <= 24; dx += step) {
+                int wx = baseX + dx, wz = baseZ + dz;
+                long key = AtlasMapScreen.key(wx, wz, step);
+                if (known.containsKey(key) || !world.getChunkSource().hasChunk(wx >> 4, wz >> 4)) continue;
+                int y = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
+                if (y <= world.getMinBuildHeight() || y >= world.getMaxBuildHeight()) continue;
+                BlockPos pos = new BlockPos(wx, y - 1, wz);
+                int color = world.getBlockState(pos).getMapColor(world, pos).col;
+                if (color == 0) color = 0x576C52;
+                int relief = (y - world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1)) * 5;
+                int shade = Math.max(-38, Math.min(38, (y - 72) / 4 + relief));
+                int red = Math.max(0, Math.min(255, ((color >> 16) & 255) + shade));
+                int green = Math.max(0, Math.min(255, ((color >> 8) & 255) + shade));
+                int blue = Math.max(0, Math.min(255, (color & 255) + shade));
+                known.put(key, 0xFF000000 | (red << 16) | (green << 8) | blue);
+                added++;
             }
         }
         if (added > 0) sinceSave += 40;
