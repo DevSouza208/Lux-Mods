@@ -84,8 +84,12 @@ public final class AtlasWalkDiscovery {
     private static void rotateWorld() {
         flush();
         if (!pending.isEmpty() && saveScope != null) {
-            UNSUBMITTED.computeIfAbsent(saveScope, ignored -> new LinkedHashMap<>())
-                    .putAll(pending);
+            // Failed screen saves may already contain newer edits for the
+            // same coordinates. Preserve them when rotating dimensions.
+            Map<Long, Integer> older = new LinkedHashMap<>(pending);
+            Map<Long, Integer> newer = UNSUBMITTED.get(saveScope);
+            if (newer != null) older.putAll(newer);
+            UNSUBMITTED.put(saveScope, older);
         }
         pending.clear();
         known.clear();
