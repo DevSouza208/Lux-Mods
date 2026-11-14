@@ -2,6 +2,9 @@ package dev.luxmods.dialogues.network;
 
 import dev.luxmods.dialogues.LuxDialogues;
 import dev.luxmods.dialogues.DialogueSessions;
+import dev.luxmods.dialogues.DialogueNpcTypes;
+import dev.luxmods.dialogues.GuardDialogueSessions;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -44,7 +47,10 @@ public final class DialogueNetwork {
     private static void endDialogue(EndDialogue payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)) return;
         Entity entity = player.level().getEntity(payload.entityId());
+        if (entity == null || entity.distanceToSqr(player) > 64D) return;
         if (entity instanceof Villager villager) DialogueSessions.finish(villager, player);
+        else if (entity instanceof Mob guard && DialogueNpcTypes.isGuard(guard))
+            GuardDialogueSessions.finish(guard, player);
     }
 
     private static void openShop(OpenShop payload, IPayloadContext context) {
