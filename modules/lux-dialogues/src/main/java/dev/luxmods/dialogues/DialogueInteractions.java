@@ -14,7 +14,7 @@ public final class DialogueInteractions {
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
         var npc = event.getTarget();
         if (!DialogueNpcTypes.supported(npc) || event.getHand() != InteractionHand.MAIN_HAND) return;
-        if (event.getEntity().isShiftKeyDown() || !event.getEntity().getMainHandItem().isEmpty()) return;
+        if (event.getEntity().isShiftKeyDown()) return;
         if (DialogueNpcTypes.guardInCombat(npc)) return;
         if (!event.getLevel().isClientSide()) {
             if (event.getEntity() instanceof ServerPlayer player && player.distanceToSqr(npc) <= 64D) {
