@@ -25,20 +25,9 @@ public final class AtlasMapScreen extends Screen {
     private static final int BG = 0xF0171425;
     private static final int DARK = 0xED242032;
     private static final int EDGE = 0xFFB88BDD;
-    private final Map<Long, Integer> tiles = new LinkedHashMap<>(4096, 0.75F, true) {
-        @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
-            if (size() <= 400_000) return false;
-            // The disk archive is authoritative. Evicting any tile means its
-            // region must be eligible for loading again on a later visit.
-            int bx = (int) ((eldest.getKey() >>> 36) & 0x0fffffffL);
-            int bz = (int) ((eldest.getKey() >>> 8) & 0x0fffffffL);
-            bx = (bx << 4) >> 4;
-            bz = (bz << 4) >> 4;
-            loadedRegions.remove(AtlasTerrainCache.regionKey(
-                    AtlasTerrainCache.region(bx), AtlasTerrainCache.region(bz)));
-            return true;
-        }
-    };
+    // Explicitly pruned by visible region. LRU eviction while loading a
+    // region caused the same region to be reloaded every frame on large maps.
+    private final Map<Long, Integer> tiles = new LinkedHashMap<>();
     // LRU is just a RAM optimization; every discovered cell persists on disk.
     private final Set<Long> loadedRegions = new HashSet<>();
     private final Map<Long, Integer> unsavedTiles = new LinkedHashMap<>();
@@ -55,7 +44,8 @@ public final class AtlasMapScreen extends Screen {
     private boolean terrainLoaded;
     private int lastMergedTick = -1;
     private int autosaveTicks;
-    private int cachedViewportRx = Integer.MIN_VALUE, cachedViewportRz = Integer.MIN_VALUE;
+    private int cachedMinRx = Integer.MIN_VALUE, cachedMinRz = Integer.MIN_VALUE;
+    private int cachedMaxRx = Integer.MIN_VALUE, cachedMaxRz = Integer.MIN_VALUE;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
     private boolean showPlayer = true;
@@ -299,11 +289,12 @@ public final class AtlasMapScreen extends Screen {
         int maxRz = AtlasTerrainCache.region(endZ);
         // Drop only out-of-view RAM copies, never explored files on disk.
         // Returning to an older area forces its regions to be reloaded.
-        int centerRx = AtlasTerrainCache.region(centerX);
-        int centerRz = AtlasTerrainCache.region(centerZ);
-        if (centerRx != cachedViewportRx || centerRz != cachedViewportRz) {
-            cachedViewportRx = centerRx;
-            cachedViewportRz = centerRz;
+        if (minRx != cachedMinRx || minRz != cachedMinRz
+                || maxRx != cachedMaxRx || maxRz != cachedMaxRz) {
+            cachedMinRx = minRx;
+            cachedMinRz = minRz;
+            cachedMaxRx = maxRx;
+            cachedMaxRz = maxRz;
             final int left = minRx - 1, right = maxRx + 1;
             final int top = minRz - 1, bottom = maxRz + 1;
             loadedRegions.removeIf(id -> {
@@ -374,9 +365,7 @@ public final class AtlasMapScreen extends Screen {
             lastMergedTick = minecraft.player.tickCount;
             AtlasWalkDiscovery.mergeInto(tiles);
         }
-        // Disk-backed explored regions are loaded lazily, even when unloaded
-        // by Minecraft itself. The player can pan to previously visited land.
-        loadVisibleRegions(startX, startZ);
+        // Region IO occurs in tick(); rendering only reads the RAM snapshot.
         lastStartX = startX;
         lastStartZ = startZ;
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
@@ -506,6 +495,9 @@ public final class AtlasMapScreen extends Screen {
     }
 
     @Override public void tick() {
+        // Region files are loaded during screen ticks, not once per rendered
+        // frame, so uncached disk IO does not repeat at the monitor refresh rate.
+        loadVisibleRegions(startX(), startZ());
         if (++autosaveTicks >= 200) {
             autosaveTicks = 0;
             if (minecraft != null && minecraft.level != null && !unsavedTiles.isEmpty()
