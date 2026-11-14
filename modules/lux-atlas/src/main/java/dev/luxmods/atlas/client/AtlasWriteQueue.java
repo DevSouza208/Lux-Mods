@@ -32,6 +32,7 @@ public final class AtlasWriteQueue {
     private static boolean failed;
     private static String error = "";
     private static long savedBatches;
+    private static int activeSamples;
 
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -116,6 +117,7 @@ public final class AtlasWriteQueue {
                 journal = next.getKey();
                 job = next.getValue();
                 iterator.remove();
+                activeSamples = job.samples();
             }
             boolean ok = false;
             try {
@@ -128,10 +130,15 @@ public final class AtlasWriteQueue {
                 ok = false;
             }
             synchronized (LOCK) {
+                activeSamples = 0;
                 if (ok) {
                     savedBatches++;
-                    failed = false;
-                    error = "";
+                    // A successful batch from another scope must not erase
+                    // an earlier recovery error while pending work remains.
+                    if (PENDING.isEmpty()) {
+                        failed = false;
+                        error = "";
+                    }
                 } else {
                     // Reinsert failed journal at FRONT to preserve update
                     // ordering; never process later writes ahead of it.
@@ -159,7 +166,7 @@ public final class AtlasWriteQueue {
 
     public static Status status() {
         synchronized (LOCK) {
-            int count = 0;
+            int count = activeSamples;
             for (Job job : PENDING.values()) count += job.samples();
             return new Status(count, running, failed, error, savedBatches);
         }
