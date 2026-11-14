@@ -36,6 +36,9 @@ public final class AtlasMapScreen extends Screen {
     private final Map<Long, Integer> failedRegionRetry = new LinkedHashMap<>();
     private int screenTicks;
     private final Map<Long, Integer> unsavedTiles = new LinkedHashMap<>();
+    // Visual overlay outlives autosave. A successful journal enqueue clears
+    // dirty tiles but must not revert the still-open map to older colors.
+    private final Map<Long, Integer> screenSamples = new LinkedHashMap<>();
     private Path openedScope;
     private final List<AtlasMarkers.Marker> markers = new ArrayList<>();
 
@@ -314,7 +317,7 @@ public final class AtlasMapScreen extends Screen {
                 int rx = AtlasTerrainCache.region(bx), rz = AtlasTerrainCache.region(bz);
                 return rx < left || rx > right || rz < top || rz > bottom;
             });
-            tiles.putAll(unsavedTiles);
+            tiles.putAll(screenSamples);
             lodDirty = true;
         }
         int budget = 1; // one compressed region per client tick
@@ -342,7 +345,7 @@ public final class AtlasMapScreen extends Screen {
                             // walking collector and this screen's edits.
                             // Precedence: persisted region < live walk < local edits.
                             AtlasWalkDiscovery.mergeInto(tiles);
-                            tiles.putAll(unsavedTiles);
+                            tiles.putAll(screenSamples);
                             lodDirty = true;
                         } else {
                             failedRegionRetry.put(regionId, screenTicks + 100);
@@ -411,7 +414,7 @@ public final class AtlasMapScreen extends Screen {
             AtlasWalkDiscovery.mergeInto(tiles);
             // This screen's latest observations always win over background
             // samples until its journal has been accepted.
-            tiles.putAll(unsavedTiles);
+            tiles.putAll(screenSamples);
             lodDirty = true;
         }
         // Region IO occurs in tick(); rendering only reads the RAM snapshot.
@@ -439,6 +442,7 @@ public final class AtlasMapScreen extends Screen {
                             budget--;
                             int color = sample(sampleX, sampleZ);
                             tiles.put(id, color);
+                            screenSamples.put(id, color);
                             unsavedTiles.put(id, color);
                             lodDirty = true;
                             cell = new AtlasLevelOfDetail.Cell(color, 1, step * step);
