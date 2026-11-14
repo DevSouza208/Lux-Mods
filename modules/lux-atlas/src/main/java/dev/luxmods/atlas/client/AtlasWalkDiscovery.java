@@ -27,6 +27,9 @@ public final class AtlasWalkDiscovery {
     private static int scanCursor;
     private static Path saveScope;
     private static final Map<Long, Integer> pending = new LinkedHashMap<>();
+    // If even the durable journal cannot be created, keep the dirty samples
+    // associated with the original world and retry on subsequent ticks.
+    private static final Map<Path, Map<Long, Integer>> UNSUBMITTED = new LinkedHashMap<>();
 
     private AtlasWalkDiscovery() {}
 
@@ -36,9 +39,16 @@ public final class AtlasWalkDiscovery {
     }
 
     public static void flush() {
+        // Retry older world samples before the current world. Never relabel
+        // failed observations as belonging to the new dimension.
+        var iterator = UNSUBMITTED.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (AtlasWriteQueue.enqueue(entry.getKey(), entry.getValue()))
+                iterator.remove();
+        }
         if (!pending.isEmpty() && saveScope != null) {
-            // The writer keeps its own immutable-in-practice copy until the
-            // disk operation finishes; successful enqueue is NOT a disk save.
+            // Returning true means journaled, not yet applied to regions.
             if (AtlasWriteQueue.enqueue(saveScope, pending)) {
                 pending.clear();
                 sinceSave = 0;
@@ -47,8 +57,12 @@ public final class AtlasWalkDiscovery {
     }
 
     private static void rotateWorld() {
-        // Queue entries retain their original save path across dimensions.
         flush();
+        if (!pending.isEmpty() && saveScope != null) {
+            UNSUBMITTED.computeIfAbsent(saveScope, ignored -> new LinkedHashMap<>())
+                    .putAll(pending);
+        }
+        pending.clear();
         known.clear();
         world = null;
         saveScope = null;
@@ -127,6 +141,9 @@ public final class AtlasWalkDiscovery {
         if (added > 0) sinceSave += 40;
         // Persist more frequently to avoid losing a short exploration session.
         if (sinceSave >= 80) flush();
-        if (mc.player.tickCount % 200 == 0) AtlasWriteQueue.retry();
+        if (mc.player.tickCount % 200 == 0) {
+            flush();
+            AtlasWriteQueue.retry();
+        }
     }
 }
