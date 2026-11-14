@@ -76,7 +76,7 @@ public final class VillagerDialogueScreen extends Screen {
                 (ContractUiState.canAccept(contractSnapshot.status()) ? 1 : 0)
                 + (ContractUiState.canDeliver(contractSnapshot.status(), contractSnapshot.mine()) ? 1 : 0);
         int count = contractMenu ? 2 + availableActions
-                : (replied ? 2 : 3 + (canRequestContract() ? 1 : 0) + (hasShop() ? 1 : 0) - 1);
+                : (replied ? 2 : 3 + (canRequestContract() ? 1 : 0) + (hasShop() ? 1 : 0));
         int buttonWidth = Math.min(116, Math.max(48, (width - 20 - (count - 1) * gap) / count));
         int total = count * buttonWidth + (count - 1) * gap;
         int x = Math.max(8, (width - total) / 2);
