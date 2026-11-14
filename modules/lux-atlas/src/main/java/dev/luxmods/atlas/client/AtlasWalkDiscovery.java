@@ -19,6 +19,9 @@ import java.util.Map;
  */
 public final class AtlasWalkDiscovery {
     private static ClientLevel world;
+    // Do not resume scanning a disconnected level that remains attached to
+    // Minecraft for a few client ticks during the logout transition.
+    private static ClientLevel disconnectedWorld;
     private static final Map<Long, Integer> known = new LinkedHashMap<>(2048, 0.75F, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
             return size() > 400_000;
@@ -123,11 +126,14 @@ public final class AtlasWalkDiscovery {
         // The client can retain its old ClientLevel briefly after logout.
         // Clear its live samples immediately so opening the map during the
         // transition cannot merge another server's exploration into it.
+        disconnectedWorld = world;
         rotateWorld();
     }
 
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.level == disconnectedWorld && disconnectedWorld != null) return;
+        if (mc.level != disconnectedWorld) disconnectedWorld = null;
         if (mc.level == null || mc.player == null) {
             if (world != null) rotateWorld();
             return;
