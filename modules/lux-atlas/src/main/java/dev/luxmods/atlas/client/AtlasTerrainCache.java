@@ -160,14 +160,8 @@ public final class AtlasTerrainCache {
             readRegion(path, rx, rz, contents);
             boolean changed;
             if (missingOnly) {
-                // Legacy snapshots never replace newer samples already archived.
-                changed = false;
-                for (var entry : batch.getValue().entrySet()) {
-                    if (!contents.containsKey(entry.getKey())) {
-                        contents.put(entry.getKey(), entry.getValue());
-                        changed = true;
-                    }
-                }
+                // Import only gaps; an already explored newer region wins.
+                changed = AtlasRegionMerge.mergeMissing(contents, batch.getValue());
             } else {
                 changed = AtlasRegionMerge.merge(contents, batch.getValue());
             }
