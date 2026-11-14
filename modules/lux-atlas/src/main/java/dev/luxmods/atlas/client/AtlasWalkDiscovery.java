@@ -25,6 +25,7 @@ public final class AtlasWalkDiscovery {
     };
     private static int sinceSave;
     private static int scanCursor;
+    private static int refreshCursor;
     private static Path saveScope;
     private static final Map<Long, Integer> pending = new LinkedHashMap<>();
     // If even the durable journal cannot be created, keep the dirty samples
@@ -78,12 +79,13 @@ public final class AtlasWalkDiscovery {
         saveScope = null;
         sinceSave = 0;
         scanCursor = 0;
+        refreshCursor = 0;
     }
 
-    private static boolean sampleOne(int wx, int wz) {
+    private static boolean sampleOne(int wx, int wz, boolean refresh) {
         long key = AtlasMapScreen.key(wx, wz, 1);
-        if (known.containsKey(key) || world == null
-                || !world.getChunkSource().hasChunk(wx >> 4, wz >> 4)) return false;
+        if (world == null || !world.getChunkSource().hasChunk(wx >> 4, wz >> 4)
+                || (!refresh && known.containsKey(key))) return false;
         int y = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
         if (y <= world.getMinBuildHeight() || y >= world.getMaxBuildHeight()) return false;
         BlockPos pos = new BlockPos(wx, y - 1, wz);
@@ -96,7 +98,10 @@ public final class AtlasWalkDiscovery {
         int green = Math.max(0, Math.min(255, ((color >> 8) & 255) + shade));
         int blue = Math.max(0, Math.min(255, (color & 255) + shade));
         int sample = 0xFF000000 | (red << 16) | (green << 8) | blue;
-        known.put(key, sample);
+        Integer previous = known.put(key, sample);
+        // Revisits detect modifications, but unchanged terrain never gets
+        // pointlessly re-journaled. Colors are stable across the same sampler.
+        if (previous != null && previous == sample) return false;
         pending.put(key, sample);
         return true;
     }
@@ -135,8 +140,18 @@ public final class AtlasWalkDiscovery {
         int added = 0;
         for (int dz = -16; dz <= 16; dz += step) {
             for (int dx = -16; dx <= 16; dx += step) {
-                if (sampleOne(baseX + dx, baseZ + dz)) added++;
+                if (sampleOne(baseX + dx, baseZ + dz, false)) added++;
             }
+        }
+        // Refresh 64 nearby coordinates per sampling cycle. This discovers
+        // roads, bridges and buildings erected AFTER the terrain was mapped,
+        // without recalculating the entire 33x33 neighborhood each time.
+        final int revisitSide = 33;
+        for (int i = 0; i < 64; i++) {
+            int index = Math.floorMod(refreshCursor++, revisitSide * revisitSide);
+            int dx = index % revisitSide - revisitSide / 2;
+            int dz = index / revisitSide - revisitSide / 2;
+            if (sampleOne(baseX + dx, baseZ + dz, true)) added++;
         }
         final int radius = 96;
         final int side = radius / step * 2 + 1;
@@ -146,7 +161,7 @@ public final class AtlasWalkDiscovery {
             int index = scanCursor++ % total;
             int dx = (index % side - side / 2) * step;
             int dz = (index / side - side / 2) * step;
-            if (sampleOne(baseX + dx, baseZ + dz)) added++;
+            if (sampleOne(baseX + dx, baseZ + dz, false)) added++;
         }
         if (added > 0) sinceSave += 40;
         // Persist more frequently to avoid losing a short exploration session.
