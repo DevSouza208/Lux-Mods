@@ -18,8 +18,10 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasLevelOfDetail.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasRegionMerge.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasWriteJournal.java \
+  modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/NpcContractLifecycle.java \
   modules/lux-hud/src/main/java/dev/luxmods/hud/HudBarMath.java \
   modules/lux-hud/src/main/java/dev/luxmods/hud/HudPartyCodec.java \
+  scripts/src/LuxNpcContractSmoke.java \
   scripts/src/LuxHudSmoke.java \
   scripts/src/LuxCompassSmoke.java \
   scripts/src/LuxAtlasViewportSmoke.java \
@@ -40,3 +42,4 @@ java -cp "$TMP" LuxAtlasRegionMergeSmoke
 java -cp "$TMP" LuxAtlasJournalSmoke
 java -cp "$TMP" LuxAtlasTerrainColorSmoke
 java -cp "$TMP" LuxAtlasTileLayersSmoke
+java -cp "$TMP" LuxNpcContractSmoke
