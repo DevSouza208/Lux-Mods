@@ -1,6 +1,7 @@
 package dev.luxmods.engine.api;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,21 @@ public final class LuxQuestTracker {
         for (Contract contract : KNOWN.values())
             if (contract.dimension().equals(dimension)) result.add(contract);
         return List.copyOf(result);
+    }
+
+    /** Nearest-first for the compact Atlas mission panel; avoids overflow hiding local quests. */
+    public static synchronized List<Contract> nearest(String dimension, int playerX, int playerZ) {
+        List<Contract> result = new ArrayList<>(inDimension(dimension));
+        result.sort(Comparator
+                .comparingLong((Contract contract) -> distanceSquared(contract, playerX, playerZ))
+                .thenComparing(contract -> contract.npc().toString()));
+        return List.copyOf(result);
+    }
+
+    private static long distanceSquared(Contract contract, int x, int z) {
+        long dx = (long) contract.x() - x;
+        long dz = (long) contract.z() - z;
+        return dx * dx + dz * dz;
     }
 
     public static synchronized List<Contract> all() {
