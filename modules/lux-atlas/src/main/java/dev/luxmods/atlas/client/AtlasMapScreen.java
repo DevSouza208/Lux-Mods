@@ -1,6 +1,7 @@
 package dev.luxmods.atlas.client;
 
 import dev.luxmods.engine.client.LuxGuiStyle;
+import dev.luxmods.engine.api.LuxQuestTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -59,6 +60,7 @@ public final class AtlasMapScreen extends Screen {
     private boolean showTerrain = true;
     private boolean showPlayer = true;
     private boolean showGrid;
+    private boolean questsTab;
     private int lastStartX = Integer.MIN_VALUE, lastStartZ = Integer.MIN_VALUE;
     private String status = "Exploracao salva por regioes";
 
@@ -98,8 +100,14 @@ public final class AtlasMapScreen extends Screen {
 
     private void addControls() {
         clearWidgets();
-        addButton(width / 2 - 174, 12, 105, "Missões", b -> status = "Missões: em desenvolvimento");
-        addButton(width / 2 - 52, 12, 105, "Mapa", b -> status = "Mapa ativo");
+        addButton(width / 2 - 174, 12, 105, "Missões", b -> {
+            questsTab = true;
+            status = "Missões conhecidas nesta sessão";
+        });
+        addButton(width / 2 - 52, 12, 105, "Mapa", b -> {
+            questsTab = false;
+            status = "Mapa ativo";
+        });
         addButton(width / 2 + 70, 12, 105, "Upgrades", b -> status = "Upgrades: em desenvolvimento");
         addButton(Math.max(mapX + 7, mapX + mapW - 184), mapY + 7, 88, "+ Marcador", b -> addMarker());
         addButton(Math.max(mapX + 98, mapX + mapW - 93), mapY + 7, 84, "- Marcador", b -> removeMarker());
@@ -211,7 +219,21 @@ public final class AtlasMapScreen extends Screen {
             panRemainderZ = 0;
             return true;
         }
-        if (button == 0 && x < mapX && y > 90 && y < 175) {
+        if (button == 0 && questsTab && x < mapX && y >= 95) {
+            if (minecraft == null || minecraft.level == null) return false;
+            var active = LuxQuestTracker.inDimension(minecraft.level.dimension().location().toString());
+            int index = ((int) y - 100) / 28;
+            if (index >= 0 && index < active.size() && index < 5) {
+                var quest = active.get(index);
+                centerX = quest.x();
+                centerZ = quest.z();
+                selectionX = centerX;
+                selectionZ = centerZ;
+                status = "Centralizado no NPC do contrato";
+                return true;
+            }
+        }
+        if (button == 0 && !questsTab && x < mapX && y > 90 && y < 175) {
             int row = ((int) y - 99) / 22;
             switch (row) {
                 case 0 -> showPlayer = !showPlayer;
@@ -475,6 +497,17 @@ public final class AtlasMapScreen extends Screen {
                             my - 4, marker.color(), true);
                 }
             }
+            // Contracts received from the authoritative NPC server snapshot.
+            // Only known positions are marked, never invented coordinates.
+            if (minecraft.level != null) {
+                String dimension = minecraft.level.dimension().location().toString();
+                for (var quest : LuxQuestTracker.inDimension(dimension)) {
+                    int qx = screenX(quest.x()), qz = screenZ(quest.z());
+                    if (qx < mapX || qx >= mapX + mapW || qz < mapY || qz >= mapY + mapH) continue;
+                    g.fill(qx - 5, qz - 5, qx + 6, qz + 6, 0xFF3B1D4C);
+                    g.drawString(font, "!", qx - 2, qz - 4, 0xFFFFD68A, true);
+                }
+            }
             if (showPlayer && minecraft.player != null) {
                 int px = screenX(minecraft.player.getBlockX());
                 int py = screenZ(minecraft.player.getBlockZ());
@@ -500,11 +533,34 @@ public final class AtlasMapScreen extends Screen {
         g.fill(0, 43, width, 45, EDGE);
         label(g, "LUX ATLAS", 17, 19, LuxGuiStyle.AMBER);
         g.fill(7, 54, mapX - 9, height - 42, DARK);
-        label(g, "CAMADAS", 15, 69, LuxGuiStyle.FOREGROUND);
-        String[] options = {"Jogador", "Marcadores", "Terreno", "Grade"};
-        boolean[] enabled = {showPlayer, showMarkers, showTerrain, showGrid};
-        for (int i = 0; i < 4; i++) {
-            label(g, (enabled[i] ? "[x] " : "[ ] ") + options[i], 14, 99 + i * 22, LuxGuiStyle.MUTED_TEXT);
+        if (questsTab) {
+            label(g, "MISSÕES", 15, 69, LuxGuiStyle.AMBER);
+            var quests = minecraft == null || minecraft.level == null
+                    ? List.<LuxQuestTracker.Contract>of()
+                    : LuxQuestTracker.inDimension(minecraft.level.dimension().location().toString());
+            if (quests.isEmpty()) label(g, "Nenhuma conhecida", 14, 99, LuxGuiStyle.MUTED_TEXT);
+            int line = 0;
+            for (var quest : quests) {
+                if (line >= 5) break;
+                String item = switch (quest.objective()) {
+                    case "minecraft:coal" -> "Carvão";
+                    case "minecraft:bread" -> "Pão";
+                    case "minecraft:iron_ingot" -> "Ferro";
+                    default -> "Material";
+                };
+                label(g, quest.quantity() + "x " + item, 14, 100 + 28 * line, LuxGuiStyle.FOREGROUND);
+                label(g, quest.status() == 4 ? "Em revisão" : "Ver NPC no mapa",
+                        14, 112 + 28 * line, LuxGuiStyle.MUTED_TEXT);
+                line++;
+            }
+        } else {
+            label(g, "CAMADAS", 15, 69, LuxGuiStyle.FOREGROUND);
+            String[] options = {"Jogador", "Marcadores", "Terreno", "Grade"};
+            boolean[] enabled = {showPlayer, showMarkers, showTerrain, showGrid};
+            for (int i = 0; i < 4; i++) {
+                label(g, (enabled[i] ? "[x] " : "[ ] ") + options[i],
+                        14, 99 + i * 22, LuxGuiStyle.MUTED_TEXT);
+            }
         }
         // Explain partial pixels so a single explored point is never mistaken
         // for an entirely surveyed regional cell.
