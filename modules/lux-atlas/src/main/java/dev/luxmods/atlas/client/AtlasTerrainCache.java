@@ -167,15 +167,18 @@ public final class AtlasTerrainCache {
      * Read one 128-block region on demand. Caller tracks which regions have
      * already been loaded for its current view; the method does no chunk IO.
      */
-    public static void loadRegion(Minecraft mc, Level level, int rx, int rz,
-                                  Map<Long, Integer> target) {
+    public static boolean loadRegion(Minecraft mc, Level level, int rx, int rz,
+                                     Map<Long, Integer> target) {
         migrate(mc, level);
         try {
             Map<Long, Integer> region = new HashMap<>();
             readRegion(regionPath(regionFolder(mc, level), rx, rz), region);
             target.putAll(region);
+            return true;
         } catch (IOException ignored) {
-            // Corrupt region affects only this area, not other explored regions.
+            // Do not mark corrupt or temporarily unreadable regions as loaded.
+            // The map can retry later while all other regions remain visible.
+            return false;
         }
     }
 
