@@ -211,8 +211,9 @@ public final class AtlasMapScreen extends Screen {
         double best = Double.MAX_VALUE;
         for (var marker : markers) {
             if (!marker.dimension().equals(dim)) continue;
-            double distance = Math.pow(marker.x() - selectionX, 2)
-                    + Math.pow(marker.z() - selectionZ, 2);
+            double dx = (double) marker.x() - selectionX;
+            double dz = (double) marker.z() - selectionZ;
+            double distance = dx * dx + dz * dz;
             if (distance < best) {
                 best = distance;
                 closest = marker;
