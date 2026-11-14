@@ -79,7 +79,7 @@ public final class DialogueClient {
         if (!(event.getTarget() instanceof LivingEntity npc)
                 || !DialogueNpcTypes.supported(npc)
                 || event.getHand() != InteractionHand.MAIN_HAND) return;
-        if (event.getEntity().isShiftKeyDown() || !event.getEntity().getMainHandItem().isEmpty()) return;
+        if (event.getEntity().isShiftKeyDown()) return;
         if (DialogueNpcTypes.guardInCombat(npc) || !event.getLevel().isClientSide()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != null) return;
