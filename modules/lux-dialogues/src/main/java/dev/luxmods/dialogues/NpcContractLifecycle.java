@@ -94,7 +94,7 @@ public final class NpcContractLifecycle {
      * reward. Append-only enum keeps historical status ordinals unchanged.
      */
     public static Offer beginSettlement(Offer offer, UUID player) {
-        if (offer == null || player == null || offer.status() != Status.SETTLING
+        if (offer == null || player == null || offer.status() != Status.ACCEPTED
                 || !player.equals(offer.claimant())) return offer;
         return new Offer(offer.npcId(), offer.issuedDay(), offer.expiresDay(),
                 offer.objective(), offer.quantity(), Status.SETTLING, player);
