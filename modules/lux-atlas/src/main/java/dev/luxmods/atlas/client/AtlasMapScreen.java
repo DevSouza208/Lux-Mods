@@ -478,7 +478,7 @@ public final class AtlasMapScreen extends Screen {
         int startX = startX();
         int startZ = startZ();
         // Keep the open map current when the player explores without closing it.
-        if (minecraft != null && minecraft.player != null
+        if (isOriginalWorld() && minecraft.player != null
                 && minecraft.player.tickCount != lastMergedTick
                 && minecraft.player.tickCount % 40 == 0) {
             lastMergedTick = minecraft.player.tickCount;
