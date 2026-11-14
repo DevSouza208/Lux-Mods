@@ -527,7 +527,12 @@ public final class AtlasMapScreen extends Screen {
         drawMap(g);
         label(g, "N", mapX + mapW / 2, mapY + 34, LuxGuiStyle.AMBER);
         label(g, "X " + selectionX + "  Z " + selectionZ, mapX + 12, mapY + mapH - 16, 0xFFF2E9FF);
-        label(g, status, Math.max(186, width / 2 - 170), height - 23, LuxGuiStyle.MUTED_TEXT);
+        AtlasWriteQueue.Status disk = AtlasWriteQueue.status();
+        String currentStatus = disk.error() ? "ERRO NO MAPA: " + disk.message()
+                : disk.pendingSamples() > 0 || disk.writing() ? "Salvando exploracao..."
+                : status;
+        label(g, currentStatus, Math.max(186, width / 2 - 170), height - 23,
+                disk.error() ? 0xFFFF8787 : LuxGuiStyle.MUTED_TEXT);
         super.render(g, mouseX, mouseY, partialTick);
     }
 
@@ -537,12 +542,16 @@ public final class AtlasMapScreen extends Screen {
         // No blur: our render() draws the atlas background, terrain, and side panels.
     }
 
+    private void submitDirtyTiles() {
+        if (minecraft == null || minecraft.level == null || unsavedTiles.isEmpty()) return;
+        AtlasWriteQueue.enqueue(AtlasTerrainCache.scope(minecraft, minecraft.level), unsavedTiles);
+        unsavedTiles.clear();
+    }
+
     @Override public void onClose() {
         if (minecraft != null && minecraft.level != null) {
             AtlasWalkDiscovery.flush();
-            if (AtlasTerrainCache.save(minecraft, minecraft.level, unsavedTiles)) {
-                unsavedTiles.clear();
-            }
+            submitDirtyTiles();
         }
         super.onClose();
     }
@@ -560,10 +569,8 @@ public final class AtlasMapScreen extends Screen {
         }
         if (++autosaveTicks >= 200) {
             autosaveTicks = 0;
-            if (minecraft != null && minecraft.level != null && !unsavedTiles.isEmpty()
-                    && AtlasTerrainCache.save(minecraft, minecraft.level, unsavedTiles)) {
-                unsavedTiles.clear();
-            }
+            submitDirtyTiles();
+            AtlasWriteQueue.retry();
         }
     }
 
