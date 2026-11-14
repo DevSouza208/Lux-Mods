@@ -6,6 +6,7 @@ import dev.luxmods.dialogues.DialogueNpcTypes;
 import dev.luxmods.dialogues.GuardDialogueSessions;
 import dev.luxmods.dialogues.NpcContractLifecycle;
 import dev.luxmods.dialogues.NpcContractStorage;
+import dev.luxmods.dialogues.NpcContractDelivery;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.network.FriendlyByteBuf;
@@ -79,11 +80,30 @@ public final class DialogueNetwork {
                 + ". Volte ao aldeão quando reunir os itens."));
     }
 
+    /** The client only identifies the NPC; all inventory and contract rules stay server-side. */
+    public record DeliverContract(int entityId) implements CustomPacketPayload {
+        public static final Type<DeliverContract> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "deliver_contract"));
+        public static final StreamCodec<FriendlyByteBuf, DeliverContract> CODEC =
+                StreamCodec.of((buf, packet) -> buf.writeVarInt(packet.entityId()),
+                        buf -> new DeliverContract(buf.readVarInt()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    private static void deliverContract(DeliverContract payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
+        Entity entity = player.level().getEntity(payload.entityId());
+        if (entity instanceof Villager villager) {
+            NpcContractDelivery.deliver(villager, player);
+        }
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(OpenShop.TYPE, OpenShop.CODEC, DialogueNetwork::openShop);
         registrar.playToServer(EndDialogue.TYPE, EndDialogue.CODEC, DialogueNetwork::endDialogue);
         registrar.playToServer(AcceptContract.TYPE, AcceptContract.CODEC, DialogueNetwork::acceptContract);
+        registrar.playToServer(DeliverContract.TYPE, DeliverContract.CODEC, DialogueNetwork::deliverContract);
     }
 
     private static void endDialogue(EndDialogue payload, IPayloadContext context) {
