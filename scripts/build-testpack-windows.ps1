@@ -11,7 +11,7 @@ $wrapper = Join-Path $root 'gradlew.bat'
 if (-not (Test-Path $wrapper)) { throw 'Gradle wrapper missing from repository.' }
 Push-Location $root
 try {
-    $javaVersion = (& java -version 2>&1 | Out-String)
+    $javaVersion = (& cmd.exe /d /c 'java -version 2>&1' | Out-String)
     if ($LASTEXITCODE -ne 0 -or $javaVersion -notmatch 'version "21[."]') {
         throw 'JDK 21 is required. Check java -version and JAVA_HOME.'
     }
@@ -38,7 +38,11 @@ try {
     $files | Sort-Object Name | ForEach-Object {
         $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
         "$($hash.Hash.ToLowerInvariant())  $($_.Name)"
-    } | Set-Content -Path $manifest -Encoding UTF8
+    } | Set-Content -Path $manifest -Encoding Ascii
+    $archive = Join-Path $root 'build\\lux-testpack\\Lux-Mods-Testpack.zip'
+    if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive -Force }
+    Compress-Archive -Path (Join-Path $output '*.jar') -DestinationPath $archive
+    Write-Host "ZIP: $archive"
     Write-Host "Lux Mods test pack built: $output" -ForegroundColor Green
     Write-Host "SHA256 manifest: $manifest"
 } finally {
