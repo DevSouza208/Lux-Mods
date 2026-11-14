@@ -124,6 +124,11 @@ public final class AtlasMapScreen extends Screen {
         });
         addButton(width / 2 + 70, 12, 105, "Upgrades", b -> status = "Upgrades: em desenvolvimento");
         if (questsTab) {
+            addButton(mapX + 7, mapY + 60, 112,
+                    showQuests ? "Ocultar missões" : "Mostrar missões", b -> {
+                showQuests = !showQuests;
+                rebuildWidgets();
+            });
             addButton(12, questPagerY(), 38, "◀", b -> {
                 questPage = Math.max(0, questPage - 1);
             });
@@ -526,7 +531,7 @@ public final class AtlasMapScreen extends Screen {
             }
             // Contracts received from the authoritative NPC server snapshot.
             // Only known positions are marked, never invented coordinates.
-            if (minecraft.level != null) {
+            if (showQuests && minecraft != null && minecraft.level != null) {
                 String dimension = minecraft.level.dimension().location().toString();
                 for (var quest : LuxQuestTracker.inDimension(dimension)) {
                     int qx = screenX(quest.x()), qz = screenZ(quest.z());
