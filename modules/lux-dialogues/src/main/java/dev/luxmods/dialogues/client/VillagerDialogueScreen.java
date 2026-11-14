@@ -35,6 +35,29 @@ public final class VillagerDialogueScreen extends Screen {
         this.message = DialogueLines.greeting(npc.getUUID(), day, guard);
     }
 
+    /** Only applies server snapshots belonging to the NPC shown on this screen. */
+    public void receiveContractSnapshot(DialogueNetwork.ContractSnapshot snapshot) {
+        if (closed || !(npc instanceof Villager) || snapshot.entityId() != npc.getId()) return;
+        String item = switch (snapshot.objective()) {
+            case "minecraft:coal" -> "carvão";
+            case "minecraft:bread" -> "pão";
+            case "minecraft:iron_ingot" -> "barra de ferro";
+            default -> "material desconhecido";
+        };
+        String situation = switch (snapshot.status()) {
+            case 0 -> "Disponível até o dia " + snapshot.expiresDay();
+            case 1 -> snapshot.mine() ? "Aceito por você" : "Reservado por outro jogador";
+            case 2 -> "Concluído";
+            case 3 -> "Expirado";
+            default -> "Estado desconhecido";
+        };
+        if (contractMenu) {
+            message = "Pedido: " + snapshot.quantity() + " de " + item + ". " + situation + ".";
+        } else if (replied) {
+            message = "Contrato: " + snapshot.quantity() + " de " + item + ". " + situation + ".";
+        }
+    }
+
     private boolean hasShop() {
         if (!(npc instanceof Villager villager)) return false;
         var profession = villager.getVillagerData().getProfession();
@@ -79,8 +102,9 @@ public final class VillagerDialogueScreen extends Screen {
             if (!guard && npc instanceof Villager) {
                 addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Contrato", () -> {
                     contractMenu = true;
-                    message = "Você pode aceitar um pedido ou entregar materiais de um contrato aceito.";
+                    message = "Consultando a oferta deste aldeão...";
                     rebuildWidgets();
+                    PacketDistributor.sendToServer(new DialogueNetwork.RequestContract(npc.getId()));
                 });
             }
             if (hasShop()) {
