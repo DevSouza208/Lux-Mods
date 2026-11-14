@@ -16,7 +16,14 @@ import java.util.List;
 
 /** Locally persisted waypoints, scoped by server/save and dimension. */
 public final class AtlasMarkers {
-    public record Marker(String label, int x, int z, String dimension) { }
+    public record Marker(String label, int x, int z, String dimension, String icon, int color) {
+        // Backwards-compatible with legacy and automatic discovery markers.
+        public Marker(String label, int x, int z, String dimension) {
+            this(label, x, z, dimension,
+                    label.startsWith("◆ ") ? "Estrutura" : "Marcador",
+                    label.startsWith("◆ ") ? 0xFFEBC17A : 0xFFD39CF5);
+        }
+    }
     private AtlasMarkers() {}
 
     static String worldKey(Minecraft mc) {
@@ -43,8 +50,13 @@ public final class AtlasMarkers {
             JsonArray array = JsonParser.parseString(Files.readString(p, StandardCharsets.UTF_8)).getAsJsonArray();
             for (JsonElement element : array) {
                 JsonObject o = element.getAsJsonObject();
-                result.add(new Marker(o.get("name").getAsString(), o.get("x").getAsInt(),
-                        o.get("z").getAsInt(), o.get("dimension").getAsString()));
+                String label = o.get("name").getAsString();
+                String dimension = o.get("dimension").getAsString();
+                int x = o.get("x").getAsInt(), z = o.get("z").getAsInt();
+                Marker defaults = new Marker(label, x, z, dimension);
+                String icon = o.has("icon") ? o.get("icon").getAsString() : defaults.icon();
+                int color = o.has("color") ? o.get("color").getAsInt() : defaults.color();
+                result.add(new Marker(label, x, z, dimension, icon, color));
             }
         } catch (Exception ignored) {
             // Corrupt user data must never stop game startup or opening the map.
@@ -63,6 +75,8 @@ public final class AtlasMarkers {
                 o.addProperty("x", marker.x());
                 o.addProperty("z", marker.z());
                 o.addProperty("dimension", marker.dimension());
+                o.addProperty("icon", marker.icon());
+                o.addProperty("color", marker.color());
                 array.add(o);
             }
             Files.writeString(p, array.toString(), StandardCharsets.UTF_8);
