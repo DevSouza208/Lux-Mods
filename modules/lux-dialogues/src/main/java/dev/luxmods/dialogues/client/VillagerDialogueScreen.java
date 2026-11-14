@@ -24,6 +24,7 @@ public final class VillagerDialogueScreen extends Screen {
     private final long day;
     private String message;
     private boolean replied;
+    private boolean contractMenu;
     private boolean closed;
 
     public VillagerDialogueScreen(LivingEntity npc) {
@@ -44,12 +45,32 @@ public final class VillagerDialogueScreen extends Screen {
     @Override protected void init() {
         clearWidgets();
         int gap = 7;
-        int count = replied ? 2 : (hasShop() ? 5 : (guard ? 3 : 4));
+        int count = contractMenu ? 4 : (replied ? 2 : (hasShop() ? 5 : (guard ? 3 : 4)));
         int buttonWidth = Math.min(116, Math.max(48, (width - 20 - (count - 1) * gap) / count));
         int total = count * buttonWidth + (count - 1) * gap;
         int x = Math.max(8, (width - total) / 2);
         int y = height - 42;
         int i = 0;
+        if (contractMenu) {
+            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Aceitar", () -> {
+                PacketDistributor.sendToServer(new DialogueNetwork.AcceptContract(npc.getId()));
+                contractMenu = false;
+                respond("Pedido de aceitação enviado. Confira a resposta no chat.");
+            });
+            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Entregar", () -> {
+                PacketDistributor.sendToServer(new DialogueNetwork.DeliverContract(npc.getId()));
+                contractMenu = false;
+                respond("Entrega solicitada. Confira o resultado no chat.");
+            });
+            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Voltar", () -> {
+                contractMenu = false;
+                replied = false;
+                message = DialogueLines.greeting(npc.getUUID(), day, guard);
+                rebuildWidgets();
+            });
+            addOption(x + (buttonWidth + gap) * i, y, buttonWidth, "Sair", this::onClose);
+            return;
+        }
         if (!replied) {
             addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Como vai?",
                     () -> respond(DialogueLines.howAreYou(npc.getUUID(), day, guard)));
@@ -57,8 +78,9 @@ public final class VillagerDialogueScreen extends Screen {
                     () -> respond(DialogueLines.rumor(npc.getUUID(), day, guard)));
             if (!guard && npc instanceof Villager) {
                 addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Contrato", () -> {
-                    PacketDistributor.sendToServer(new DialogueNetwork.AcceptContract(npc.getId()));
-                    respond("Pedido enviado. Veja no chat se o aldeão aceitou o contrato.");
+                    contractMenu = true;
+                    message = "Você pode aceitar um pedido ou entregar materiais de um contrato aceito.";
+                    rebuildWidgets();
                 });
             }
             if (hasShop()) {
