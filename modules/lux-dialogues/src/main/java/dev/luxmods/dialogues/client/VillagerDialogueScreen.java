@@ -53,7 +53,7 @@ public final class VillagerDialogueScreen extends Screen {
         if (!replied) {
             addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Como vai?",
                     () -> respond(DialogueLines.howAreYou(npc.getUUID(), day, guard)));
-            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Ouviu boatos?",
+            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Qual é a boa?",
                     () -> respond(DialogueLines.rumor(npc.getUUID(), day, guard)));
             if (hasShop()) {
                 addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Abrir loja", () -> {
