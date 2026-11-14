@@ -33,7 +33,7 @@ class JarValidatorTests(unittest.TestCase):
             jar.writestr("META-INF/neoforge.mods.toml",
                          metadata(mod, deps) if override is None else override)
             if classname:
-                jar.writestr(classname, b"fake class - structure only")
+                jar.writestr(classname, bytes.fromhex("cafebabe00000041"))
 
     def test_valid_engine(self):
         self.fixture()
@@ -139,6 +139,22 @@ class JarValidatorTests(unittest.TestCase):
         with self.assertRaises(InvalidArtifact):
             validate_jar(self.path, "lux_discovery",
                          "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"})
+
+    def test_invalid_class_signature(self):
+        self.fixture()
+        with zipfile.ZipFile(self.path, "a") as jar:
+            jar.writestr("dev/luxmods/engine/LuxEngine.class", b"not java")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
+
+    def test_wrong_java_version(self):
+        with zipfile.ZipFile(self.path, "w") as jar:
+            jar.writestr("META-INF/neoforge.mods.toml",
+                         metadata("lux_engine", ("minecraft", "neoforge")))
+            jar.writestr("dev/luxmods/engine/LuxEngine.class",
+                         bytes.fromhex("cafebabe0000003d"))
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
 
     def test_missing_class(self):
         self.fixture(classname=None)
