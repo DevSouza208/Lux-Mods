@@ -10,10 +10,10 @@ import net.minecraft.world.item.Items;
 /**
  * Server-side delivery for the first three NPC supply contracts.
  *
- * A completion is persisted before items/rewards are transferred so a repeated
- * packet cannot mint another reward. All steps must run on the server thread.
- * This is not a cross-entity disk transaction: an abrupt crash mid-delivery
- * still requires recovery logic before production use.
+ * The NPC enters SETTLING before moving items and cannot settle twice.
+ * A crash may still leave an ambiguous state: it is frozen for manual review,
+ * NOT automatically refunded or paid. All steps run on the server thread.
+ * This is not a durable atomic transaction across the player and NPC saves.
  */
 public final class NpcContractDelivery {
     private NpcContractDelivery() {}
@@ -27,6 +27,12 @@ public final class NpcContractDelivery {
         var offer = NpcContractStorage.current(villager, day);
         if (offer.status() == NpcContractLifecycle.Status.COMPLETED) {
             player.sendSystemMessage(Component.literal("Este contrato já foi concluído."));
+            return;
+        }
+        if (offer.status() == NpcContractLifecycle.Status.SETTLING) {
+            player.sendSystemMessage(Component.literal(
+                    "Entrega interrompida ou em revisão. Nenhum item será cobrado novamente. "
+                    + "Peça ajuda ao administrador do mundo."));
             return;
         }
         if (offer.status() != NpcContractLifecycle.Status.ACCEPTED
@@ -70,11 +76,10 @@ public final class NpcContractDelivery {
             return;
         }
 
-        var completed = NpcContractLifecycle.complete(offer, player.getUUID(), true);
-        // The server thread serializes requests; comparing the expected state
-        // rejects a second delivery. Crash safety still requires a durable
-        // cross-entity transaction journal in a future pass.
-        if (!NpcContractStorage.store(villager, offer, completed)) {
+        var settling = NpcContractLifecycle.beginSettlement(offer, player.getUUID());
+        // Reserve a non-repeatable settlement before touching inventory.
+        // Interrupted settlements require manual review; NEVER auto-pay them.
+        if (!NpcContractStorage.store(villager, offer, settling)) {
             player.sendSystemMessage(Component.literal("Contrato alterado; tente novamente."));
             return;
         }
@@ -89,6 +94,12 @@ public final class NpcContractDelivery {
         player.addItem(reward);
         // addItem can leave a remainder when only part of the stack fits.
         if (!reward.isEmpty()) player.drop(reward, false);
+        var completed = NpcContractLifecycle.complete(settling, player.getUUID(), true);
+        if (!NpcContractStorage.store(villager, settling, completed)) {
+            player.sendSystemMessage(Component.literal(
+                    "Pagamento entregue, mas o registro exige revisão do administrador."));
+            return;
+        }
         player.sendSystemMessage(Component.literal("Contrato concluído! Recompensa: "
                 + emeralds + " esmeraldas."));
     }
