@@ -68,7 +68,11 @@ public final class AtlasWalkDiscovery {
             if (AtlasWriteQueue.enqueue(entry.getKey(), entry.getValue()))
                 iterator.remove();
         }
-        if (!pending.isEmpty() && saveScope != null) {
+        // An older unjournaled batch for this same world must be accepted
+        // first. Otherwise a later successful batch can be replayed before
+        // the older one, reverting newly explored terrain after recovery.
+        if (!pending.isEmpty() && saveScope != null
+                && !UNSUBMITTED.containsKey(saveScope)) {
             // Returning true means journaled, not yet applied to regions.
             if (AtlasWriteQueue.enqueue(saveScope, pending)) {
                 pending.clear();
