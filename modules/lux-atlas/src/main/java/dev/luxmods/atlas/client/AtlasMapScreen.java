@@ -338,7 +338,10 @@ public final class AtlasMapScreen extends Screen {
                         if (loaded) {
                             loadedRegions.add(regionId);
                             failedRegionRetry.remove(regionId);
-                            // Unsaved samples must override older disk colors.
+                            // The region on disk may lag behind the active
+                            // walking collector and this screen's edits.
+                            // Precedence: persisted region < live walk < local edits.
+                            AtlasWalkDiscovery.mergeInto(tiles);
                             tiles.putAll(unsavedTiles);
                             lodDirty = true;
                         } else {
@@ -406,6 +409,9 @@ public final class AtlasMapScreen extends Screen {
                 && minecraft.player.tickCount % 40 == 0) {
             lastMergedTick = minecraft.player.tickCount;
             AtlasWalkDiscovery.mergeInto(tiles);
+            // This screen's latest observations always win over background
+            // samples until its journal has been accepted.
+            tiles.putAll(unsavedTiles);
             lodDirty = true;
         }
         // Region IO occurs in tick(); rendering only reads the RAM snapshot.
