@@ -1,7 +1,5 @@
 package dev.luxmods.dialogues;
 
-import java.util.Arrays;
-
 /**
  * Pure Java inventory removal plan. Never remove an item unless the full
  * contract quantity is available; the caller applies the plan server-side.
