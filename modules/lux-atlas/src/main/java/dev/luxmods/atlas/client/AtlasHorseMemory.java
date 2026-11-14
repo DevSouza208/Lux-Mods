@@ -65,7 +65,9 @@ public final class AtlasHorseMemory {
     public static Sighting get(Minecraft mc) {
         if (mc.level == null || last == null
                 || !AtlasMarkers.dimension(mc.level).equals(last.dimension())) return null;
-        boolean current = mc.player != null && mc.player.tickCount - lastSeenTick < 40;
+        boolean current = mc.player != null && lastSeenTick >= 0
+                && mc.player.tickCount >= lastSeenTick
+                && mc.player.tickCount - lastSeenTick < 40;
         return new Sighting(last.x(), last.z(), last.dimension(), current);
     }
 
