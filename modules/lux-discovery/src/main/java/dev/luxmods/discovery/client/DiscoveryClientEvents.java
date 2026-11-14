@@ -1,6 +1,8 @@
 package dev.luxmods.discovery.client;
 
 import dev.luxmods.discovery.DiscoveryConfig;
+import dev.luxmods.engine.LuxLocationDiscoveredEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import dev.luxmods.discovery.network.BiomeDiscoveredPayload;
 import dev.luxmods.discovery.network.StructureDiscoveredPayload;
 import net.minecraft.ChatFormatting;
@@ -51,6 +53,10 @@ public final class DiscoveryClientEvents {
                 : humanize(key);
         DiscoveryOverlay.show(Component.literal(title).withStyle(ChatFormatting.GOLD),
                 Component.literal("ESTRUTURA DESCOBERTA").withStyle(ChatFormatting.GRAY));
+        // Optional Atlas listener persists it as a waypoint. Discovery itself
+        // does not depend on Atlas, and posts only server-confirmed locations.
+        NeoForge.EVENT_BUS.post(new LuxLocationDiscoveredEvent(payload.structureId(),
+                mc.level.dimension().location().toString(), payload.x(), payload.z()));
     }
 
     private static String humanize(String path) {
