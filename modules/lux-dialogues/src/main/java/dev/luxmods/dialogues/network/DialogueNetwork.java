@@ -80,6 +80,7 @@ public final class DialogueNetwork {
             return;
         }
         PlayerQuestLedger.record(player, villager, updated);
+        sendQuestLedger(player);
         player.sendSystemMessage(Component.literal("Contrato aceito: entregar "
                 + updated.quantity() + " de " + updated.objective()
                 + ". Volte ao aldeão quando reunir os itens."));
@@ -101,8 +102,10 @@ public final class DialogueNetwork {
         Entity entity = player.level().getEntity(payload.entityId());
         if (entity instanceof Villager villager) {
             NpcContractDelivery.deliver(villager, player);
-            if (villager.isAlive() && villager.distanceToSqr(player) <= 64.0D)
+            if (villager.isAlive() && villager.distanceToSqr(player) <= 64.0D) {
                 sendContractSnapshot(villager, player);
+                sendQuestLedger(player);
+            }
         }
     }
 
