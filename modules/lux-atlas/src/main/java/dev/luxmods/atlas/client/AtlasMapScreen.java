@@ -500,10 +500,15 @@ public final class AtlasMapScreen extends Screen {
                         // in tick(), otherwise fast monitors trigger repeated
                         // heightmap/block lookups and severe frame-time spikes.
                         AtlasLevelOfDetail.Cell cell = lod.cell(wx, wz, step, tiles);
+                        int sx = mapX + px * drawSize;
+                        int sy = mapY + py * drawSize;
+                        // The server's mod-aware biome generator previews
+                        // unexplored regions. Real sampled surface wins.
                         if (cell != null) {
-                            int sx = mapX + px * drawSize;
-                            int sy = mapY + py * drawSize;
                             drawCoverageCell(g, sx, sy, cell);
+                        } else {
+                            Integer biome = AtlasBiomeClient.color(wx, wz);
+                            if (biome != null) g.fill(sx, sy, sx + 2, sy + 2, biome);
                         }
                     }
                 }
@@ -709,6 +714,12 @@ public final class AtlasMapScreen extends Screen {
     @Override public void tick() {
         screenTicks++;
         sampleVisibleTerrain();
+        if (isOriginalWorld()) {
+            int minX = startX(), minZ = startZ();
+            AtlasBiomeClient.requestVisible(minX, minZ,
+                    minX + Math.max(1, mapW / 2) * step,
+                    minZ + Math.max(1, mapH / 2) * step, screenTicks);
+        }
         // Region files are loaded during screen ticks, not once per rendered
         // frame, so uncached disk IO does not repeat at the monitor refresh rate.
         loadVisibleRegions(startX(), startZ());
