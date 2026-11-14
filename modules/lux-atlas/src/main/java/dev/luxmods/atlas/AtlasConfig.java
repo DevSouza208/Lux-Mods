@@ -2,7 +2,7 @@ package dev.luxmods.atlas;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-/** Client compass options; snap-to-hotbar is new to Clean Fantasy v2. */
+/** Client compass options, with the exploration bar at the top by default. */
 public final class AtlasConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -11,7 +11,7 @@ public final class AtlasConfig {
             .define("showCompass", true);
 
     public static final ModConfigSpec.BooleanValue SNAP_TO_HOTBAR = BUILDER
-            .comment("Posicionar a bussola automaticamente logo acima da hotbar.")
+            .comment("Posicionar a bussola automaticamente no topo da tela.")
             .define("snapToHotbar", true);
 
     public static final ModConfigSpec.IntValue DISTANCE_FROM_BOTTOM = BUILDER
