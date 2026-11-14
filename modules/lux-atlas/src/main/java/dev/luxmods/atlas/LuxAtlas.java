@@ -33,6 +33,7 @@ public final class LuxAtlas {
             modBus.addListener(AtlasClientLayers::register);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasMapKey::onTick);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasWalkDiscovery::onTick);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasWalkDiscovery::onLogout);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasHorseMemory::onTick);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasDiscoveryMarkers::onLocation);
         }
