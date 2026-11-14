@@ -3,7 +3,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-from verify_jars import InvalidArtifact, validate_jar
+from verify_jars import InvalidArtifact, validate_jar, validate_test_pack, MODULES
 
 
 def metadata(mod_id, deps):
@@ -85,6 +85,54 @@ class JarValidatorTests(unittest.TestCase):
         with self.assertRaises(InvalidArtifact):
             validate_jar(self.path, "lux_menu",
                          "dev/luxmods/menu/LuxMenu.class", {"lux_engine"})
+
+    def test_valid_borderless(self):
+        self.fixture("lux_borderless", "dev/luxmods/borderless/LuxBorderless.class")
+        result = validate_jar(self.path, "lux_borderless",
+                              "dev/luxmods/borderless/LuxBorderless.class")
+        self.assertEqual("lux_borderless", result["mod_id"])
+
+    def test_valid_dialogues(self):
+        self.fixture("lux_dialogues", "dev/luxmods/dialogues/LuxDialogues.class",
+                     ("minecraft", "neoforge", "lux_engine"))
+        result = validate_jar(self.path, "lux_dialogues",
+                              "dev/luxmods/dialogues/LuxDialogues.class", {"lux_engine"})
+        self.assertEqual("lux_dialogues", result["mod_id"])
+
+    def test_dialogues_requires_engine(self):
+        self.fixture("lux_dialogues", "dev/luxmods/dialogues/LuxDialogues.class")
+        with self.assertRaises(InvalidArtifact):
+            validate_jar(self.path, "lux_dialogues",
+                         "dev/luxmods/dialogues/LuxDialogues.class", {"lux_engine"})
+
+    def test_manifest_covers_seven_modules(self):
+        self.assertEqual(7, len(MODULES))
+        self.assertIn("lux-borderless", MODULES)
+        self.assertIn("lux-dialogues", MODULES)
+
+    def test_pack_rejects_missing_jar(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package_dir = Path(directory) / "mods"
+            package_dir.mkdir()
+            with self.assertRaises(InvalidArtifact):
+                validate_test_pack({"engine": self.path}, package_dir)
+
+    def test_pack_rejects_modified_jar(self):
+        self.fixture()
+        with tempfile.TemporaryDirectory() as directory:
+            package_dir = Path(directory) / "mods"
+            package_dir.mkdir()
+            (package_dir / self.path.name).write_bytes(b"modified")
+            with self.assertRaises(InvalidArtifact):
+                validate_test_pack({"engine": self.path}, package_dir)
+
+    def test_pack_accepts_identical_jar(self):
+        self.fixture()
+        with tempfile.TemporaryDirectory() as directory:
+            package_dir = Path(directory) / "mods"
+            package_dir.mkdir()
+            (package_dir / self.path.name).write_bytes(self.path.read_bytes())
+            validate_test_pack({"engine": self.path}, package_dir)
 
     def test_missing_dependency(self):
         self.fixture("lux_discovery", "dev/luxmods/discovery/LuxDiscovery.class")
