@@ -48,6 +48,14 @@ public final class AtlasTerrainCache {
                 .resolve(world + "_" + dimension + "_regions");
     }
 
+    /**
+     * Freeze the save scope while the player is inside a specific world.
+     * Needed to save pending exploration safely after a dimension transfer.
+     */
+    static Path scope(Minecraft mc, Level level) {
+        return regionFolder(mc, level);
+    }
+
     private static Path regionPath(Path folder, int rx, int rz) {
         return folder.resolve("r." + rx + "." + rz + ".lxt.gz");
     }
@@ -171,15 +179,25 @@ public final class AtlasTerrainCache {
         }
     }
 
+    /**
+     * Persist into a scope captured before a world/dimension switch.
+     * Never derive a changed server name from a new active connection.
+     */
+    static boolean saveToScope(Path folder, Map<Long, Integer> updates) {
+        if (updates.isEmpty()) return true;
+        if (folder == null) return false;
+        try {
+            persist(folder, updates);
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
     /** Commit discovered samples by region; older regions are never truncated. */
     public static boolean save(Minecraft mc, Level level, Map<Long, Integer> updates) {
         if (updates.isEmpty()) return true;
         migrate(mc, level);
-        try {
-            persist(regionFolder(mc, level), updates);
-            return true;
-        } catch (IOException ignored) {
-            return false; // caller retains dirty samples and retries
-        }
+        return saveToScope(regionFolder(mc, level), updates);
     }
 }
