@@ -25,7 +25,7 @@ public final class AtlasMapScreen extends Screen {
     private static final int EDGE = 0xFFB88BDD;
     private final Map<Long, Integer> tiles = new LinkedHashMap<>(4096, 0.75F, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
-            return size() > 120_000;
+            return size() > 400_000;
         }
     };
     private final List<AtlasMarkers.Marker> markers = new ArrayList<>();
@@ -39,6 +39,7 @@ public final class AtlasMapScreen extends Screen {
     private double panRemainderX, panRemainderZ;
     private boolean firstOpen = true;
     private boolean terrainLoaded;
+    private int lastMergedTick = -1;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
     private boolean showPlayer = true;
@@ -111,7 +112,7 @@ public final class AtlasMapScreen extends Screen {
     private void setZoom(int value) {
         zoomIndex = Math.max(0, Math.min(5, value));
         step = new int[]{16, 8, 4, 2, 1, 1}[zoomIndex];
-        // Tiles are keyed by world coordinates and zoom; zooming need not erase discoveries.
+        // All zoom levels reuse the same world-aligned 2x2 terrain cache.
     }
 
     private boolean inMap(double x, double y) {
@@ -242,6 +243,13 @@ public final class AtlasMapScreen extends Screen {
         int drawSize = 2;
         int startX = centerX - cellsX * step / 2;
         int startZ = centerZ - cellsY * step / 2;
+        // Keep the open map current when the player explores without closing it.
+        if (minecraft != null && minecraft.player != null
+                && minecraft.player.tickCount != lastMergedTick
+                && minecraft.player.tickCount % 40 == 0) {
+            lastMergedTick = minecraft.player.tickCount;
+            AtlasWalkDiscovery.mergeInto(tiles);
+        }
         // Preserve sampled terrain while panning. Limit memory rather than
         // forcing a complete redraw on every camera movement.
         // Bounded LRU cache keeps recently explored regions without clearing them.
@@ -256,15 +264,19 @@ public final class AtlasMapScreen extends Screen {
                     for (int px = 0; px < cellsX; px++) {
                         int wx = startX + px * step;
                         int wz = startZ + py * step;
-                        long id = key(wx, wz, step);
+                        // Canonical 2-block cells are independent of viewport
+                        // offset and zoom; revisiting never redraws old terrain.
+                        int sampleX = Math.floorDiv(wx, 2) * 2;
+                        int sampleZ = Math.floorDiv(wz, 2) * 2;
+                        long id = key(sampleX, sampleZ, 2);
                         Integer color = tiles.get(id);
                         if (color == null && budget > 0 && minecraft != null
                                 && minecraft.level != null
-                                && minecraft.level.getChunkSource().hasChunk(wx >> 4, wz >> 4)) {
+                                && minecraft.level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
                             // Do not cache unloaded regions as empty terrain:
                             // when the player explores them later they can be sampled.
                             budget--;
-                            color = sample(wx, wz);
+                            color = sample(sampleX, sampleZ);
                             tiles.put(id, color);
                         }
                         if (color != null) {
@@ -324,7 +336,7 @@ public final class AtlasMapScreen extends Screen {
         for (int i = 0; i < 4; i++) {
             label(g, (enabled[i] ? "[x] " : "[ ] ") + options[i], 14, 99 + i * 22, LuxGuiStyle.MUTED_TEXT);
         }
-        label(g, "Zoom: " + (100 / step) + "%", 14, height - 59, LuxGuiStyle.AMBER);
+        label(g, "Escala: " + step + " blocos", 14, height - 59, LuxGuiStyle.AMBER);
         if (minecraft != null && minecraft.player != null && width >= 790) {
             int rx = mapX + mapW + 12;
             g.fill(rx - 5, 54, width - 9, height - 42, DARK);
@@ -342,7 +354,7 @@ public final class AtlasMapScreen extends Screen {
             }
         }
         drawMap(g);
-        label(g, "N", mapX + 12, mapY + 12, LuxGuiStyle.AMBER);
+        label(g, "N", mapX + mapW / 2, mapY + 34, LuxGuiStyle.AMBER);
         label(g, "X " + selectionX + "  Z " + selectionZ, mapX + 12, mapY + mapH - 16, 0xFFF2E9FF);
         label(g, status, Math.max(186, width / 2 - 170), height - 23, LuxGuiStyle.MUTED_TEXT);
         super.render(g, mouseX, mouseY, partialTick);
@@ -356,6 +368,7 @@ public final class AtlasMapScreen extends Screen {
 
     @Override public void onClose() {
         if (minecraft != null && minecraft.level != null) {
+            AtlasWalkDiscovery.mergeInto(tiles);
             AtlasTerrainCache.save(minecraft, minecraft.level, tiles);
         }
         super.onClose();
