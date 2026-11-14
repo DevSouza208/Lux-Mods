@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect Lux Engine and Discovery JARs after Gradle build (Python 3.11+)."""
+"""Validate all seven Lux Mods JARs and the assembled test pack (Python 3.11+)."""
 import hashlib
 import sys
 import tomllib
@@ -13,6 +13,8 @@ MODULES = {
     "lux-atlas": ("lux_atlas", "dev/luxmods/atlas/LuxAtlas.class", {"lux_engine"}),
     "lux-hud": ("lux_hud", "dev/luxmods/hud/LuxHud.class", {"lux_engine"}),
     "lux-menu": ("lux_menu", "dev/luxmods/menu/LuxMenu.class", {"lux_engine"}),
+    "lux-borderless": ("lux_borderless", "dev/luxmods/borderless/LuxBorderless.class", set()),
+    "lux-dialogues": ("lux_dialogues", "dev/luxmods/dialogues/LuxDialogues.class", {"lux_engine"}),
 }
 
 
@@ -72,15 +74,37 @@ def artifact_for(project):
     return jars[0]
 
 
+def validate_test_pack(artifacts, pack_dir=None):
+    """Make sure the distribution folder contains precisely the validated JARs."""
+    pack_dir = Path(pack_dir) if pack_dir is not None else ROOT / "build/lux-testpack/mods"
+    if not pack_dir.is_dir():
+        raise InvalidArtifact(f"Pacote ausente: {pack_dir}")
+    expected = {path.name for path in artifacts.values()}
+    found = {path.name for path in pack_dir.glob("*.jar")}
+    if expected != found:
+        raise InvalidArtifact(
+            f"Pacote incompleto ou com JARs extras: faltando={sorted(expected - found)}, "
+            f"extras={sorted(found - expected)}"
+        )
+    for path in artifacts.values():
+        packaged = pack_dir / path.name
+        if hashlib.sha256(packaged.read_bytes()).digest() != hashlib.sha256(path.read_bytes()).digest():
+            raise InvalidArtifact(f"JAR diferente no pacote: {path.name}")
+
+
 def main():
     try:
+        artifacts = {}
         for name, (mod_id, class_path, deps) in MODULES.items():
-            result = validate_jar(artifact_for(name), mod_id, class_path, deps)
+            artifact = artifact_for(name)
+            result = validate_jar(artifact, mod_id, class_path, deps)
+            artifacts[name] = artifact
             print(f"OK: {mod_id} {result['version']} SHA256={result['sha256']}")
+        validate_test_pack(artifacts)
     except InvalidArtifact as exc:
         print(f"FALHA NA VERIFICAÇÃO: {exc}", file=sys.stderr)
         return 1
-    print("Os cinco JARs parecem bem formados; ainda precisam de teste no jogo.")
+    print("Sete JARs e pacote unificado verificados; teste Minecraft ainda necessário.")
     return 0
 
 
