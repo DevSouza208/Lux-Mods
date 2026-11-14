@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
@@ -89,15 +90,11 @@ public final class AtlasWalkDiscovery {
         int y = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
         if (y <= world.getMinBuildHeight() || y >= world.getMaxBuildHeight()) return false;
         BlockPos pos = new BlockPos(wx, y - 1, wz);
-        int color = world.getBlockState(pos).getMapColor(world, pos).col;
-        if (color == 0) color = 0x576C52;
+        var state = world.getBlockState(pos);
         int northY = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1);
-        int relief = (y - northY) * 5;
-        int shade = Math.max(-38, Math.min(38, (y - 72) / 4 + relief));
-        int red = Math.max(0, Math.min(255, ((color >> 16) & 255) + shade));
-        int green = Math.max(0, Math.min(255, ((color >> 8) & 255) + shade));
-        int blue = Math.max(0, Math.min(255, (color & 255) + shade));
-        int sample = 0xFF000000 | (red << 16) | (green << 8) | blue;
+        int westY = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz);
+        int sample = AtlasTerrainColor.shade(state.getMapColor(world, pos).col,
+                y, northY, westY, state.is(Blocks.WATER));
         Integer previous = known.put(key, sample);
         // Revisits detect modifications, but unchanged terrain never gets
         // pointlessly re-journaled. Colors are stable across the same sampler.
