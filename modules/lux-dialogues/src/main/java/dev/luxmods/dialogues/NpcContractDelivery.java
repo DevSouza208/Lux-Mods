@@ -18,33 +18,33 @@ import net.minecraft.world.item.Items;
 public final class NpcContractDelivery {
     private NpcContractDelivery() {}
 
-    public static void deliver(Villager villager, ServerPlayer player) {
+    public static boolean deliver(Villager villager, ServerPlayer player) {
         if (villager.level().isClientSide() || !villager.isAlive()
                 || !player.isAlive() || player.isSpectator()
-                || villager.distanceToSqr(player) > 64.0D) return;
+                || villager.distanceToSqr(player) > 64.0D) return false;
 
         long day = Math.max(0L, villager.level().getDayTime() / 24000L);
         var offer = NpcContractStorage.current(villager, day);
         if (offer.status() == NpcContractLifecycle.Status.COMPLETED) {
             player.sendSystemMessage(Component.literal("Este contrato já foi concluído."));
-            return;
+            return false;
         }
         if (offer.status() == NpcContractLifecycle.Status.SETTLING) {
             player.sendSystemMessage(Component.literal(
                     "Entrega interrompida ou em revisão. Nenhum item será cobrado novamente. "
                     + "Peça ajuda ao administrador do mundo."));
-            return;
+            return false;
         }
         if (offer.status() != NpcContractLifecycle.Status.ACCEPTED
                 || !player.getUUID().equals(offer.claimant())) {
             player.sendSystemMessage(Component.literal("Você não possui um contrato aceito com este aldeão."));
-            return;
+            return false;
         }
 
         Item item = requestedItem(offer.objective());
         if (item == null) {
             player.sendSystemMessage(Component.literal("Tipo de contrato desconhecido. Nenhum item foi retirado."));
-            return;
+            return false;
         }
 
         // Snapshot only matching items. Do not mark COMPLETED unless a plan
@@ -62,7 +62,7 @@ public final class NpcContractDelivery {
             player.sendSystemMessage(Component.literal("Faltam "
                     + Math.max(0, offer.quantity() - owned)
                     + " itens para concluir o contrato."));
-            return;
+            return false;
         }
 
         // Validate that quantities still match the plan before writing NBT.
@@ -73,7 +73,7 @@ public final class NpcContractDelivery {
         }
         if (!ContractInventoryPlan.canApply(current, removal, offer.quantity())) {
             player.sendSystemMessage(Component.literal("Inventário alterado. Tente novamente."));
-            return;
+            return false;
         }
 
         var settling = NpcContractLifecycle.beginSettlement(offer, player.getUUID());
@@ -81,7 +81,7 @@ public final class NpcContractDelivery {
         // Interrupted settlements require manual review; NEVER auto-pay them.
         if (!NpcContractStorage.store(villager, offer, settling)) {
             player.sendSystemMessage(Component.literal("Contrato alterado; tente novamente."));
-            return;
+            return false;
         }
         PlayerQuestLedger.record(player, villager, settling);
 
@@ -99,11 +99,12 @@ public final class NpcContractDelivery {
         if (!NpcContractStorage.store(villager, settling, completed)) {
             player.sendSystemMessage(Component.literal(
                     "Pagamento entregue, mas o registro exige revisão do administrador."));
-            return;
+            return false;
         }
         PlayerQuestLedger.record(player, villager, completed);
         player.sendSystemMessage(Component.literal("Contrato concluído! Recompensa: "
                 + emeralds + " esmeraldas."));
+        return true;
     }
 
     private static Item requestedItem(String objective) {
