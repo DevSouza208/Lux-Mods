@@ -103,6 +103,7 @@ public final class AtlasMapScreen extends Screen {
         addButton(width / 2 + 70, 12, 105, "Upgrades", b -> status = "Upgrades: em desenvolvimento");
         addButton(Math.max(mapX + 7, mapX + mapW - 184), mapY + 7, 88, "+ Marcador", b -> addMarker());
         addButton(Math.max(mapX + 98, mapX + mapW - 93), mapY + 7, 84, "- Marcador", b -> removeMarker());
+        addButton(Math.max(mapX + 7, mapX + mapW - 184), mapY + 33, 88, "Editar", btn -> editMarker());
         addButton(12, height - 28, 34, "-", b -> setZoom(zoomIndex - 1));
         addButton(50, height - 28, 34, "+", b -> setZoom(zoomIndex + 1));
         addButton(90, height - 28, 88, "Centralizar", b -> centerPlayer());
@@ -139,29 +140,60 @@ public final class AtlasMapScreen extends Screen {
 
     private void addMarker() {
         if (minecraft == null || minecraft.level == null) return;
-        markers.add(new AtlasMarkers.Marker("Marcador " + (markers.size() + 1), selectionX, selectionZ,
-                AtlasMarkers.dimension(minecraft.level)));
-        AtlasMarkers.save(minecraft, markers);
-        status = "Marcador fixado: " + selectionX + ", " + selectionZ;
+        AtlasMarkers.Marker fresh = new AtlasMarkers.Marker("Marcador " + (markers.size() + 1),
+                selectionX, selectionZ, AtlasMarkers.dimension(minecraft.level));
+        minecraft.setScreen(new AtlasMarkerEditScreen(this, fresh, marker -> {
+            markers.add(marker);
+            AtlasMarkers.save(minecraft, markers);
+            status = "Marcador salvo: " + marker.label();
+        }));
+    }
+
+    private void editMarker() {
+        AtlasMarkers.Marker closest = findSelectedMarker();
+        if (closest == null) {
+            status = "Selecione um marcador proximo";
+            return;
+        }
+        minecraft.setScreen(new AtlasMarkerEditScreen(this, closest, updated -> {
+            markers.set(markers.indexOf(closest), updated);
+            AtlasMarkers.save(minecraft, markers);
+            status = "Marcador atualizado: " + updated.label();
+        }));
+    }
+
+    private AtlasMarkers.Marker findSelectedMarker() {
+        if (minecraft == null || minecraft.level == null) return null;
+        String dim = AtlasMarkers.dimension(minecraft.level);
+        AtlasMarkers.Marker closest = null;
+        double best = Double.MAX_VALUE;
+        for (var marker : markers) {
+            if (!marker.dimension().equals(dim)) continue;
+            double distance = Math.pow(marker.x() - selectionX, 2)
+                    + Math.pow(marker.z() - selectionZ, 2);
+            if (distance < best) {
+                best = distance;
+                closest = marker;
+            }
+        }
+        return closest != null && best <= Math.pow(step * 14.0, 2) ? closest : null;
     }
 
     private void removeMarker() {
         if (minecraft == null || minecraft.level == null) return;
-        String dimension = AtlasMarkers.dimension(minecraft.level);
-        AtlasMarkers.Marker closest = null;
-        double distance = Double.MAX_VALUE;
-        for (var marker : markers) {
-            if (!marker.dimension().equals(dimension)) continue;
-            double d = Math.pow(marker.x() - selectionX, 2) + Math.pow(marker.z() - selectionZ, 2);
-            if (d < distance) { distance = d; closest = marker; }
-        }
-        if (closest == null || distance > Math.pow(step * 14.0, 2)) {
+        AtlasMarkers.Marker closest = findSelectedMarker();
+        if (closest == null) {
             status = "Selecione um marcador para remover";
             return;
         }
-        markers.remove(closest);
-        AtlasMarkers.save(minecraft, markers);
-        status = "Marcador removido";
+        minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(confirmed -> {
+            if (confirmed) {
+                markers.remove(closest);
+                AtlasMarkers.save(minecraft, markers);
+                status = "Marcador removido";
+            }
+            minecraft.setScreen(this);
+        }, Component.literal("Remover marcador?"), Component.literal(closest.label())));
     }
 
     @Override public boolean mouseClicked(double x, double y, int button) {
@@ -382,8 +414,8 @@ public final class AtlasMapScreen extends Screen {
                     // Pinned diamond: coordinates remain fixed while camera pans.
                     g.fill(mx - 4, my, mx + 5, my + 1, 0xFF33243F);
                     g.fill(mx, my - 4, mx + 1, my + 5, 0xFF33243F);
-                    g.fill(mx - 2, my, mx + 3, my + 1, 0xFFEBC17A);
-                    g.fill(mx, my - 2, mx + 1, my + 3, 0xFFEBC17A);
+                    g.fill(mx - 2, my, mx + 3, my + 1, marker.color());
+                    g.fill(mx, my - 2, mx + 1, my + 3, marker.color());
                 }
             }
             if (showPlayer && minecraft.player != null) {
