@@ -53,7 +53,7 @@ public final class NpcContractLifecycle {
     }
 
     /**
-     * Only accept the two state transitions used by the server's compare-and-store.
+     * Only accept authorized state transitions used by the server's compare-and-store.
      * Never permit changing objectives, quantities, deadlines, NPCs or claimants
      * by accidentally passing an unrelated Offer to the persistence layer.
      */
@@ -100,7 +100,7 @@ public final class NpcContractLifecycle {
                 offer.objective(), offer.quantity(), Status.SETTLING, player);
     }
 
-    /** Call ONLY after a server-authoritative inventory transfer has succeeded. */
+    /** Call only after the server has processed inventory removal and reward dispatch. */
     public static Offer complete(Offer offer, UUID player, boolean itemsConsumed) {
         if (!itemsConsumed || player == null || offer.status() != Status.SETTLING
                 || !player.equals(offer.claimant())) return offer;
