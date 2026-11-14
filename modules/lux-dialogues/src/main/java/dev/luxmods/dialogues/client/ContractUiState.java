@@ -30,6 +30,7 @@ public final class ContractUiState {
             case 1 -> mine ? "Aceito por você" : "Reservado por outro jogador";
             case 2 -> "Concluído";
             case 3 -> "Expirado";
+            case 4 -> "Entrega em revisão — procure o administrador";
             default -> "Indisponível";
         };
     }
