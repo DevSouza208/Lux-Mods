@@ -261,7 +261,9 @@ public final class AtlasMapScreen extends Screen {
     }
 
     private int sample(int wx, int wz) {
-        if (minecraft == null || minecraft.level == null) return 0xFF141421;
+        if (minecraft == null || minecraft.level == null || openedScope == null
+                || !openedScope.equals(AtlasTerrainCache.scope(minecraft, minecraft.level)))
+            return 0xFF141421;
         var level = minecraft.level;
         if (!level.getChunkSource().hasChunk(wx >> 4, wz >> 4)) return 0xFF181827;
         int y = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
