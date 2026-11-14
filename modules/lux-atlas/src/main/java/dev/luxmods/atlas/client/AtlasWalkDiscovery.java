@@ -43,7 +43,7 @@ public final class AtlasWalkDiscovery {
     }
 
     private static boolean sampleOne(int wx, int wz) {
-        long key = AtlasMapScreen.key(wx, wz, 2);
+        long key = AtlasMapScreen.key(wx, wz, 1);
         if (known.containsKey(key) || world == null
                 || !world.getChunkSource().hasChunk(wx >> 4, wz >> 4)) return false;
         int y = world.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
@@ -84,15 +84,15 @@ public final class AtlasWalkDiscovery {
         }
 
         if (mc.player.tickCount % 40 != 0) return;
-        // A small always-sampled circle prevents missing paths while walking.
-        // A rotating scan progressively maps farther loaded chunks (96-block
-        // radius), instead of doing tens of thousands of height queries at once.
-        final int step = 2;
-        int baseX = Math.floorDiv(mc.player.getBlockX(), step) * step;
-        int baseZ = Math.floorDiv(mc.player.getBlockZ(), step) * step;
+        // Each stored cell now corresponds to one exact world block.
+        // Immediate surroundings fill reliably; outer loaded terrain is
+        // sampled progressively with a bounded per-tick budget.
+        final int step = 1;
+        int baseX = mc.player.getBlockX();
+        int baseZ = mc.player.getBlockZ();
         int added = 0;
-        for (int dz = -24; dz <= 24; dz += step) {
-            for (int dx = -24; dx <= 24; dx += step) {
+        for (int dz = -16; dz <= 16; dz += step) {
+            for (int dx = -16; dx <= 16; dx += step) {
                 if (sampleOne(baseX + dx, baseZ + dz)) added++;
             }
         }
