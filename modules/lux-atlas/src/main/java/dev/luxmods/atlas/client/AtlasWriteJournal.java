@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.CRC32;
 
 /**
@@ -29,19 +28,49 @@ public final class AtlasWriteJournal {
     private static final int MAGIC = 0x4c584a31; // LXJ1
     private static final int MAX_SAMPLES = 4_000_000;
     private static final String EXT = ".lxj";
-    private static final AtomicLong SERIAL = new AtomicLong();
+    private static final Map<Path, Long> LAST_TIMESTAMP = new HashMap<>();
+    private static final Map<Path, Long> LAST_SERIAL = new HashMap<>();
 
     private AtlasWriteJournal() {}
 
     public static Path folder(Path scope) { return scope.resolve(".pending"); }
 
-    public static Path create(Path scope, Map<Long, Integer> samples) throws IOException {
+    public static synchronized Path create(Path scope, Map<Long, Integer> samples)
+            throws IOException {
         if (scope == null || samples.isEmpty() || samples.size() > MAX_SAMPLES)
             throw new IOException("Invalid Atlas journal batch");
         Path directory = folder(scope);
         Files.createDirectories(directory);
+        // A computer clock can jump backwards between game launches. Seed
+        // the logical timestamp and serial from surviving journals so that
+        // newly journaled changes always sort AFTER older pending changes.
+        if (!LAST_TIMESTAMP.containsKey(scope)) {
+            long maxMillis = 0;
+            long maxSerial = 0;
+            for (Path existing : find(scope)) {
+                String name = existing.getFileName().toString();
+                String[] parts = name.split("-", 3);
+                if (parts.length != 3) continue;
+                try {
+                    long stamp = Long.parseLong(parts[0]);
+                    long serial = Long.parseLong(parts[1]);
+                    if (stamp > maxMillis || stamp == maxMillis && serial > maxSerial) {
+                        maxMillis = stamp;
+                        maxSerial = serial;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // Old or manually renamed journals are still handled by
+                    // recovery; they do not determine the next sequence.
+                }
+            }
+            LAST_TIMESTAMP.put(scope, maxMillis);
+            LAST_SERIAL.put(scope, maxSerial);
+        }
+        long millis = Math.max(System.currentTimeMillis(), LAST_TIMESTAMP.get(scope));
+        long serial = millis == LAST_TIMESTAMP.get(scope)
+                ? LAST_SERIAL.get(scope) + 1 : 1;
         String filename = String.format("%013d-%016d-%s%s",
-                System.currentTimeMillis(), SERIAL.incrementAndGet(), UUID.randomUUID(), EXT);
+                millis, serial, UUID.randomUUID(), EXT);
         Path target = directory.resolve(filename);
         Path temp = Files.createTempFile(directory, "pending-", ".tmp");
         try {
@@ -71,6 +100,8 @@ public final class AtlasWriteJournal {
                 Files.move(temp, target);
             }
             syncDirectory(directory); // best effort across filesystems
+            LAST_TIMESTAMP.put(scope, millis);
+            LAST_SERIAL.put(scope, serial);
             return target;
         } finally {
             Files.deleteIfExists(temp);
