@@ -55,6 +55,7 @@ public final class AtlasMapScreen extends Screen {
     private boolean terrainLoaded;
     private int lastMergedTick = -1;
     private int autosaveTicks;
+    private int terrainScanCursor;
     private int cachedMinRx = Integer.MIN_VALUE, cachedMinRz = Integer.MIN_VALUE;
     private int cachedMaxRx = Integer.MIN_VALUE, cachedMaxRz = Integer.MIN_VALUE;
     private boolean showMarkers = true;
@@ -495,28 +496,14 @@ public final class AtlasMapScreen extends Screen {
         try {
             if (showTerrain) {
                 // Limit initial frame work; map fills progressively as the user explores.
-                int budget = 1600;
                 for (int py = 0; py < cellsY; py++) {
                     for (int px = 0; px < cellsX; px++) {
                         int wx = startX + px * step;
                         int wz = startZ + py * step;
-                        // Zoomed-out cells use observed regional averages,
-                        // rather than requiring a lucky sample at the top-left
-                        // corner. No unknown terrain is synthesized.
-                        int sampleX = wx, sampleZ = wz;
-                        long id = key(sampleX, sampleZ, 1);
+                        // Rendering must be read-only. Terrain sampling is budgeted
+                        // in tick(), otherwise fast monitors trigger repeated
+                        // heightmap/block lookups and severe frame-time spikes.
                         AtlasLevelOfDetail.Cell cell = lod.cell(wx, wz, step, tiles);
-                        if (cell == null && budget > 0 && isOriginalWorld()
-                                && minecraft.level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
-                            // Only sample terrain already sent to the client.
-                            budget--;
-                            int color = sample(sampleX, sampleZ);
-                            tiles.put(id, color);
-                            screenSamples.put(id, color);
-                            unsavedTiles.put(id, color);
-                            lodDirty = true;
-                            cell = new AtlasLevelOfDetail.Cell(color, 1, step * step);
-                        }
                         if (cell != null) {
                             int sx = mapX + px * drawSize;
                             int sy = mapY + py * drawSize;
@@ -696,8 +683,36 @@ public final class AtlasMapScreen extends Screen {
         super.onClose();
     }
 
+    /**
+     * Read a small number of already loaded columns per game tick.
+     * No terrain queries happen during rendering and no distant chunks
+     * are generated. The incremental cursor continues across ticks.
+     */
+    private void sampleVisibleTerrain() {
+        if (!showTerrain || !isOriginalWorld()) return;
+        int cellsX = Math.max(1, mapW / 2);
+        int cellsZ = Math.max(1, mapH / 2);
+        int count = cellsX * cellsZ;
+        int firstX = startX(), firstZ = startZ();
+        int budget = Math.min(96, count);
+        for (int i = 0; i < budget; i++) {
+            int index = Math.floorMod(terrainScanCursor++, count);
+            int wx = firstX + (index % cellsX) * step;
+            int wz = firstZ + (index / cellsX) * step;
+            if (!minecraft.level.getChunkSource().hasChunk(wx >> 4, wz >> 4)) continue;
+            long id = key(wx, wz, 1);
+            if (tiles.containsKey(id)) continue;
+            int color = sample(wx, wz);
+            tiles.put(id, color);
+            screenSamples.put(id, color);
+            unsavedTiles.put(id, color);
+            lodDirty = true;
+        }
+    }
+
     @Override public void tick() {
         screenTicks++;
+        sampleVisibleTerrain();
         // Region files are loaded during screen ticks, not once per rendered
         // frame, so uncached disk IO does not repeat at the monitor refresh rate.
         loadVisibleRegions(startX(), startZ());
