@@ -22,6 +22,7 @@ public final class AtlasWalkDiscovery {
         }
     };
     private static int sinceSave;
+    private static final Map<Long, Integer> pending = new LinkedHashMap<>();
 
     private AtlasWalkDiscovery() {}
 
@@ -32,24 +33,29 @@ public final class AtlasWalkDiscovery {
 
     public static void flush() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.level == world && sinceSave > 0) {
-            AtlasTerrainCache.save(mc, world, known, "walk");
-            sinceSave = 0;
+        if (mc.level != null && mc.level == world && !pending.isEmpty()) {
+            if (AtlasTerrainCache.save(mc, world, pending)) {
+                pending.clear();
+                sinceSave = 0;
+            }
         }
     }
 
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) {
+            // Preserve pending samples if the save cannot be written yet.
             world = null;
             known.clear();
+            pending.clear();
             sinceSave = 0;
             return;
         }
         if (world != mc.level) {
             world = mc.level;
             known.clear();
-            AtlasTerrainCache.load(mc, world, known, "walk");
+            pending.clear();
+            AtlasTerrainCache.migrate(mc, world);
             sinceSave = 0;
         }
 
@@ -60,6 +66,8 @@ public final class AtlasWalkDiscovery {
         int px = mc.player.getBlockX();
         int pz = mc.player.getBlockZ();
         int added = 0;
+        // The archive remains complete on disk; this bounded map is only a
+        // runtime hot cache. Previously explored cells can be read by Atlas.
         int baseX = Math.floorDiv(px, step) * step;
         int baseZ = Math.floorDiv(pz, step) * step;
         for (int dz = -24; dz <= 24; dz += step) {
@@ -77,7 +85,9 @@ public final class AtlasWalkDiscovery {
                 int red = Math.max(0, Math.min(255, ((color >> 16) & 255) + shade));
                 int green = Math.max(0, Math.min(255, ((color >> 8) & 255) + shade));
                 int blue = Math.max(0, Math.min(255, (color & 255) + shade));
-                known.put(key, 0xFF000000 | (red << 16) | (green << 8) | blue);
+                int sample = 0xFF000000 | (red << 16) | (green << 8) | blue;
+                known.put(key, sample);
+                pending.put(key, sample);
                 added++;
             }
         }
