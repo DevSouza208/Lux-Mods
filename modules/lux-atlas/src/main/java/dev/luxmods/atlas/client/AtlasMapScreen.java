@@ -27,7 +27,16 @@ public final class AtlasMapScreen extends Screen {
     private static final int EDGE = 0xFFB88BDD;
     private final Map<Long, Integer> tiles = new LinkedHashMap<>(4096, 0.75F, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
-            return size() > 400_000;
+            if (size() <= 400_000) return false;
+            // The disk archive is authoritative. Evicting any tile means its
+            // region must be eligible for loading again on a later visit.
+            int bx = (int) ((eldest.getKey() >>> 36) & 0x0fffffffL);
+            int bz = (int) ((eldest.getKey() >>> 8) & 0x0fffffffL);
+            bx = (bx << 4) >> 4;
+            bz = (bz << 4) >> 4;
+            loadedRegions.remove(AtlasTerrainCache.regionKey(
+                    AtlasTerrainCache.region(bx), AtlasTerrainCache.region(bz)));
+            return true;
         }
     };
     // LRU is just a RAM optimization; every discovered cell persists on disk.
