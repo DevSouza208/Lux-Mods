@@ -17,7 +17,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public final class AtlasTerrainCache {
     private static final int MAGIC = 0x4C585431; // LXT1
-    private static final int MAX_TILES = 120_000;
+    private static final int MAX_TILES = 400_000;
 
     private AtlasTerrainCache() {}
 
