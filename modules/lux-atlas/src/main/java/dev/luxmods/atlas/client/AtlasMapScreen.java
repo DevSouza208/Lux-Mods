@@ -198,8 +198,12 @@ public final class AtlasMapScreen extends Screen {
     }
 
     @Override public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
-        if (inMap(x, y)) {
+        if (inMap(x, y) && vertical != 0) {
+            // Zoom around the cursor, not the middle of the screen.
+            int wx = worldX(x), wz = worldZ(y);
             setZoom(zoomIndex + (vertical > 0 ? 1 : -1));
+            centerX += wx - worldX(x);
+            centerZ += wz - worldZ(y);
             return true;
         }
         return super.mouseScrolled(x, y, horizontal, vertical);
