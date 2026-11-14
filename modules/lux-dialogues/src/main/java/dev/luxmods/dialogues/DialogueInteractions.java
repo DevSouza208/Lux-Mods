@@ -18,7 +18,12 @@ public final class DialogueInteractions {
         if (DialogueNpcTypes.guardInCombat(npc)) return;
         if (!event.getLevel().isClientSide()) {
             if (event.getEntity() instanceof ServerPlayer player && player.distanceToSqr(npc) <= 64D) {
-                if (npc instanceof Villager villager) DialogueSessions.start(villager, player);
+                if (npc instanceof Villager villager) {
+                    // Initialize/read a stable server-owned offer; viewing it never
+                    // accepts the contract, consumes items, or rerolls a live offer.
+                    NpcContractStorage.current(villager, Math.max(0L, villager.level().getDayTime() / 24000L));
+                    DialogueSessions.start(villager, player);
+                }
                 else if (npc instanceof Mob guard) GuardDialogueSessions.start(guard, player);
                 event.setCancellationResult(InteractionResult.SUCCESS);
                 event.setCanceled(true);
