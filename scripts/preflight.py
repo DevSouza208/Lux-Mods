@@ -13,6 +13,8 @@ MODULES = {
     "lux-atlas": ("lux_atlas", "LuxAtlas", "dev/luxmods/atlas/LuxAtlas.java"),
     "lux-hud": ("lux_hud", "LuxHud", "dev/luxmods/hud/LuxHud.java"),
     "lux-menu": ("lux_menu", "LuxMenu", "dev/luxmods/menu/LuxMenu.java"),
+    "lux-borderless": ("lux_borderless", "LuxBorderless", "dev/luxmods/borderless/LuxBorderless.java"),
+    "lux-dialogues": ("lux_dialogues", "LuxDialogues", "dev/luxmods/dialogues/LuxDialogues.java"),
 }
 
 
@@ -42,13 +44,17 @@ def audit(root=ROOT):
             errors.append(f"Manifesto de mod incompleto: {project}")
         if f"[[dependencies.{modid}]]" not in metadata:
             errors.append(f"Dependências de mod ausentes: {project}")
-        if project in ("lux-discovery", "lux-atlas", "lux-hud", "lux-menu") and 'modId="lux_engine"' not in metadata:
+        if project in ("lux-discovery", "lux-atlas", "lux-hud", "lux-menu", "lux-dialogues") and 'modId="lux_engine"' not in metadata:
             errors.append(f"{project} não declara Engine como dependência")
 
     if "evaluationDependsOn(':lux-engine')" not in build:
         errors.append("Falta ordem de avaliação entre projetos")
     if "project(':lux-engine').sourceSets.main" not in build:
         errors.append("Engine não registrado no run do Discovery")
+    if "loadedMods = [mods.lux_dialogues, mods.lux_engine]" not in build:
+        errors.append("Testes Dialogues não carregam Engine")
+    if "project(':lux-dialogues').sourceSets.main" in build:
+        errors.append("Inconsistência: dialogues deveria ser JAR independente")
     if "loadedMods = [mods.lux_menu, mods.lux_engine]" not in build:
         errors.append("Testes Menu não carregam Engine")
     if "loadedMods = [mods.lux_hud, mods.lux_engine]" not in build:
@@ -61,6 +67,9 @@ def audit(root=ROOT):
         errors.append("Unit tests sem testedMod")
     if "tasks.register('assembleTestPack'" not in build:
         errors.append("Falta tarefa assembleTestPack")
+    for project in MODULES:
+        if f"':{project}:build'" not in build:
+            errors.append(f"Build do pacote não inclui {project}")
     if "minecraft_version=1.21.1" not in props:
         errors.append("Versão Minecraft não é 1.21.1")
     if "neo_version=" not in props:
@@ -74,6 +83,10 @@ def audit(root=ROOT):
     for project in MODULES:
         java_root = root / "modules" / project / "src/main/java"
         for path in java_root.rglob("*.java"):
+            # Lux Borderless is entirely client-only by design. Its entrypoint
+            # references GLFW/Minecraft classes and cannot run on a server.
+            if project == "lux-borderless":
+                continue
             if "/client/" in "/" + path.relative_to(java_root).as_posix():
                 continue
             if re.search(r"^import\s+net\.minecraft\.client\.", path.read_text(encoding="utf-8"), re.M):
