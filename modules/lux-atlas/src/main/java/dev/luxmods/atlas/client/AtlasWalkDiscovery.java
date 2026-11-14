@@ -38,6 +38,16 @@ public final class AtlasWalkDiscovery {
         target.putAll(known);
     }
 
+    /**
+     * Transfer unjournaled map-screen samples before that screen is destroyed.
+     * This is a session fallback, not a successful disk save.
+     */
+    public static void keepUnsubmitted(Path scope, Map<Long, Integer> changes) {
+        if (scope == null || changes.isEmpty()) return;
+        UNSUBMITTED.computeIfAbsent(scope, ignored -> new LinkedHashMap<>())
+                .putAll(changes);
+    }
+
     public static void flush() {
         // Retry older world samples before the current world. Never relabel
         // failed observations as belonging to the new dimension.
