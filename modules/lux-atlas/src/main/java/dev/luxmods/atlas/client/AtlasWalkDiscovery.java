@@ -159,21 +159,23 @@ public final class AtlasWalkDiscovery {
         // Each stored cell now corresponds to one exact world block.
         // Keep the immediate pass small to avoid thousands of synchronous
         // height/block lookups every two seconds on slower modpacks.
-        // Outer loaded terrain is sampled progressively over subsequent ticks.
+        // Biome preview covers unexplored territory, so reduce the immediate
+        // collector's cost to keep movement smooth. Exact surface samples
+        // still accumulate while the player explores.
         final int step = 1;
         int baseX = mc.player.getBlockX();
         int baseZ = mc.player.getBlockZ();
         int added = 0;
-        for (int dz = -8; dz <= 8; dz += step) {
-            for (int dx = -8; dx <= 8; dx += step) {
+        for (int dz = -4; dz <= 4; dz += step) {
+            for (int dx = -4; dx <= 4; dx += step) {
                 if (sampleOne(baseX + dx, baseZ + dz, false)) added++;
             }
         }
-        // Refresh 64 nearby coordinates per sampling cycle. This discovers
+        // Refresh 24 nearby coordinates per sampling cycle. This discovers
         // roads, bridges and buildings erected AFTER the terrain was mapped,
         // without recalculating the entire 33x33 neighborhood each time.
         final int revisitSide = 33;
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < 24; i++) {
             int index = Math.floorMod(refreshCursor++, revisitSide * revisitSide);
             int dx = index % revisitSide - revisitSide / 2;
             int dz = index / revisitSide - revisitSide / 2;
@@ -182,7 +184,7 @@ public final class AtlasWalkDiscovery {
         final int radius = 96;
         final int side = radius / step * 2 + 1;
         final int total = side * side;
-        final int budget = 192;
+        final int budget = 96;
         for (int i = 0; i < budget; i++) {
             // Keep the scan cursor bounded: integer overflow after long
             // sessions would otherwise produce negative sample offsets.
