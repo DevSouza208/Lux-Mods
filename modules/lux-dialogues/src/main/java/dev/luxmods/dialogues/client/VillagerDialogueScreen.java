@@ -58,6 +58,10 @@ public final class VillagerDialogueScreen extends Screen {
         rebuildWidgets();
     }
 
+    private boolean canRequestContract() {
+        return npc instanceof Villager villager && !villager.isBaby();
+    }
+
     private boolean hasShop() {
         if (!(npc instanceof Villager villager)) return false;
         var profession = villager.getVillagerData().getProfession();
@@ -71,7 +75,8 @@ public final class VillagerDialogueScreen extends Screen {
         int availableActions = contractSnapshot == null ? 0 :
                 (ContractUiState.canAccept(contractSnapshot.status()) ? 1 : 0)
                 + (ContractUiState.canDeliver(contractSnapshot.status(), contractSnapshot.mine()) ? 1 : 0);
-        int count = contractMenu ? 2 + availableActions : (replied ? 2 : (hasShop() ? 5 : (guard ? 3 : 4)));
+        int count = contractMenu ? 2 + availableActions
+                : (replied ? 2 : 3 + (canRequestContract() ? 1 : 0) + (hasShop() ? 1 : 0) - 1);
         int buttonWidth = Math.min(116, Math.max(48, (width - 20 - (count - 1) * gap) / count));
         int total = count * buttonWidth + (count - 1) * gap;
         int x = Math.max(8, (width - total) / 2);
@@ -110,7 +115,7 @@ public final class VillagerDialogueScreen extends Screen {
                     () -> respond(DialogueLines.howAreYou(npc.getUUID(), day, guard)));
             addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Qual é a boa?",
                     () -> respond(DialogueLines.rumor(npc.getUUID(), day, guard)));
-            if (!guard && npc instanceof Villager) {
+            if (canRequestContract()) {
                 addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Contrato", () -> {
                     contractMenu = true;
                     contractSnapshot = null;
