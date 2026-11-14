@@ -11,7 +11,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.phys.AABB;
 
-/** The Lux Atlas mini-compass: narrow, slim and snapped just above the hotbar. */
+/** Direction compass at the upper center; legacy manual-bottom placement remains optional. */
 public final class AtlasCompassHud {
     private static final int WIDTH = 162;
     private static final int HEIGHT = 18;
@@ -26,9 +26,10 @@ public final class AtlasCompassHud {
                 || !AtlasConfig.SHOW_COMPASS.get()) return;
 
         int centerX = g.guiWidth() / 2;
-        int bottomDistance = AtlasConfig.SNAP_TO_HOTBAR.get() ?
-                46 : AtlasConfig.DISTANCE_FROM_BOTTOM.get();
-        int y = Math.max(4, g.guiHeight() - bottomDistance);
+        // The primary exploration compass belongs at the TOP of the screen.
+        // Keep legacy manual positioning only for users who disabled snapping.
+        int y = AtlasConfig.SNAP_TO_HOTBAR.get() ? 8
+                : Math.max(4, g.guiHeight() - AtlasConfig.DISTANCE_FROM_BOTTOM.get());
         int x = centerX - WIDTH / 2;
         float heading = CompassMath.fromMinecraftYaw(mc.player.getYRot());
 
