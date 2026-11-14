@@ -45,6 +45,7 @@ public final class AtlasMapScreen extends Screen {
     private boolean firstOpen = true;
     private boolean terrainLoaded;
     private int lastMergedTick = -1;
+    private int cachedViewportRx = Integer.MIN_VALUE, cachedViewportRz = Integer.MIN_VALUE;
     private boolean showMarkers = true;
     private boolean showTerrain = true;
     private boolean showPlayer = true;
@@ -252,7 +253,30 @@ public final class AtlasMapScreen extends Screen {
         int minRz = AtlasTerrainCache.region(startZ);
         int maxRx = AtlasTerrainCache.region(endX);
         int maxRz = AtlasTerrainCache.region(endZ);
-        int budget = 6;
+        // Drop only out-of-view RAM copies, never explored files on disk.
+        // Returning to an older area forces its regions to be reloaded.
+        int centerRx = AtlasTerrainCache.region(centerX);
+        int centerRz = AtlasTerrainCache.region(centerZ);
+        if (centerRx != cachedViewportRx || centerRz != cachedViewportRz) {
+            cachedViewportRx = centerRx;
+            cachedViewportRz = centerRz;
+            final int left = minRx - 1, right = maxRx + 1;
+            final int top = minRz - 1, bottom = maxRz + 1;
+            loadedRegions.removeIf(id -> {
+                int rx = (int) (id >> 32), rz = (int) (long) id;
+                return rx < left || rx > right || rz < top || rz > bottom;
+            });
+            tiles.keySet().removeIf(id -> {
+                int bx = (int) ((id >>> 36) & 0x0fffffffL);
+                int bz = (int) ((id >>> 8) & 0x0fffffffL);
+                bx = (bx << 4) >> 4;
+                bz = (bz << 4) >> 4;
+                int rx = AtlasTerrainCache.region(bx), rz = AtlasTerrainCache.region(bz);
+                return rx < left || rx > right || rz < top || rz > bottom;
+            });
+            tiles.putAll(unsavedTiles);
+        }
+        int budget = 4;
         // Load from the player's camera center outward to avoid a visible
         // upper-left sweep when opening a large world map.
         int middleRx = AtlasTerrainCache.region(centerX);
@@ -413,8 +437,9 @@ public final class AtlasMapScreen extends Screen {
     @Override public void onClose() {
         if (minecraft != null && minecraft.level != null) {
             AtlasWalkDiscovery.flush();
-            AtlasTerrainCache.save(minecraft, minecraft.level, unsavedTiles);
-            unsavedTiles.clear();
+            if (AtlasTerrainCache.save(minecraft, minecraft.level, unsavedTiles)) {
+                unsavedTiles.clear();
+            }
         }
         super.onClose();
     }
