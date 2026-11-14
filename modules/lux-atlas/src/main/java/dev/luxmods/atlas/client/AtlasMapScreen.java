@@ -343,6 +343,19 @@ public final class AtlasMapScreen extends Screen {
         }
     }
 
+    private static String markerGlyph(String kind) {
+        return switch (kind.toLowerCase(java.util.Locale.ROOT)) {
+            case "casa" -> "C";
+            case "vila" -> "V";
+            case "portal" -> "P";
+            case "torre" -> "T";
+            case "mina" -> "M";
+            case "cavalo" -> "H";
+            case "estrutura" -> "◆";
+            default -> "✦";
+        };
+    }
+
     private void drawMap(GuiGraphics g) {
         g.fill(mapX - 4, mapY - 4, mapX + mapW + 4, mapY + mapH + 4, 0xFF705286);
         g.fill(mapX - 2, mapY - 2, mapX + mapW + 2, mapY + mapH + 2, 0xFFC7A372);
@@ -411,11 +424,12 @@ public final class AtlasMapScreen extends Screen {
                     int mx = (int) Math.round(mapX + mapW / 2.0 + (marker.x() - centerX) * 2.0 / step);
                     int my = (int) Math.round(mapY + mapH / 2.0 + (marker.z() - centerZ) * 2.0 / step);
                     if (mx < mapX || mx >= mapX + mapW || my < mapY || my >= mapY + mapH) continue;
-                    // Pinned diamond: coordinates remain fixed while camera pans.
-                    g.fill(mx - 4, my, mx + 5, my + 1, 0xFF33243F);
-                    g.fill(mx, my - 4, mx + 1, my + 5, 0xFF33243F);
-                    g.fill(mx - 2, my, mx + 3, my + 1, marker.color());
-                    g.fill(mx, my - 2, mx + 1, my + 3, marker.color());
+                    // Typed waypoint with persistent user color.
+                    String glyph = markerGlyph(marker.icon());
+                    g.fill(mx - 6, my - 6, mx + 7, my + 6, 0xCC21162F);
+                    g.fill(mx - 6, my - 6, mx + 7, my - 5, marker.color());
+                    g.drawString(font, glyph, mx - font.width(glyph) / 2,
+                            my - 4, marker.color(), true);
                 }
             }
             if (showPlayer && minecraft.player != null) {
