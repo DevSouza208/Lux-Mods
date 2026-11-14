@@ -49,22 +49,26 @@ public final class AtlasBiomeClient {
     public static void requestVisible(int minX, int minZ, int maxX, int maxZ, int ticks) {
         checkWorld();
         if (currentLevel == null || Minecraft.getInstance().player == null) return;
-        // Match the server's 8192-block request radius and world border.
-        // Clamping also prevents huge loops when the map is zoomed far out
-        // or panned to invalid coordinates.
+        // Request regions intersecting the viewport, even when the viewport is
+        // smaller than one 512-block region or begins halfway through one.
+        // Clamp REGION ORIGINS to the server's player-distance/world limits.
         long px = Minecraft.getInstance().player.getBlockX();
         long pz = Minecraft.getInstance().player.getBlockZ();
-        long lowX = Math.max(Math.max((long) minX, px - 8192L), -30_000_000L);
-        long lowZ = Math.max(Math.max((long) minZ, pz - 8192L), -30_000_000L);
-        long highX = Math.min(Math.min((long) maxX, px + 8192L - AtlasBiomeNetwork.REGION_BLOCKS), 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
-        long highZ = Math.min(Math.min((long) maxZ, pz + 8192L - AtlasBiomeNetwork.REGION_BLOCKS), 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
-        if (lowX > highX || lowZ > highZ) return;
-        // The server validates region ORIGINS, not intersecting cells.
-        // Round up the lower bound so the first request is always legal.
-        int startX = (int) -Math.floorDiv(-lowX, AtlasBiomeNetwork.REGION_BLOCKS);
-        int startZ = (int) -Math.floorDiv(-lowZ, AtlasBiomeNetwork.REGION_BLOCKS);
-        int endX = (int) Math.floorDiv(highX, AtlasBiomeNetwork.REGION_BLOCKS);
-        int endZ = (int) Math.floorDiv(highZ, AtlasBiomeNetwork.REGION_BLOCKS);
+        long minOriginX = Math.max(px - 8192L, -30_000_000L);
+        long minOriginZ = Math.max(pz - 8192L, -30_000_000L);
+        long maxOriginX = Math.min(px + 8192L, 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
+        long maxOriginZ = Math.min(pz + 8192L, 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
+        long firstX = Math.max(Math.floorDiv((long) minX, AtlasBiomeNetwork.REGION_BLOCKS),
+                -Math.floorDiv(-minOriginX, AtlasBiomeNetwork.REGION_BLOCKS));
+        long firstZ = Math.max(Math.floorDiv((long) minZ, AtlasBiomeNetwork.REGION_BLOCKS),
+                -Math.floorDiv(-minOriginZ, AtlasBiomeNetwork.REGION_BLOCKS));
+        long lastX = Math.min(Math.floorDiv((long) maxX, AtlasBiomeNetwork.REGION_BLOCKS),
+                Math.floorDiv(maxOriginX, AtlasBiomeNetwork.REGION_BLOCKS));
+        long lastZ = Math.min(Math.floorDiv((long) maxZ, AtlasBiomeNetwork.REGION_BLOCKS),
+                Math.floorDiv(maxOriginZ, AtlasBiomeNetwork.REGION_BLOCKS));
+        if (firstX > lastX || firstZ > lastZ) return;
+        int startX = (int) firstX, startZ = (int) firstZ;
+        int endX = (int) lastX, endZ = (int) lastZ;
         // Only one request every 12 client ticks. A server can throttle as well.
         if (ticks % 12 != 0) return;
         for (int z = startZ; z <= endZ; z++) {
