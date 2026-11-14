@@ -78,6 +78,7 @@ public final class DialogueNetwork {
         player.sendSystemMessage(Component.literal("Contrato aceito: entregar "
                 + updated.quantity() + " de " + updated.objective()
                 + ". Volte ao aldeão quando reunir os itens."));
+        sendContractSnapshot(villager, player);
     }
 
     /** The client only identifies the NPC; all inventory and contract rules stay server-side. */
@@ -95,7 +96,59 @@ public final class DialogueNetwork {
         Entity entity = player.level().getEntity(payload.entityId());
         if (entity instanceof Villager villager) {
             NpcContractDelivery.deliver(villager, player);
+            if (villager.isAlive() && villager.distanceToSqr(player) <= 64.0D)
+                sendContractSnapshot(villager, player);
         }
+    }
+
+    /** Read-only contract query; the server sends the authoritative snapshot. */
+    public record RequestContract(int entityId) implements CustomPacketPayload {
+        public static final Type<RequestContract> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "request_contract"));
+        public static final StreamCodec<FriendlyByteBuf, RequestContract> CODEC =
+                StreamCodec.of((buf, payload) -> buf.writeVarInt(payload.entityId()),
+                        buf -> new RequestContract(buf.readVarInt()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /** Bounded server-owned display values; no client-trusted contract mutations. */
+    public record ContractSnapshot(int entityId, String objective, int quantity,
+                                   long expiresDay, int status, boolean mine) implements CustomPacketPayload {
+        public static final Type<ContractSnapshot> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "contract_snapshot"));
+        public static final StreamCodec<FriendlyByteBuf, ContractSnapshot> CODEC =
+                StreamCodec.of((buf, p) -> {
+                    buf.writeVarInt(p.entityId());
+                    buf.writeUtf(p.objective(), 64);
+                    buf.writeVarInt(p.quantity());
+                    buf.writeVarLong(p.expiresDay());
+                    buf.writeVarInt(p.status());
+                    buf.writeBoolean(p.mine());
+                }, buf -> new ContractSnapshot(buf.readVarInt(), buf.readUtf(64),
+                        buf.readVarInt(), buf.readVarLong(), buf.readVarInt(), buf.readBoolean()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    private static void requestContract(RequestContract payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
+        Entity entity = player.level().getEntity(payload.entityId());
+        if (!(entity instanceof Villager villager) || !villager.isAlive()
+                || villager.isBaby() || player.distanceToSqr(villager) > 64.0D) return;
+        sendContractSnapshot(villager, player);
+    }
+
+    private static void sendContractSnapshot(Villager villager, ServerPlayer player) {
+        long day = Math.max(0L, villager.level().getDayTime() / 24000L);
+        NpcContractLifecycle.Offer offer = NpcContractStorage.current(villager, day);
+        boolean mine = player.getUUID().equals(offer.claimant());
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                new ContractSnapshot(villager.getId(), offer.objective(), offer.quantity(),
+                        offer.expiresDay(), offer.status().ordinal(), mine));
+    }
+
+    private static void receiveContractSnapshot(ContractSnapshot snapshot, IPayloadContext context) {
+        context.enqueueWork(() ->
+                dev.luxmods.dialogues.client.DialogueClient.onContractSnapshot(snapshot));
     }
 
     public static void register(RegisterPayloadHandlersEvent event) {
@@ -104,6 +157,8 @@ public final class DialogueNetwork {
         registrar.playToServer(EndDialogue.TYPE, EndDialogue.CODEC, DialogueNetwork::endDialogue);
         registrar.playToServer(AcceptContract.TYPE, AcceptContract.CODEC, DialogueNetwork::acceptContract);
         registrar.playToServer(DeliverContract.TYPE, DeliverContract.CODEC, DialogueNetwork::deliverContract);
+        registrar.playToServer(RequestContract.TYPE, RequestContract.CODEC, DialogueNetwork::requestContract);
+        registrar.playToClient(ContractSnapshot.TYPE, ContractSnapshot.CODEC, DialogueNetwork::receiveContractSnapshot);
     }
 
     private static void endDialogue(EndDialogue payload, IPayloadContext context) {
