@@ -451,23 +451,19 @@ public final class AtlasMapScreen extends Screen {
     private static void drawCoverageCell(GuiGraphics g, int x, int y,
                                          AtlasLevelOfDetail.Cell cell) {
         if (cell == null) return;
-        if (cell.known() >= cell.total()) {
-            g.fill(x, y, x + 2, y + 2, cell.color());
-            return;
-        }
-        int pixels = Math.max(1, (int) Math.ceil(4.0 * cell.fraction()));
+        // A coherent dimmed surface is easier to navigate than four
+        // disconnected pixels. Reduced brightness still marks the cell as
+        // partly observed, rather than claiming full terrain certainty.
         int color = cell.color();
-        // A trace amount of exploration should not look like 25% coverage.
-        if (cell.fraction() < 0.125) {
-            int r = (((color >>> 16) & 255) + 24) / 2;
-            int green = (((color >>> 8) & 255) + 24) / 2;
-            int b = ((color & 255) + 39) / 2;
-            color = 0xff000000 | r << 16 | green << 8 | b;
+        if (cell.known() < cell.total()) {
+            double fraction = Math.max(0.0, Math.min(1.0, cell.fraction()));
+            double brightness = 0.37 + 0.63 * fraction;
+            int red = (int) (((color >>> 16) & 255) * brightness);
+            int green = (int) (((color >>> 8) & 255) * brightness);
+            int blue = (int) ((color & 255) * brightness);
+            color = 0xff000000 | red << 16 | green << 8 | blue;
         }
-        if (pixels >= 1) g.fill(x, y, x + 1, y + 1, color);
-        if (pixels >= 2) g.fill(x + 1, y + 1, x + 2, y + 2, color);
-        if (pixels >= 3) g.fill(x + 1, y, x + 2, y + 1, color);
-        if (pixels >= 4) g.fill(x, y + 1, x + 1, y + 2, color);
+        g.fill(x, y, x + 2, y + 2, color);
     }
 
     private void drawMap(GuiGraphics g) {
