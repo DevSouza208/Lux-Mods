@@ -3,6 +3,7 @@ package dev.luxmods.atlas;
 import dev.luxmods.atlas.client.AtlasClientLayers;
 import dev.luxmods.atlas.client.AtlasMapKey;
 import dev.luxmods.atlas.client.AtlasWalkDiscovery;
+import dev.luxmods.atlas.client.AtlasHorseMemory;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -31,6 +32,7 @@ public final class LuxAtlas {
             modBus.addListener(AtlasClientLayers::register);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasMapKey::onTick);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasWalkDiscovery::onTick);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasHorseMemory::onTick);
         }
     }
 }
