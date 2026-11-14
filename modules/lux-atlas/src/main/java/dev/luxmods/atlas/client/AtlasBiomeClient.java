@@ -80,6 +80,10 @@ public final class AtlasBiomeClient {
         int rx = Math.floorDiv(response.originX(), AtlasBiomeNetwork.REGION_BLOCKS);
         int rz = Math.floorDiv(response.originZ(), AtlasBiomeNetwork.REGION_BLOCKS);
         long key = key(rx, rz);
+        // Only accept a reply to a request made in this ClientLevel. A delayed
+        // packet from a previous connection using the same dimension name
+        // must not populate the new world's biome preview.
+        if (!REQUESTED.containsKey(key)) return;
         REGIONS.put(key, response.colors().clone());
         REQUESTED.remove(key);
     }
