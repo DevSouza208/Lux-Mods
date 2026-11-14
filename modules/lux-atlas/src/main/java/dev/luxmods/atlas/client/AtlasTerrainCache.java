@@ -79,16 +79,27 @@ public final class AtlasTerrainCache {
         return (value << 4) >> 4;
     }
 
-    private static void readRegion(Path file, Map<Long, Integer> target) throws IOException {
+    private static void readRegion(Path file, int rx, int rz, Map<Long, Integer> target)
+            throws IOException {
         if (!Files.isRegularFile(file)) return;
+        // Never mix a partially decoded/corrupt archive into live terrain.
+        Map<Long, Integer> decoded = new HashMap<>();
         try (DataInputStream in = new DataInputStream(new GZIPInputStream(Files.newInputStream(file)))) {
             if (in.readInt() != REGION_MAGIC) throw new IOException("Invalid Atlas region header");
             int count = in.readInt();
             if (count < 0 || count > MAX_REGION_SAMPLES) throw new IOException("Invalid Atlas region count");
             for (int i = 0; i < count; i++) {
-                target.put(in.readLong(), in.readInt());
+                long key = in.readLong();
+                int color = in.readInt();
+                // A corrupt file must not inject unrelated world coordinates.
+                if (region(unpackX(key)) != rx || region(unpackZ(key)) != rz)
+                    throw new IOException("Atlas sample belongs to another region");
+                decoded.put(key, color);
             }
+            if (decoded.size() != count) throw new IOException("Duplicate Atlas samples");
+            if (in.read() != -1) throw new IOException("Atlas region has trailing data");
         }
+        target.putAll(decoded);
     }
 
     private static void writeRegion(Path file, Map<Long, Integer> data) throws IOException {
@@ -126,7 +137,7 @@ public final class AtlasTerrainCache {
             int rz = (int) (long) batch.getKey();
             Path path = regionPath(folder, rx, rz);
             Map<Long, Integer> contents = new HashMap<>();
-            readRegion(path, contents);
+            readRegion(path, rx, rz, contents);
             boolean changed = false;
             for (var sample : batch.getValue().entrySet()) {
                 Integer previous = contents.put(sample.getKey(), sample.getValue());
@@ -178,7 +189,7 @@ public final class AtlasTerrainCache {
         migrate(mc, level);
         try {
             Map<Long, Integer> region = new HashMap<>();
-            readRegion(regionPath(regionFolder(mc, level), rx, rz), region);
+            readRegion(regionPath(regionFolder(mc, level), rx, rz), rx, rz, region);
             target.putAll(region);
             return true;
         } catch (IOException ignored) {
