@@ -90,8 +90,7 @@ public final class AtlasCompassHud {
                 g.fill(px - 2, y + 1, px + 3, y + 6, 0xFF33121A);
                 g.fill(px - 1, y + 2, px + 2, y + 5, 0xFFF04C59);
             } else {
-                g.fill(px - 5, y, px + 6, y + 9, 0xE021192F);
-                g.drawString(mc.font, "H", px - 3, y + 1, 0xFFECC37C, true);
+                drawHorseIcon(g, px, y, 0xFFECC37C);
             }
         }
     }
@@ -107,8 +106,18 @@ public final class AtlasCompassHud {
         if (Math.abs(offset) > HALF_WINDOW_DEGREES) return;
         int px = Math.round(centerX + offset * PIXELS_PER_DEGREE);
         // Muted color + '?' means historical position, not a live GPS signal.
-        g.fill(px - 6, y - 2, px + 7, y + 9, 0xDA211B2B);
-        g.drawString(mc.font, "H?", px - 6, y - 1, 0xFFC2A4D1, true);
+        drawHorseIcon(g, px - 3, y, 0xFF957C9F);
+        g.drawString(mc.font, "?", px + 2, y, 0xFFC2A4D1, true);
+    }
+
+    /** Tiny pixel horse-head silhouette, with no external texture dependency. */
+    private static void drawHorseIcon(GuiGraphics g, int cx, int y, int color) {
+        g.fill(cx - 4, y, cx + 4, y + 11, 0xE021192F);
+        g.fill(cx - 2, y + 1, cx, y + 4, color);      // ear
+        g.fill(cx + 1, y + 2, cx + 3, y + 5, color);  // mane
+        g.fill(cx - 2, y + 4, cx + 2, y + 8, color);  // head
+        g.fill(cx - 3, y + 7, cx + 1, y + 10, color); // muzzle
+        g.fill(cx - 1, y + 5, cx, y + 6, 0xFF1D1526);
     }
 
 }
