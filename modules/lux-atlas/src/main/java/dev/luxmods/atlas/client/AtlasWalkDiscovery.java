@@ -165,7 +165,10 @@ public final class AtlasWalkDiscovery {
         final int total = side * side;
         final int budget = 900;
         for (int i = 0; i < budget; i++) {
-            int index = scanCursor++ % total;
+            // Keep the scan cursor bounded: integer overflow after long
+            // sessions would otherwise produce negative sample offsets.
+            int index = scanCursor;
+            scanCursor = (scanCursor + 1) % total;
             int dx = (index % side - side / 2) * step;
             int dz = (index / side - side / 2) * step;
             if (sampleOne(baseX + dx, baseZ + dz, false)) added++;
