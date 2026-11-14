@@ -49,10 +49,20 @@ public final class AtlasBiomeClient {
     public static void requestVisible(int minX, int minZ, int maxX, int maxZ, int ticks) {
         checkWorld();
         if (currentLevel == null || Minecraft.getInstance().player == null) return;
-        int startX = Math.floorDiv(minX, AtlasBiomeNetwork.REGION_BLOCKS);
-        int startZ = Math.floorDiv(minZ, AtlasBiomeNetwork.REGION_BLOCKS);
-        int endX = Math.floorDiv(maxX, AtlasBiomeNetwork.REGION_BLOCKS);
-        int endZ = Math.floorDiv(maxZ, AtlasBiomeNetwork.REGION_BLOCKS);
+        // Match the server's 8192-block request radius and world border.
+        // Clamping also prevents huge loops when the map is zoomed far out
+        // or panned to invalid coordinates.
+        long px = Minecraft.getInstance().player.getBlockX();
+        long pz = Minecraft.getInstance().player.getBlockZ();
+        long lowX = Math.max(Math.max((long) minX, px - 8192L), -30_000_000L);
+        long lowZ = Math.max(Math.max((long) minZ, pz - 8192L), -30_000_000L);
+        long highX = Math.min(Math.min((long) maxX, px + 8192L - AtlasBiomeNetwork.REGION_BLOCKS), 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
+        long highZ = Math.min(Math.min((long) maxZ, pz + 8192L - AtlasBiomeNetwork.REGION_BLOCKS), 30_000_000L - AtlasBiomeNetwork.REGION_BLOCKS);
+        if (lowX > highX || lowZ > highZ) return;
+        int startX = (int) Math.floorDiv(lowX, AtlasBiomeNetwork.REGION_BLOCKS);
+        int startZ = (int) Math.floorDiv(lowZ, AtlasBiomeNetwork.REGION_BLOCKS);
+        int endX = (int) Math.floorDiv(highX, AtlasBiomeNetwork.REGION_BLOCKS);
+        int endZ = (int) Math.floorDiv(highZ, AtlasBiomeNetwork.REGION_BLOCKS);
         // Only one request every 12 client ticks. A server can throttle as well.
         if (ticks % 12 != 0) return;
         for (int z = startZ; z <= endZ; z++) {
