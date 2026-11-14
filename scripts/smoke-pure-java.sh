@@ -13,11 +13,13 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/LuxDiscoveryEvents.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/CompassMath.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasViewport.java \
+  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasLevelOfDetail.java \
   modules/lux-hud/src/main/java/dev/luxmods/hud/HudBarMath.java \
   modules/lux-hud/src/main/java/dev/luxmods/hud/HudPartyCodec.java \
   scripts/src/LuxHudSmoke.java \
   scripts/src/LuxCompassSmoke.java \
   scripts/src/LuxAtlasViewportSmoke.java \
+  scripts/src/LuxAtlasLodSmoke.java \
   scripts/src/LuxSmokeMain.java \
   scripts/src/LuxEventDepthSmoke.java
 java -cp "$TMP" LuxSmokeMain
@@ -25,3 +27,4 @@ java -cp "$TMP" LuxEventDepthSmoke
 java -cp "$TMP" LuxCompassSmoke
 java -cp "$TMP" LuxHudSmoke
 java -cp "$TMP" LuxAtlasViewportSmoke
+java -cp "$TMP" LuxAtlasLodSmoke
