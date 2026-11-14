@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -23,7 +22,12 @@ public final class AtlasBiomeClient {
             return size() > MAX_REGIONS;
         }
     };
-    private static final Map<Long, Integer> REQUESTED = new HashMap<>();
+    private static final Map<Long, Integer> REQUESTED =
+            new LinkedHashMap<>(128, .75f, true) {
+                @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> entry) {
+                    return size() > 128;
+                }
+            };
 
     private AtlasBiomeClient() {}
 
