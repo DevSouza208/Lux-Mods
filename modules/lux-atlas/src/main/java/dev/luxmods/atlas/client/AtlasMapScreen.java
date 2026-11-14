@@ -106,21 +106,25 @@ public final class AtlasMapScreen extends Screen {
         addButton(width / 2 - 174, 12, 105, "Missões", b -> {
             questsTab = true;
             status = "Missões conhecidas nesta sessão";
+            rebuildWidgets();
         });
         addButton(width / 2 - 52, 12, 105, "Mapa", b -> {
             questsTab = false;
             status = "Mapa ativo";
+            rebuildWidgets();
         });
         addButton(width / 2 + 70, 12, 105, "Upgrades", b -> status = "Upgrades: em desenvolvimento");
-        addButton(12, 182, 38, "◀", b -> {
-            questPage = Math.max(0, questPage - 1);
-        });
-        addButton(56, 182, 38, "▶", b -> {
-            if (minecraft == null || minecraft.level == null || minecraft.player == null) return;
-            int count = LuxQuestTracker.inDimension(
-                    minecraft.level.dimension().location().toString()).size();
-            questPage = Math.min(LuxQuestPage.pages(count, 5) - 1, questPage + 1);
-        });
+        if (questsTab) {
+            addButton(12, 182, 38, "◀", b -> {
+                questPage = Math.max(0, questPage - 1);
+            });
+            addButton(56, 182, 38, "▶", b -> {
+                if (minecraft == null || minecraft.level == null || minecraft.player == null) return;
+                int count = LuxQuestTracker.inDimension(
+                        minecraft.level.dimension().location().toString()).size();
+                questPage = Math.min(LuxQuestPage.pages(count, 5) - 1, questPage + 1);
+            });
+        }
         addButton(Math.max(mapX + 7, mapX + mapW - 184), mapY + 7, 88, "+ Marcador", b -> addMarker());
         addButton(Math.max(mapX + 98, mapX + mapW - 93), mapY + 7, 84, "- Marcador", b -> removeMarker());
         addButton(Math.max(mapX + 7, mapX + mapW - 184), mapY + 33, 88, "Editar", btn -> editMarker());
