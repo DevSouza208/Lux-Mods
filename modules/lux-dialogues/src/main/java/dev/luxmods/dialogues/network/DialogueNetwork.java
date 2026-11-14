@@ -24,6 +24,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public final class DialogueNetwork {
     private DialogueNetwork() {}
 
+    // A malicious client must not request the full 128-entry quest index every tick.
+    // Weak player keys are discarded after disconnection.
+    private static final java.util.Map<ServerPlayer, Integer> QUEST_SYNC_COOLDOWN =
+            new java.util.WeakHashMap<>();
+
     public record OpenShop(int entityId) implements CustomPacketPayload {
         public static final Type<OpenShop> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "open_shop"));
@@ -169,7 +174,12 @@ public final class DialogueNetwork {
     }
 
     private static void requestQuestLedger(RequestQuestLedger payload, IPayloadContext context) {
-        if (context.player() instanceof ServerPlayer player) sendQuestLedger(player);
+        if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
+        int now = player.tickCount;
+        Integer previous = QUEST_SYNC_COOLDOWN.get(player);
+        if (previous != null && now >= previous && now - previous < 40) return;
+        QUEST_SYNC_COOLDOWN.put(player, now);
+        sendQuestLedger(player);
     }
 
     /** A bounded, server-authored list of accepted contracts for reconnection. */
