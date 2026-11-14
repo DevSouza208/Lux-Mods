@@ -265,19 +265,10 @@ public final class AtlasMapScreen extends Screen {
         if (y <= level.getMinBuildHeight() || y >= level.getMaxBuildHeight()) return 0xFF181827;
         BlockPos pos = new BlockPos(wx, y - 1, wz);
         var state = level.getBlockState(pos);
-        int color = state.getMapColor(level, pos).col;
-        if (color == 0) color = 0x576C52;
-        // Directional relief shading gives mountain ridges clearer contours
-        // without adding any textures, world generation or new GUI overlays.
         int northY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1);
         int westY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz);
-        int relief = (y - northY) * 5 + (y - westY) * 3;
-        int shade = Math.max(-37, Math.min(42, (y - 72) / 4 + relief));
-        if (state.is(Blocks.WATER)) shade = -12;
-        int red = Math.max(0, Math.min(255, ((color >> 16) & 255) + shade));
-        int green = Math.max(0, Math.min(255, ((color >> 8) & 255) + shade));
-        int blue = Math.max(0, Math.min(255, (color & 255) + shade));
-        return 0xFF000000 | (red << 16) | (green << 8) | blue;
+        return AtlasTerrainColor.shade(state.getMapColor(level, pos).col,
+                y, northY, westY, state.is(Blocks.WATER));
     }
 
     /** Read only the persisted regions currently visible in the map window.
