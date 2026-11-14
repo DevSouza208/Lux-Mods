@@ -22,6 +22,7 @@ public final class LuxAtlas {
 
     public LuxAtlas(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, AtlasConfig.SPEC);
+        modBus.addListener(AtlasBiomeNetwork::register);
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientSetup.register(modBus);
         }
