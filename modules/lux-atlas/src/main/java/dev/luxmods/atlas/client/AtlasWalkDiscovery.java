@@ -157,14 +157,15 @@ public final class AtlasWalkDiscovery {
 
         if (mc.player.tickCount % 40 != 0) return;
         // Each stored cell now corresponds to one exact world block.
-        // Immediate surroundings fill reliably; outer loaded terrain is
-        // sampled progressively with a bounded per-tick budget.
+        // Keep the immediate pass small to avoid thousands of synchronous
+        // height/block lookups every two seconds on slower modpacks.
+        // Outer loaded terrain is sampled progressively over subsequent ticks.
         final int step = 1;
         int baseX = mc.player.getBlockX();
         int baseZ = mc.player.getBlockZ();
         int added = 0;
-        for (int dz = -16; dz <= 16; dz += step) {
-            for (int dx = -16; dx <= 16; dx += step) {
+        for (int dz = -8; dz <= 8; dz += step) {
+            for (int dx = -8; dx <= 8; dx += step) {
                 if (sampleOne(baseX + dx, baseZ + dz, false)) added++;
             }
         }
@@ -181,7 +182,7 @@ public final class AtlasWalkDiscovery {
         final int radius = 96;
         final int side = radius / step * 2 + 1;
         final int total = side * side;
-        final int budget = 900;
+        final int budget = 192;
         for (int i = 0; i < budget; i++) {
             // Keep the scan cursor bounded: integer overflow after long
             // sessions would otherwise produce negative sample offsets.
