@@ -25,6 +25,7 @@ public final class LuxDialogues {
         private static void init() {
             // UI types are kept away from dedicated server class loading.
             NeoForge.EVENT_BUS.addListener(dev.luxmods.dialogues.client.DialogueClient::onInteract);
+            NeoForge.EVENT_BUS.addListener(dev.luxmods.dialogues.client.DialogueClient::onLogout);
         }
     }
 }
