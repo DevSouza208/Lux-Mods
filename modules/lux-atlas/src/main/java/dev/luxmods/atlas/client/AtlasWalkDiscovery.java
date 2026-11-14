@@ -120,6 +120,10 @@ public final class AtlasWalkDiscovery {
             System.err.println("[Lux Atlas] Gravações pendentes ao desconectar: "
                     + AtlasWriteQueue.status().message());
         }
+        // The client can retain its old ClientLevel briefly after logout.
+        // Clear its live samples immediately so opening the map during the
+        // transition cannot merge another server's exploration into it.
+        rotateWorld();
     }
 
     public static void onTick(ClientTickEvent.Post event) {
