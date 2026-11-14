@@ -273,8 +273,11 @@ public final class AtlasMapScreen extends Screen {
         if (y <= level.getMinBuildHeight() || y >= level.getMaxBuildHeight()) return 0xFF181827;
         BlockPos pos = new BlockPos(wx, y - 1, wz);
         var state = level.getBlockState(pos);
-        int northY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1);
-        int westY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz);
+        // Shade only from loaded neighbors; do not force chunk loads.
+        int northY = level.getChunkSource().hasChunk(wx >> 4, (wz - 1) >> 4)
+                ? level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz - 1) : y;
+        int westY = level.getChunkSource().hasChunk((wx - 1) >> 4, wz >> 4)
+                ? level.getHeight(Heightmap.Types.WORLD_SURFACE, wx - 1, wz) : y;
         return AtlasTerrainColor.shade(state.getMapColor(level, pos).col,
                 y, northY, westY, state.is(Blocks.WATER));
     }
