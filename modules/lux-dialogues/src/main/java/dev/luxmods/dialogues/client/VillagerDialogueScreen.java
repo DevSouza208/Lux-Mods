@@ -25,6 +25,7 @@ public final class VillagerDialogueScreen extends Screen {
     private String message;
     private boolean replied;
     private boolean contractMenu;
+    private DialogueNetwork.ContractSnapshot contractSnapshot;
     private boolean closed;
 
     public VillagerDialogueScreen(LivingEntity npc) {
@@ -38,23 +39,14 @@ public final class VillagerDialogueScreen extends Screen {
     /** Only applies server snapshots belonging to the NPC shown on this screen. */
     public void receiveContractSnapshot(DialogueNetwork.ContractSnapshot snapshot) {
         if (closed || !(npc instanceof Villager) || snapshot.entityId() != npc.getId()) return;
-        String item = switch (snapshot.objective()) {
-            case "minecraft:coal" -> "carvão";
-            case "minecraft:bread" -> "pão";
-            case "minecraft:iron_ingot" -> "barra de ferro";
-            default -> "material desconhecido";
-        };
-        String situation = switch (snapshot.status()) {
-            case 0 -> "Disponível até o dia " + snapshot.expiresDay();
-            case 1 -> snapshot.mine() ? "Aceito por você" : "Reservado por outro jogador";
-            case 2 -> "Concluído";
-            case 3 -> "Expirado";
-            default -> "Estado desconhecido";
-        };
+        contractSnapshot = snapshot;
         if (contractMenu) {
-            message = "Pedido: " + snapshot.quantity() + " de " + item + ". " + situation + ".";
+            message = ContractUiState.description(snapshot.objective(), snapshot.quantity(),
+                    snapshot.expiresDay(), snapshot.status(), snapshot.mine());
+            rebuildWidgets();
         } else if (replied) {
-            message = "Contrato: " + snapshot.quantity() + " de " + item + ". " + situation + ".";
+            message = "Contrato: " + ContractUiState.description(snapshot.objective(),
+                    snapshot.quantity(), snapshot.expiresDay(), snapshot.status(), snapshot.mine());
         }
     }
 
@@ -68,23 +60,34 @@ public final class VillagerDialogueScreen extends Screen {
     @Override protected void init() {
         clearWidgets();
         int gap = 7;
-        int count = contractMenu ? 4 : (replied ? 2 : (hasShop() ? 5 : (guard ? 3 : 4)));
+        int availableActions = contractSnapshot == null ? 0 :
+                (ContractUiState.canAccept(contractSnapshot.status()) ? 1 : 0)
+                + (ContractUiState.canDeliver(contractSnapshot.status(), contractSnapshot.mine()) ? 1 : 0);
+        int count = contractMenu ? 2 + availableActions : (replied ? 2 : (hasShop() ? 5 : (guard ? 3 : 4)));
         int buttonWidth = Math.min(116, Math.max(48, (width - 20 - (count - 1) * gap) / count));
         int total = count * buttonWidth + (count - 1) * gap;
         int x = Math.max(8, (width - total) / 2);
         int y = height - 42;
         int i = 0;
         if (contractMenu) {
-            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Aceitar", () -> {
-                PacketDistributor.sendToServer(new DialogueNetwork.AcceptContract(npc.getId()));
-                contractMenu = false;
-                respond("Pedido de aceitação enviado. Confira a resposta no chat.");
-            });
-            addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Entregar", () -> {
-                PacketDistributor.sendToServer(new DialogueNetwork.DeliverContract(npc.getId()));
-                contractMenu = false;
-                respond("Entrega solicitada. Confira o resultado no chat.");
-            });
+            if (contractSnapshot != null && ContractUiState.canAccept(contractSnapshot.status())) {
+                addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Aceitar", () -> {
+                    // Refresh before accepting again; server independently checks all state.
+                    contractSnapshot = null;
+                    PacketDistributor.sendToServer(new DialogueNetwork.AcceptContract(npc.getId()));
+                    message = "Registrando pedido...";
+                    rebuildWidgets();
+                });
+            }
+            if (contractSnapshot != null
+                    && ContractUiState.canDeliver(contractSnapshot.status(), contractSnapshot.mine())) {
+                addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Entregar", () -> {
+                    contractSnapshot = null;
+                    PacketDistributor.sendToServer(new DialogueNetwork.DeliverContract(npc.getId()));
+                    message = "Verificando materiais...";
+                    rebuildWidgets();
+                });
+            }
             addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Voltar", () -> {
                 contractMenu = false;
                 replied = false;
@@ -102,6 +105,7 @@ public final class VillagerDialogueScreen extends Screen {
             if (!guard && npc instanceof Villager) {
                 addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Contrato", () -> {
                     contractMenu = true;
+                    contractSnapshot = null;
                     message = "Consultando a oferta deste aldeão...";
                     rebuildWidgets();
                     PacketDistributor.sendToServer(new DialogueNetwork.RequestContract(npc.getId()));
