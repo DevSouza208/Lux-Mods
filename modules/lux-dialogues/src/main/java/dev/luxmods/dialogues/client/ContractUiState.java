@@ -15,6 +15,15 @@ public final class ContractUiState {
         return status == 1 && mine; // ACCEPTED by the local player
     }
 
+    /** Separate delivery confirmation from the current or next NPC offer. */
+    public static String deliveryMessage(boolean success) {
+        return success
+                ? "Entrega concluída! A recompensa foi enviada ao inventário. "
+                    + "Confira o chat para ver a quantidade recebida."
+                : "Não foi possível concluir a entrega. Confira os materiais "
+                    + "e a mensagem do servidor no chat.";
+    }
+
     public static String itemLabel(String objective) {
         return switch (objective) {
             case "minecraft:coal" -> "carvão";
