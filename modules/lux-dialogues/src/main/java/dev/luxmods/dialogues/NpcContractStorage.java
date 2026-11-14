@@ -27,10 +27,9 @@ public final class NpcContractStorage {
             return offer;
         }
 
-        // Offers stay identical while active. An old AVAILABLE offer is replaced
-        // once, on next access after its expiry; accepted offers are preserved.
-        if (offer.status() == NpcContractLifecycle.Status.AVAILABLE
-                && gameDay >= offer.expiresDay()) {
+        // Completed offers do not pay twice. Once the original deadline has
+        // passed, a NEW contract may appear; active claims are preserved.
+        if (NpcContractLifecycle.shouldRotate(offer, gameDay)) {
             offer = NpcContractLifecycle.create(villager.getUUID(), Math.max(0, gameDay));
             write(root, offer);
         }
