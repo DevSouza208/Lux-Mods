@@ -39,7 +39,23 @@ public final class LuxAtlasJournalSmoke {
                 throw new AssertionError("Completed journal still discoverable");
             if (!AtlasWriteJournal.read(b).equals(Map.of(one, 0xff654321)))
                 throw new AssertionError("Other dimension damaged");
-            System.out.println("LUX ATLAS JOURNAL: persistence, integrity and isolation OK");
+
+            // Simulate a pending file created while the computer clock was
+            // far ahead. New changes must still sort AFTER it.
+            Path futureScope = base.resolve("clock_rollback_regions");
+            Files.createDirectories(AtlasWriteJournal.folder(futureScope));
+            Path future = AtlasWriteJournal.folder(futureScope).resolve(
+                    "9999999999999-0000000000000099-existing.lxj");
+            Files.copy(b, future);
+            Path newest = AtlasWriteJournal.create(futureScope,
+                    Map.of(one, 0xff010203));
+            if (future.getFileName().toString().compareTo(
+                    newest.getFileName().toString()) >= 0)
+                throw new AssertionError("Clock rollback reordered journal recovery");
+            if (!AtlasWriteJournal.find(futureScope).equals(
+                    java.util.List.of(future, newest)))
+                throw new AssertionError("Journal replay sequence is incorrect");
+            System.out.println("LUX ATLAS JOURNAL: persistence, integrity, clock and isolation OK");
         } finally {
             try (var files = Files.walk(base)) {
                 files.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
