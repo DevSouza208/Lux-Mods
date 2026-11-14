@@ -6,7 +6,7 @@ import java.util.UUID;
 public final class NpcContractLifecycle {
     private NpcContractLifecycle() {}
 
-    public enum Status { AVAILABLE, ACCEPTED, COMPLETED, EXPIRED }
+    public enum Status { AVAILABLE, ACCEPTED, COMPLETED, EXPIRED, SETTLING }
 
     public record Offer(UUID npcId, long issuedDay, long expiresDay, String objective,
                         int quantity, Status status, UUID claimant) {
@@ -15,7 +15,7 @@ public final class NpcContractLifecycle {
                 throw new IllegalArgumentException("invalid contract");
             if (issuedDay < 0 || expiresDay <= issuedDay || quantity < 1)
                 throw new IllegalArgumentException("invalid dates or quantity");
-            if ((status == Status.ACCEPTED || status == Status.COMPLETED) != (claimant != null))
+            if ((status == Status.ACCEPTED || status == Status.COMPLETED || status == Status.SETTLING) != (claimant != null))
                 throw new IllegalArgumentException("claimant inconsistent with status");
         }
     }
@@ -67,7 +67,11 @@ public final class NpcContractLifecycle {
         if (before.status() == Status.AVAILABLE) {
             return after.status() == Status.ACCEPTED && after.claimant() != null;
         }
-        return before.status() == Status.ACCEPTED
+        if (before.status() == Status.ACCEPTED) {
+            return after.status() == Status.SETTLING
+                    && before.claimant().equals(after.claimant());
+        }
+        return before.status() == Status.SETTLING
                 && after.status() == Status.COMPLETED
                 && before.claimant().equals(after.claimant());
     }
@@ -82,6 +86,18 @@ public final class NpcContractLifecycle {
         return offer.status() == Status.AVAILABLE
                 || offer.status() == Status.COMPLETED
                 || offer.status() == Status.EXPIRED;
+    }
+
+    /**
+     * Persist this marker BEFORE consuming inventory. An interrupted delivery
+     * stays blocked for manual review instead of silently granting a second
+     * reward. Append-only enum keeps historical status ordinals unchanged.
+     */
+    public static Offer beginSettlement(Offer offer, UUID player) {
+        if (offer == null || player == null || offer.status() != Status.SETTLING
+                || !player.equals(offer.claimant())) return offer;
+        return new Offer(offer.npcId(), offer.issuedDay(), offer.expiresDay(),
+                offer.objective(), offer.quantity(), Status.SETTLING, player);
     }
 
     /** Call ONLY after a server-authoritative inventory transfer has succeeded. */
