@@ -23,7 +23,7 @@ public final class LuxQuestTrackerSmoke {
                 1000, 1000, "minecraft:iron_ingot", 8, 40, 1), true);
         check(LuxQuestTracker.nearest("minecraft:overworld", 0, 0).get(0).npc().equals(a));
         check(LuxQuestTracker.nearest("minecraft:overworld", 900, 900).get(0).npc().equals(farther));
-        // Distances use long arithmetic; extreme world coordinates must not overflow int.
+        // Distance calculations must handle extreme coordinates without overflow.
         check(!LuxQuestTracker.nearest("minecraft:overworld",
                 Integer.MIN_VALUE, Integer.MAX_VALUE).isEmpty());
         LuxQuestTracker.observe(new LuxQuestTracker.Contract(farther, "minecraft:overworld",
