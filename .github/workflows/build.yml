@@ -45,10 +45,12 @@ jobs:
         run: ./gradlew assembleTestPack --no-daemon --stacktrace
       - name: Verificar JARs produzidos
         run: python3 -m unittest discover -s scripts -p "test_verify_jars.py" -v && python3 scripts/verify_jars.py
-      - name: Guardar JARs experimentais
+      # Publish exactly the package assembled by assembleTestPack, rather than
+      # an unrelated glob over individual module build directories.
+      - name: Guardar pacote unificado para teste
         uses: actions/upload-artifact@v4
         with:
-          name: lux-engine-discovery-atlas-hud-menu-dev
-          path: modules/*/build/libs/*.jar
+          name: lux-mods-neoforge-1.21.1-testpack
+          path: build/lux-testpack/mods/*.jar
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
