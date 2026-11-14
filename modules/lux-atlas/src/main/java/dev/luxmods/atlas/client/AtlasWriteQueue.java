@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -34,6 +33,17 @@ public final class AtlasWriteQueue {
     private static boolean failed;
     private static String error = "";
     private static long savedBatches;
+
+    static {
+        // Safety net for an ordinary JVM shutdown when the client disconnect
+        // event did not fire. Does not protect against forced termination.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (!drain(5000)) {
+                System.err.println("[Lux Atlas] Mapa ainda possui amostras nao gravadas: "
+                        + status().pendingSamples());
+            }
+        }, "LuxAtlas-DrainOnExit"));
+    }
 
     private AtlasWriteQueue() {}
 
@@ -69,7 +79,12 @@ public final class AtlasWriteQueue {
                 first.remove();
             }
 
-            boolean ok = AtlasTerrainCache.saveToScope(scope, batch);
+            boolean ok;
+            try {
+                ok = AtlasTerrainCache.saveToScope(scope, batch);
+            } catch (RuntimeException exception) {
+                ok = false; // never discard dirty data on unexpected IO failures
+            }
             synchronized (LOCK) {
                 if (ok) {
                     savedBatches++;
