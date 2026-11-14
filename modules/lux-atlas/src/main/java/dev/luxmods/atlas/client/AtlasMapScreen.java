@@ -552,6 +552,13 @@ public final class AtlasMapScreen extends Screen {
         if (minecraft != null && minecraft.level != null) {
             AtlasWalkDiscovery.flush();
             submitDirtyTiles();
+            if (!unsavedTiles.isEmpty()) {
+                // The screen will be destroyed. Do not silently discard a
+                // failed journal write with the screen's dirty in-memory map.
+                AtlasWalkDiscovery.keepUnsubmitted(
+                        AtlasTerrainCache.scope(minecraft, minecraft.level), unsavedTiles);
+                unsavedTiles.clear();
+            }
         }
         super.onClose();
     }
