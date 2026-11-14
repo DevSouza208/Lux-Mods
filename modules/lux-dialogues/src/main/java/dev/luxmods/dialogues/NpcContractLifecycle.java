@@ -72,6 +72,18 @@ public final class NpcContractLifecycle {
                 && before.claimant().equals(after.claimant());
     }
 
+    /**
+     * A consumed offer stays completed until its original deadline. After that
+     * the NPC can publish a new offer. Active claims are NEVER rerolled.
+     * This policy is pure and can be tested without a Minecraft runtime.
+     */
+    public static boolean shouldRotate(Offer offer, long day) {
+        if (offer == null || day < 0 || day < offer.expiresDay()) return false;
+        return offer.status() == Status.AVAILABLE
+                || offer.status() == Status.COMPLETED
+                || offer.status() == Status.EXPIRED;
+    }
+
     /** Call ONLY after a server-authoritative inventory transfer has succeeded. */
     public static Offer complete(Offer offer, UUID player, boolean itemsConsumed) {
         if (!itemsConsumed || player == null || offer.status() != Status.ACCEPTED
