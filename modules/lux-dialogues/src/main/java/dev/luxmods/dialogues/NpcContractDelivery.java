@@ -72,9 +72,9 @@ public final class NpcContractDelivery {
 
         int emeralds = offer.objective().equals("minecraft:iron_ingot") ? 4 : 3;
         ItemStack reward = new ItemStack(Items.EMERALD, emeralds);
-        if (!player.addItem(reward) && !reward.isEmpty()) {
-            player.drop(reward, false);
-        }
+        player.addItem(reward);
+        // addItem can leave a remainder when only part of the stack fits.
+        if (!reward.isEmpty()) player.drop(reward, false);
         player.sendSystemMessage(Component.literal("Contrato concluído! Recompensa: "
                 + emeralds + " esmeraldas."));
     }
