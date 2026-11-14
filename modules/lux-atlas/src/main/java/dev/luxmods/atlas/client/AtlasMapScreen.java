@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Functional terrain map: reads only client-loaded chunks and never fabricates
@@ -28,6 +30,9 @@ public final class AtlasMapScreen extends Screen {
             return size() > 400_000;
         }
     };
+    // LRU is just a RAM optimization; every discovered cell persists on disk.
+    private final Set<Long> loadedRegions = new HashSet<>();
+    private final Map<Long, Integer> unsavedTiles = new LinkedHashMap<>();
     private final List<AtlasMarkers.Marker> markers = new ArrayList<>();
 
     private int centerX, centerZ;
@@ -45,7 +50,7 @@ public final class AtlasMapScreen extends Screen {
     private boolean showPlayer = true;
     private boolean showGrid;
     private int lastStartX = Integer.MIN_VALUE, lastStartZ = Integer.MIN_VALUE;
-    private String status = "Somente chunks carregados";
+    private String status = "Exploracao salva por regioes";
 
     public AtlasMapScreen() {
         super(Component.literal("Lux Atlas"));
@@ -57,10 +62,8 @@ public final class AtlasMapScreen extends Screen {
         if (!terrainLoaded && minecraft.level != null) {
             terrainLoaded = true;
             AtlasWalkDiscovery.flush();
-            AtlasTerrainCache.load(minecraft, minecraft.level, tiles);
-            Map<Long, Integer> fromWalking = new LinkedHashMap<>();
-            AtlasTerrainCache.load(minecraft, minecraft.level, fromWalking, "walk");
-            tiles.putAll(fromWalking);
+            AtlasTerrainCache.migrate(minecraft, minecraft.level);
+            AtlasWalkDiscovery.mergeInto(tiles);
         }
         if (firstOpen) {
             firstOpen = false;
@@ -238,6 +241,42 @@ public final class AtlasMapScreen extends Screen {
         return 0xFF000000 | (red << 16) | (green << 8) | blue;
     }
 
+    /** Read only the persisted regions currently visible in the map window.
+     *  At most six region files per rendered frame; no full-world RAM preload.
+     */
+    private void loadVisibleRegions(int startX, int startZ) {
+        if (minecraft == null || minecraft.level == null) return;
+        int endX = startX + Math.max(1, mapW / 2) * step;
+        int endZ = startZ + Math.max(1, mapH / 2) * step;
+        int minRx = AtlasTerrainCache.region(startX);
+        int minRz = AtlasTerrainCache.region(startZ);
+        int maxRx = AtlasTerrainCache.region(endX);
+        int maxRz = AtlasTerrainCache.region(endZ);
+        int budget = 6;
+        // Load from the player's camera center outward to avoid a visible
+        // upper-left sweep when opening a large world map.
+        int middleRx = AtlasTerrainCache.region(centerX);
+        int middleRz = AtlasTerrainCache.region(centerZ);
+        int maximumDistance = Math.max(Math.max(middleRx - minRx, maxRx - middleRx),
+                Math.max(middleRz - minRz, maxRz - middleRz));
+        for (int radius = 0; radius <= maximumDistance && budget > 0; radius++) {
+            for (int rz = Math.max(minRz, middleRz - radius);
+                    rz <= Math.min(maxRz, middleRz + radius) && budget > 0; rz++) {
+                for (int rx = Math.max(minRx, middleRx - radius);
+                        rx <= Math.min(maxRx, middleRx + radius) && budget > 0; rx++) {
+                    if (Math.max(Math.abs(rx - middleRx), Math.abs(rz - middleRz)) != radius) continue;
+                    long regionId = AtlasTerrainCache.regionKey(rx, rz);
+                    if (loadedRegions.add(regionId)) {
+                        AtlasTerrainCache.loadRegion(minecraft, minecraft.level, rx, rz, tiles);
+                        // A user's just-discovered samples take precedence.
+                        tiles.putAll(unsavedTiles);
+                        budget--;
+                    }
+                }
+            }
+        }
+    }
+
     private void drawMap(GuiGraphics g) {
         g.fill(mapX - 4, mapY - 4, mapX + mapW + 4, mapY + mapH + 4, 0xFF705286);
         g.fill(mapX - 2, mapY - 2, mapX + mapW + 2, mapY + mapH + 2, 0xFFC7A372);
@@ -254,9 +293,9 @@ public final class AtlasMapScreen extends Screen {
             lastMergedTick = minecraft.player.tickCount;
             AtlasWalkDiscovery.mergeInto(tiles);
         }
-        // Preserve sampled terrain while panning. Limit memory rather than
-        // forcing a complete redraw on every camera movement.
-        // Bounded LRU cache keeps recently explored regions without clearing them.
+        // Disk-backed explored regions are loaded lazily, even when unloaded
+        // by Minecraft itself. The player can pan to previously visited land.
+        loadVisibleRegions(startX, startZ);
         lastStartX = startX;
         lastStartZ = startZ;
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
@@ -282,6 +321,7 @@ public final class AtlasMapScreen extends Screen {
                             budget--;
                             color = sample(sampleX, sampleZ);
                             tiles.put(id, color);
+                            unsavedTiles.put(id, color);
                         }
                         if (color != null) {
                             int sx = mapX + px * drawSize;
@@ -372,8 +412,9 @@ public final class AtlasMapScreen extends Screen {
 
     @Override public void onClose() {
         if (minecraft != null && minecraft.level != null) {
-            AtlasWalkDiscovery.mergeInto(tiles);
-            AtlasTerrainCache.save(minecraft, minecraft.level, tiles);
+            AtlasWalkDiscovery.flush();
+            AtlasTerrainCache.save(minecraft, minecraft.level, unsavedTiles);
+            unsavedTiles.clear();
         }
         super.onClose();
     }
