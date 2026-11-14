@@ -221,7 +221,8 @@ public final class AtlasMapScreen extends Screen {
         }
         if (button == 0 && questsTab && x < mapX && y >= 95) {
             if (minecraft == null || minecraft.level == null) return false;
-            var active = LuxQuestTracker.inDimension(minecraft.level.dimension().location().toString());
+            var active = LuxQuestTracker.nearest(minecraft.level.dimension().location().toString(),
+                            minecraft.player.getBlockX(), minecraft.player.getBlockZ());
             int index = ((int) y - 100) / 28;
             if (index >= 0 && index < active.size() && index < 5) {
                 var quest = active.get(index);
@@ -537,7 +538,8 @@ public final class AtlasMapScreen extends Screen {
             label(g, "MISSÕES", 15, 69, LuxGuiStyle.AMBER);
             var quests = minecraft == null || minecraft.level == null
                     ? List.<LuxQuestTracker.Contract>of()
-                    : LuxQuestTracker.inDimension(minecraft.level.dimension().location().toString());
+                    : LuxQuestTracker.nearest(minecraft.level.dimension().location().toString(),
+                            minecraft.player.getBlockX(), minecraft.player.getBlockZ());
             if (quests.isEmpty()) label(g, "Nenhuma conhecida", 14, 99, LuxGuiStyle.MUTED_TEXT);
             int line = 0;
             for (var quest : quests) {
