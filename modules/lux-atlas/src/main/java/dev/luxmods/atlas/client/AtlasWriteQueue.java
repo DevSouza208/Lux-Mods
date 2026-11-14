@@ -48,12 +48,19 @@ public final class AtlasWriteQueue {
         synchronized (LOCK) {
             if (REGISTERED.contains(scope)) return true;
             try {
+                // Validate the complete recovery set before inserting ANY of
+                // its entries. Otherwise a corrupt later file can leave an
+                // incomplete prefix queued and be silently skipped on retry.
+                Map<Path, Job> discovered = new LinkedHashMap<>();
                 for (Path journal : AtlasWriteJournal.find(scope)) {
-                    // Corrupt journals must remain on disk for diagnosis,
-                    // never silently disappear or be applied partially.
                     int count = AtlasWriteJournal.read(journal).size();
-                    PENDING.putIfAbsent(journal, new Job(scope, count));
+                    discovered.put(journal, new Job(scope, count));
                 }
+                // Replay pre-existing disk journals before new session writes.
+                Map<Path, Job> merged = new LinkedHashMap<>(discovered);
+                merged.putAll(PENDING);
+                PENDING.clear();
+                PENDING.putAll(merged);
                 REGISTERED.add(scope);
                 scheduleLocked();
                 return true;
@@ -76,8 +83,8 @@ public final class AtlasWriteQueue {
             try {
                 Path journal = AtlasWriteJournal.create(scope, changes);
                 PENDING.put(journal, new Job(scope, changes.size()));
-                failed = false;
-                error = "";
+                // Do not clear a previous save failure just because another
+                // journal was created successfully.
                 scheduleLocked();
                 return true;
             } catch (IOException failure) {
