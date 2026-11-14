@@ -51,6 +51,7 @@ public final class AtlasCompassHud {
             }
         }
         drawNearbyEntities(g, mc, centerX, y, heading);
+        drawLastHorseSighting(g, mc, centerX, y, heading);
         // Fine stationary needle at current heading, plus pixel jewel.
         g.fill(centerX, y + 2, centerX + 1, y + 8, 0xFFF3DAFF);
         LuxGuiStyle.icon(g, "compass_needle", centerX - 3, y - 3, 7, 9);
@@ -93,4 +94,20 @@ public final class AtlasCompassHud {
             }
         }
     }
+    private static void drawLastHorseSighting(GuiGraphics g, Minecraft mc,
+                                              int centerX, int y, float heading) {
+        AtlasHorseMemory.Sighting sighting = AtlasHorseMemory.get(mc);
+        if (sighting == null || sighting.current() || mc.player == null) return;
+        double dx = sighting.x() - mc.player.getX();
+        double dz = sighting.z() - mc.player.getZ();
+        if (dx * dx + dz * dz < 16D) return; // player is at the stale location
+        float bearing = CompassMath.normalize((float) Math.toDegrees(Math.atan2(dx, -dz)));
+        float offset = CompassMath.signedOffset(bearing, heading);
+        if (Math.abs(offset) > HALF_WINDOW_DEGREES) return;
+        int px = Math.round(centerX + offset * PIXELS_PER_DEGREE);
+        // Muted color + '?' means historical position, not a live GPS signal.
+        g.fill(px - 6, y - 2, px + 7, y + 9, 0xDA211B2B);
+        g.drawString(mc.font, "H?", px - 6, y - 1, 0xFFC2A4D1, true);
+    }
+
 }
