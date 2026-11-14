@@ -40,6 +40,12 @@ public final class AtlasWalkDiscovery {
         target.putAll(known);
     }
 
+    /** Apply the live walk snapshot, then preserve newer map-screen edits. */
+    public static void mergeInto(Map<Long, Integer> target,
+                                 Map<Long, Integer> screenEdits) {
+        AtlasTileLayers.overlay(target, known, screenEdits);
+    }
+
     /**
      * Transfer unjournaled map-screen samples before that screen is destroyed.
      * This is a session fallback, not a successful disk save.
