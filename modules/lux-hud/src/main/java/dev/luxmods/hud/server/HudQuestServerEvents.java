@@ -11,8 +11,11 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/** Two permanent introductory quests: gather 16 logs, then 16 stone blocks.
- *  Tracks the highest number held during pickup, preventing drop/pickup loops.
+/**
+ * Introductory inventory quests: 16 logs, then 16 stone blocks.
+ * Uses the highest inventory quantity seen, never cumulative pickup events.
+ * The server owns progress and checks inventory periodically, including items
+ * already held or moved into the inventory without a world-item pickup.
  */
 public final class HudQuestServerEvents {
     private static final String STAGE = "lux_quest_stage";
@@ -25,20 +28,7 @@ public final class HudQuestServerEvents {
                 data.getInt(STAGE), data.getInt(PROGRESS)));
     }
 
-    @SubscribeEvent
-    public void onPickup(ItemEntityPickupEvent.Post event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
-        var data = player.getPersistentData();
-        int stage = data.getInt(STAGE);
-        if (stage >= 2) return;
-        ItemStack picked = event.getOriginalStack();
-        boolean matches = stage == 0 ? picked.is(ItemTags.LOGS) :
-                picked.is(Items.COBBLESTONE) || picked.is(Items.COBBLED_DEEPSLATE)
-                || picked.is(Items.STONE);
-        if (!matches) return;
-
-        // Track the highest actual inventory quantity, not cumulative pickup
-        // events: dropping and re-picking the same logs cannot farm progress.
+    private static int countRelevant(ServerPlayer player, int stage) {
         int held = 0;
         for (ItemStack stack : player.getInventory().items) {
             boolean relevant = stage == 0 ? stack.is(ItemTags.LOGS) :
@@ -46,23 +36,43 @@ public final class HudQuestServerEvents {
                     || stack.is(Items.STONE);
             if (relevant) held += stack.getCount();
         }
-        int progress = Math.min(TARGET, Math.max(data.getInt(PROGRESS), held));
+        return Math.min(TARGET, held);
+    }
+
+    private static void updateFromInventory(ServerPlayer player) {
+        var data = player.getPersistentData();
+        int stage = data.getInt(STAGE);
+        if (stage >= 2) return;
+        int previous = data.getInt(PROGRESS);
+        int progress = Math.min(TARGET, Math.max(previous, countRelevant(player, stage)));
         if (progress == TARGET) {
             data.putInt(STAGE, stage + 1);
             data.putInt(PROGRESS, 0);
             player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                     stage == 0 ? "Missão concluída: Primeiros troncos!" :
                             "Missão concluída: Pedras para construir!"));
-        } else {
+            // Evaluate the next stage on a subsequent tick. Completion is
+            // persisted first, so re-entrance/relogging cannot reward twice.
+        } else if (progress != previous) {
             data.putInt(PROGRESS, progress);
+        } else {
+            return; // No state change; regular heartbeat handles initial sync.
         }
         sync(player);
     }
 
     @SubscribeEvent
+    public void onPickup(ItemEntityPickupEvent.Post event) {
+        if (event.getPlayer() instanceof ServerPlayer player) {
+            updateFromInventory(player);
+        }
+    }
+
+    @SubscribeEvent
     public void onTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player && player.tickCount % 40 == 0) {
-            sync(player);
+            updateFromInventory(player);
+            sync(player); // A low-frequency heartbeat for reconnect/UI initialization.
         }
     }
 
