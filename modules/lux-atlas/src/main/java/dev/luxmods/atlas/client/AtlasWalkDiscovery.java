@@ -5,6 +5,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -61,6 +62,11 @@ public final class AtlasWalkDiscovery {
         known.put(key, sample);
         pending.put(key, sample);
         return true;
+    }
+
+    /** Persist the last few seconds of exploration before leaving the server. */
+    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        flush();
     }
 
     public static void onTick(ClientTickEvent.Post event) {
