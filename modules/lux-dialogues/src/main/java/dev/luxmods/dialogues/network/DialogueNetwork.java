@@ -159,6 +159,19 @@ public final class DialogueNetwork {
                 dev.luxmods.dialogues.client.DialogueClient.onContractSnapshot(snapshot));
     }
 
+    /** Client asks for a fresh server-owned quest index when its level is ready. */
+    public record RequestQuestLedger() implements CustomPacketPayload {
+        public static final Type<RequestQuestLedger> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "request_quest_ledger"));
+        public static final StreamCodec<FriendlyByteBuf, RequestQuestLedger> CODEC =
+                StreamCodec.unit(new RequestQuestLedger());
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    private static void requestQuestLedger(RequestQuestLedger payload, IPayloadContext context) {
+        if (context.player() instanceof ServerPlayer player) sendQuestLedger(player);
+    }
+
     /** A bounded, server-authored list of accepted contracts for reconnection. */
     public record QuestLedgerSync(java.util.List<PlayerQuestLedger.Entry> entries)
             implements CustomPacketPayload {
@@ -211,6 +224,7 @@ public final class DialogueNetwork {
         registrar.playToServer(RequestContract.TYPE, RequestContract.CODEC, DialogueNetwork::requestContract);
         registrar.playToClient(ContractSnapshot.TYPE, ContractSnapshot.CODEC, DialogueNetwork::receiveContractSnapshot);
         registrar.playToClient(QuestLedgerSync.TYPE, QuestLedgerSync.CODEC, DialogueNetwork::receiveQuestLedger);
+        registrar.playToServer(RequestQuestLedger.TYPE, RequestQuestLedger.CODEC, DialogueNetwork::requestQuestLedger);
     }
 
     private static void endDialogue(EndDialogue payload, IPayloadContext context) {
