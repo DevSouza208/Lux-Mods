@@ -4,6 +4,9 @@ import dev.luxmods.dialogues.LuxDialogues;
 import dev.luxmods.dialogues.DialogueSessions;
 import dev.luxmods.dialogues.DialogueNpcTypes;
 import dev.luxmods.dialogues.GuardDialogueSessions;
+import dev.luxmods.dialogues.NpcContractLifecycle;
+import dev.luxmods.dialogues.NpcContractStorage;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -38,10 +41,49 @@ public final class DialogueNetwork {
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    /** Client request only; NPC, current offer and player are verified server-side. */
+    public record AcceptContract(int entityId) implements CustomPacketPayload {
+        public static final Type<AcceptContract> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "accept_contract"));
+        public static final StreamCodec<FriendlyByteBuf, AcceptContract> CODEC =
+                StreamCodec.of((buf, packet) -> buf.writeVarInt(packet.entityId()),
+                        buf -> new AcceptContract(buf.readVarInt()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    private static void acceptContract(AcceptContract payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
+        Entity entity = player.level().getEntity(payload.entityId());
+        if (!(entity instanceof Villager villager) || !villager.isAlive()
+                || villager.distanceToSqr(player) > 64.0D || villager.isBaby()) return;
+        long day = Math.max(0L, villager.level().getDayTime() / 24000L);
+        NpcContractLifecycle.Offer old = NpcContractStorage.current(villager, day);
+        if (old.status() == NpcContractLifecycle.Status.ACCEPTED) {
+            player.sendSystemMessage(Component.literal(old.claimant().equals(player.getUUID())
+                    ? "Você já aceitou o contrato deste aldeão."
+                    : "Este contrato já foi reservado por outro aventureiro."));
+            return;
+        }
+        if (old.status() != NpcContractLifecycle.Status.AVAILABLE) {
+            player.sendSystemMessage(Component.literal("Não há contrato disponível neste momento."));
+            return;
+        }
+        NpcContractLifecycle.Offer updated =
+                NpcContractLifecycle.accept(old, player.getUUID(), day);
+        if (!NpcContractStorage.store(villager, old, updated)) {
+            player.sendSystemMessage(Component.literal("Contrato mudou. Converse novamente com o aldeão."));
+            return;
+        }
+        player.sendSystemMessage(Component.literal("Contrato aceito: entregar "
+                + updated.quantity() + " de " + updated.objective()
+                + ". Volte ao aldeão quando reunir os itens."));
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(OpenShop.TYPE, OpenShop.CODEC, DialogueNetwork::openShop);
         registrar.playToServer(EndDialogue.TYPE, EndDialogue.CODEC, DialogueNetwork::endDialogue);
+        registrar.playToServer(AcceptContract.TYPE, AcceptContract.CODEC, DialogueNetwork::acceptContract);
     }
 
     private static void endDialogue(EndDialogue payload, IPayloadContext context) {
