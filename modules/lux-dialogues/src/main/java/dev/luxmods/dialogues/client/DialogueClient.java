@@ -28,6 +28,20 @@ public final class DialogueClient {
         }
     }
 
+    /** Restore only server-owned quests, never locally inferred acceptance. */
+    public static void onQuestLedgerSync(DialogueNetwork.QuestLedgerSync packet) {
+        LuxQuestTracker.clear();
+        for (var entry : packet.entries()) {
+            if ((entry.status() != 1 && entry.status() != 4)
+                    || entry.quantity() < 1 || entry.dimension().isBlank()
+                    || entry.objective().isBlank()) continue;
+            LuxQuestTracker.observe(new LuxQuestTracker.Contract(
+                    entry.npc(), entry.dimension(), entry.x(), entry.z(),
+                    entry.objective(), entry.quantity(), entry.expiresDay(),
+                    entry.status()), true);
+        }
+    }
+
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         LuxQuestTracker.clear();
     }
