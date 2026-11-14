@@ -41,6 +41,21 @@ public final class AtlasLevelOfDetail {
             int resolution = (int) (id & 0xffL);
             if (resolution != 1 && resolution != 2) continue;
             int wx = AtlasViewport.unpackX(id), wz = AtlasViewport.unpackZ(id);
+            // Existing LXT1 2x2 colors are fallback only. Once any newer
+            // single-block sample exists in that 2x2 footprint, do not blend
+            // the outdated coarse color into regional summaries.
+            if (resolution == 2) {
+                boolean replaced = false;
+                for (int dz = 0; dz < 2 && !replaced; dz++) {
+                    for (int dx = 0; dx < 2; dx++) {
+                        if (source.containsKey(AtlasViewport.sampleKey(wx + dx, wz + dz, 1))) {
+                            replaced = true;
+                            break;
+                        }
+                    }
+                }
+                if (replaced) continue;
+            }
             int weight = resolution == 1 ? 1 : 4;
             for (int step : STEPS) {
                 int x = Math.floorDiv(wx, step) * step;
