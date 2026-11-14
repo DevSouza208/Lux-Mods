@@ -544,8 +544,8 @@ public final class AtlasMapScreen extends Screen {
 
     private void submitDirtyTiles() {
         if (minecraft == null || minecraft.level == null || unsavedTiles.isEmpty()) return;
-        AtlasWriteQueue.enqueue(AtlasTerrainCache.scope(minecraft, minecraft.level), unsavedTiles);
-        unsavedTiles.clear();
+        if (AtlasWriteQueue.enqueue(AtlasTerrainCache.scope(minecraft, minecraft.level), unsavedTiles))
+            unsavedTiles.clear();
     }
 
     @Override public void onClose() {
