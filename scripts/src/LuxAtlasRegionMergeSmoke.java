@@ -16,6 +16,17 @@ public final class LuxAtlasRegionMergeSmoke {
             throw new AssertionError("Different coordinate must be added");
         if (region.size() != 2 || region.get(1L) != 0xff987654)
             throw new AssertionError("Updates must preserve unrelated coordinates");
+        // LXT1 migration must fill holes without overwriting later scans.
+        Map<Long, Integer> current = new HashMap<>();
+        current.put(1L, 0xff102030);
+        if (!AtlasRegionMerge.mergeMissing(current,
+                Map.of(1L, 0xffaabbcc, 3L, 0xff445566)))
+            throw new AssertionError("Legacy import should add missing coordinates");
+        if (current.get(1L) != 0xff102030 || current.get(3L) != 0xff445566)
+            throw new AssertionError("Legacy import overwrote newer terrain");
+        if (AtlasRegionMerge.mergeMissing(current,
+                Map.of(1L, 0xffaabbcc, 3L, 0xff445566)))
+            throw new AssertionError("Repeated migration must be a no-op");
         System.out.println("LUX ATLAS REGION MERGE: OK");
     }
 }
