@@ -10,6 +10,12 @@ on:
 permissions:
   contents: read
 
+# Many small development commits can arrive before the NeoForge build
+# finishes. Keep only the newest run of each branch or pull request.
+concurrency:
+  group: lux-mods-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pure-java:
     name: Testes de lógica sem Minecraft
