@@ -50,6 +50,20 @@ public final class VillagerDialogueScreen extends Screen {
         }
     }
 
+    /** Delivery result is deliberately independent of the next NPC offer. */
+    public void receiveDeliveryResult(DialogueNetwork.ContractDeliveryResult result) {
+        if (closed || !contractMenu || result.entityId() != npc.getId()) return;
+        if (result.success()) {
+            contractSnapshot = null;
+            message = "Entrega concluída! A recompensa foi enviada ao inventário. "
+                    + "Confira o chat para ver a quantidade recebida.";
+        } else {
+            message = "Não foi possível concluir a entrega. Confira os materiais "
+                    + "e a mensagem do servidor no chat.";
+        }
+        rebuildWidgets();
+    }
+
     private boolean hasShop() {
         if (!(npc instanceof Villager villager)) return false;
         var profession = villager.getVillagerData().getProfession();
