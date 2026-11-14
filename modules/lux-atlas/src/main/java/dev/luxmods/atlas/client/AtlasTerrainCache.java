@@ -126,6 +126,13 @@ public final class AtlasTerrainCache {
             } catch (AtomicMoveNotSupportedException ignored) {
                 Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
             }
+            // Best-effort directory metadata sync after the atomic rename.
+            // Some platforms do not permit opening directories as channels.
+            try (FileChannel directory = FileChannel.open(file.getParent(), StandardOpenOption.READ)) {
+                directory.force(true);
+            } catch (IOException | UnsupportedOperationException ignored) {
+                // The region file content has already been force-flushed.
+            }
         } finally {
             Files.deleteIfExists(temp);
         }
