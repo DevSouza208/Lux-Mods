@@ -71,10 +71,10 @@ public final class HudPanel {
         if (hydration != null) {
             drawThirst(g, mc, x + 63, y + 61, hydration);
         } else {
-            // The 1.21.1 thirst API may differ between releases. Never
-            // show invented hydration or hide the real third-party overlay.
-            drawStat(g, mc, x + 63, y + 61, "stat_xp",
-                    player.experienceProgress, 1f, LuxGuiStyle.EXPERIENCE, true);
+            // Never substitute XP for thirst. If the installed hydration mod
+            // does not expose a readable value, keep its own overlay visible.
+            g.drawString(mc.font, "Sede: --", x + 80, y + 63,
+                    LuxGuiStyle.MUTED_TEXT, false);
         }
 
         if (HudConfig.SHOW_EFFECTS.get()) {
