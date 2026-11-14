@@ -569,6 +569,25 @@ public final class AtlasMapScreen extends Screen {
         }
     }
 
+    /** Read-only progress from the local inventory; NPC remains authoritative. */
+    private int itemsCarried(String objective) {
+        if (minecraft == null || minecraft.player == null) return 0;
+        net.minecraft.world.item.Item required = switch (objective) {
+            case "minecraft:coal" -> net.minecraft.world.item.Items.COAL;
+            case "minecraft:bread" -> net.minecraft.world.item.Items.BREAD;
+            case "minecraft:iron_ingot" -> net.minecraft.world.item.Items.IRON_INGOT;
+            default -> null;
+        };
+        if (required == null) return 0;
+        int total = 0;
+        var inventory = minecraft.player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            var stack = inventory.getItem(i);
+            if (stack.is(required)) total += stack.getCount();
+        }
+        return total;
+    }
+
     private void label(GuiGraphics g, String text, int x, int y, int color) {
         g.drawString(font, text, x, y, color, false);
     }
@@ -597,7 +616,10 @@ public final class AtlasMapScreen extends Screen {
                     case "minecraft:iron_ingot" -> "Ferro";
                     default -> "Material";
                 };
-                label(g, quest.quantity() + "x " + item, 14, 100 + 28 * line, LuxGuiStyle.FOREGROUND);
+                int owned = Math.min(quest.quantity(), itemsCarried(quest.objective()));
+                String progress = quest.status() == 4 ? "Em revisão"
+                        : owned + "/" + quest.quantity();
+                label(g, progress + " " + item, 14, 100 + 28 * line, LuxGuiStyle.FOREGROUND);
                 label(g, quest.status() == 4 ? "Em revisão" : "Ver NPC no mapa",
                         14, 112 + 28 * line, LuxGuiStyle.MUTED_TEXT);
                 line++;
