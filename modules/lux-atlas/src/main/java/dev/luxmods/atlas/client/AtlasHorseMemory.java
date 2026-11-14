@@ -93,7 +93,8 @@ public final class AtlasHorseMemory {
         for (var entity : mc.level.getEntities(player, player.getBoundingBox().inflate(64D),
                 e -> e instanceof AbstractHorse)) {
             if (!(entity instanceof AbstractHorse horse) || !horse.isAlive()
-                    || !horse.isTamed() || !player.getUUID().equals(horse.getOwnerUUID())) continue;
+                    || !horse.isTamed() || !(player.getUUID().equals(horse.getOwnerUUID())
+                    || player.getVehicle() == horse)) continue;
             int x = horse.getBlockX(), z = horse.getBlockZ();
             boolean moved = last == null || !last.dimension().equals(dimension)
                     || Math.abs(last.x() - x) + Math.abs(last.z() - z) >= 3;
