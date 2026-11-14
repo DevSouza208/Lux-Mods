@@ -39,9 +39,10 @@ public final class AtlasWalkDiscovery {
         if (!pending.isEmpty() && saveScope != null) {
             // The writer keeps its own immutable-in-practice copy until the
             // disk operation finishes; successful enqueue is NOT a disk save.
-            AtlasWriteQueue.enqueue(saveScope, pending);
-            pending.clear();
-            sinceSave = 0;
+            if (AtlasWriteQueue.enqueue(saveScope, pending)) {
+                pending.clear();
+                sinceSave = 0;
+            }
         }
     }
 
@@ -96,7 +97,8 @@ public final class AtlasWalkDiscovery {
             world = mc.level;
             AtlasTerrainCache.migrate(mc, world);
             saveScope = AtlasTerrainCache.scope(mc, world);
-            AtlasWriteQueue.retry(); // retry older paths without mixing worlds
+            AtlasWriteQueue.registerScope(saveScope);
+            AtlasWriteQueue.retry(); // recover interrupted journals for this world
         }
 
         if (mc.player.tickCount % 40 != 0) return;
