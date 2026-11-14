@@ -329,10 +329,14 @@ public final class AtlasMapScreen extends Screen {
         return AtlasViewport.sampleKey(x, z, sampleStep);
     }
 
+    /** Never record samples from a level different from the one that opened this screen. */
+    private boolean isOriginalWorld() {
+        return minecraft != null && minecraft.level != null && openedScope != null
+                && openedScope.equals(AtlasTerrainCache.scope(minecraft, minecraft.level));
+    }
+
     private int sample(int wx, int wz) {
-        if (minecraft == null || minecraft.level == null || openedScope == null
-                || !openedScope.equals(AtlasTerrainCache.scope(minecraft, minecraft.level)))
-            return 0xFF141421;
+        if (!isOriginalWorld()) return 0xFF141421;
         var level = minecraft.level;
         if (!level.getChunkSource().hasChunk(wx >> 4, wz >> 4)) return 0xFF181827;
         int y = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
@@ -352,8 +356,7 @@ public final class AtlasMapScreen extends Screen {
      *  At most six region files per rendered frame; no full-world RAM preload.
      */
     private void loadVisibleRegions(int startX, int startZ) {
-        if (minecraft == null || minecraft.level == null || openedScope == null
-                || !openedScope.equals(AtlasTerrainCache.scope(minecraft, minecraft.level))) return;
+        if (!isOriginalWorld()) return;
         int endX = startX + Math.max(1, mapW / 2) * step;
         int endZ = startZ + Math.max(1, mapH / 2) * step;
         int minRx = AtlasTerrainCache.region(startX);
@@ -502,8 +505,7 @@ public final class AtlasMapScreen extends Screen {
                         int sampleX = wx, sampleZ = wz;
                         long id = key(sampleX, sampleZ, 1);
                         AtlasLevelOfDetail.Cell cell = lod.cell(wx, wz, step, tiles);
-                        if (cell == null && budget > 0 && minecraft != null
-                                && minecraft.level != null
+                        if (cell == null && budget > 0 && isOriginalWorld()
                                 && minecraft.level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
                             // Only sample terrain already sent to the client.
                             budget--;
