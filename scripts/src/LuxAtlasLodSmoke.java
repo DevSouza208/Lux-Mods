@@ -29,6 +29,12 @@ public final class LuxAtlasLodSmoke {
         equal(0xffff0000, lod.color(7, 9, 1, samples), "1:1 original color unchanged");
         equal(0xffaa8844, lod.color(23, 18, 1, samples), "old 2x2 snapshot fallback");
         equal(0xffaa8844, lod.color(16, 16, 16, samples), "old snapshot regional color");
+        // A newly sampled real block must supersede an older approximate
+        // color of the same 2x2 footprint in distant zoom levels.
+        samples.put(AtlasViewport.sampleKey(22, 18, 1), 0xff112233);
+        lod.rebuild(samples);
+        equal(0xff112233, lod.color(16, 16, 16, samples),
+                "new exact sample wins over obsolete coarse color");
         System.out.println("LUX ATLAS LOD: sampling, legacy and fog OK");
     }
 }
