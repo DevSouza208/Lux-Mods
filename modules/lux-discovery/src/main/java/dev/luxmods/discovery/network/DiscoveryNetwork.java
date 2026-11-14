@@ -14,7 +14,8 @@ public final class DiscoveryNetwork {
     }
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToClient(
+        var registrar = event.registrar("1");
+        registrar.playToClient(
                 BiomeDiscoveredPayload.TYPE,
                 BiomeDiscoveredPayload.STREAM_CODEC,
                 (payload, context) -> {
@@ -25,10 +26,20 @@ public final class DiscoveryNetwork {
                     }
                 }
         );
+        registrar.playToClient(StructureDiscoveredPayload.TYPE,
+                StructureDiscoveredPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) ClientHandler.handleStructure(payload, context);
+                });
     }
 
     /** Separação deliberada: a JVM só resolve esta classe no cliente físico. */
     private static final class ClientHandler {
+        private static void handleStructure(StructureDiscoveredPayload payload,
+                net.neoforged.neoforge.network.handling.IPayloadContext context) {
+            DiscoveryClientEvents.handleStructure(payload, context);
+        }
+
         private static void handle(
                 BiomeDiscoveredPayload payload,
                 net.neoforged.neoforge.network.handling.IPayloadContext context
