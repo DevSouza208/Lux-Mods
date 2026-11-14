@@ -29,12 +29,30 @@ public final class LuxAtlasLodSmoke {
         equal(0xffff0000, lod.color(7, 9, 1, samples), "1:1 original color unchanged");
         equal(0xffaa8844, lod.color(23, 18, 1, samples), "old 2x2 snapshot fallback");
         equal(0xffaa8844, lod.color(16, 16, 16, samples), "old snapshot regional color");
-        // A newly sampled real block must supersede an older approximate
-        // color of the same 2x2 footprint in distant zoom levels.
+        // Regional zoom carries a truthful coverage fraction.
+        equal(2, lod.cell(0, 0, 16, samples).known(), "two exact blocks discovered");
+        equal(256, lod.cell(0, 0, 16, samples).total(), "16x16 cell area");
+        equal(4, lod.cell(16, 16, 16, samples).known(), "legacy 2x2 footprint");
+        equal(null, lod.cell(80, 80, 16, samples), "unexplored cells stay absent");
+
+        // New detailed samples replace only the matching old footprint block,
+        // not all four blocks of an already explored 2x2 legacy square.
         samples.put(AtlasViewport.sampleKey(22, 18, 1), 0xff112233);
         lod.rebuild(samples);
-        equal(0xff112233, lod.color(16, 16, 16, samples),
-                "new exact sample wins over obsolete coarse color");
+        equal(4, lod.cell(16, 16, 16, samples).known(),
+                "no double counting of legacy coverage");
+        int blended = 0xff000000 | ((0xaa * 3 + 0x11) / 4 << 16)
+                | ((0x88 * 3 + 0x22) / 4 << 8) | ((0x44 * 3 + 0x33) / 4);
+        equal(blended, lod.color(16, 16, 16, samples),
+                "new block replaces only its own prior approximate color");
+
+        // A fully mapped 2x2 cell is 100% explored, not merely nonempty.
+        var complete = new HashMap<Long, Integer>();
+        for (int z = 0; z < 2; z++) for (int x = 0; x < 2; x++)
+            complete.put(AtlasViewport.sampleKey(x, z, 1), 0xff557799);
+        lod.rebuild(complete);
+        equal(4, lod.cell(0, 0, 2, complete).known(), "fully explored block count");
+        equal(4, lod.cell(0, 0, 2, complete).total(), "fully explored cell size");
         System.out.println("LUX ATLAS LOD: sampling, legacy and fog OK");
     }
 }
