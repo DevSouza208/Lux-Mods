@@ -43,9 +43,9 @@ public final class VillagerDialogueScreen extends Screen {
 
     @Override protected void init() {
         clearWidgets();
-        int buttonWidth = Math.min(116, Math.max(82, (width - 46) / 4));
         int gap = 7;
-        int count = replied ? 2 : (hasShop() ? 4 : 3);
+        int count = replied ? 2 : (hasShop() ? 5 : (guard ? 3 : 4));
+        int buttonWidth = Math.min(116, Math.max(48, (width - 20 - (count - 1) * gap) / count));
         int total = count * buttonWidth + (count - 1) * gap;
         int x = Math.max(8, (width - total) / 2);
         int y = height - 42;
@@ -55,6 +55,12 @@ public final class VillagerDialogueScreen extends Screen {
                     () -> respond(DialogueLines.howAreYou(npc.getUUID(), day, guard)));
             addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Qual é a boa?",
                     () -> respond(DialogueLines.rumor(npc.getUUID(), day, guard)));
+            if (!guard && npc instanceof Villager) {
+                addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Contrato", () -> {
+                    PacketDistributor.sendToServer(new DialogueNetwork.AcceptContract(npc.getId()));
+                    respond("Pedido enviado. Veja no chat se o aldeão aceitou o contrato.");
+                });
+            }
             if (hasShop()) {
                 addOption(x + (buttonWidth + gap) * i++, y, buttonWidth, "Abrir loja", () -> {
                     closed = true;
