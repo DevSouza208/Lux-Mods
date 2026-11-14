@@ -117,6 +117,12 @@ public final class AtlasWriteJournal {
             long expectedCrc = in.readLong();
             if (count < 1 || count > MAX_SAMPLES)
                 throw new IOException("Invalid Atlas journal sample count");
+            // LXJ1 has a fixed 16-byte header and exactly 12 bytes per
+            // sample. Reject truncated/oversized files before allocating a
+            // map or replaying any updates.
+            long expectedBytes = 16L + 12L * count;
+            if (Files.size(file) != expectedBytes)
+                throw new IOException("Invalid Atlas journal length");
             for (int i = 0; i < count; i++) {
                 long key = in.readLong();
                 int value = in.readInt();
