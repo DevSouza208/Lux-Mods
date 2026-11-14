@@ -1,28 +1,27 @@
 package dev.luxmods.atlas.client;
 
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Single-writer disk queue shared by Atlas background discovery and map UI.
+ * Single region writer, backed by durable per-batch journals (LXJ1).
+ * Disk operations never run concurrently. Each scope is a world+dimension.
  *
- * The game thread only snapshots dirty tiles into this queue. All region
- * read/modify/write operations run serially off-thread, so independent writers
- * cannot replace one another's updates. Failure retains the dirty entries
- * for a later retry; accepting a snapshot does NOT mean it is persisted.
- *
- * Queue is process-local: a crash or unwriteable disk may still lose unsaved
- * data. At disconnect, drain() makes a best-effort bounded wait and reports
- * failures rather than pretending every sample was committed.
+ * Important: enqueue synchronously writes its SMALL journal and can take
+ * filesystem time. Compression of big terrain regions remains off-thread.
  */
 public final class AtlasWriteQueue {
     private static final Object LOCK = new Object();
-    private static final Map<Path, Map<Long, Integer>> PENDING = new LinkedHashMap<>();
+    private record Job(Path scope, int samples) {}
+    private static final Map<Path, Job> PENDING = new LinkedHashMap<>();
+    private static final Set<Path> REGISTERED = new HashSet<>();
     private static final ExecutorService WRITER = Executors.newSingleThreadExecutor(task -> {
         Thread thread = new Thread(task, "LuxAtlas-RegionWriter");
         thread.setDaemon(true);
@@ -35,24 +34,57 @@ public final class AtlasWriteQueue {
     private static long savedBatches;
 
     static {
-        // Safety net for an ordinary JVM shutdown when the client disconnect
-        // event did not fire. Does not protect against forced termination.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (!drain(5000)) {
-                System.err.println("[Lux Atlas] Mapa ainda possui amostras nao gravadas: "
-                        + status().pendingSamples());
-            }
+            if (!drain(5000))
+                System.err.println("[Lux Atlas] Unfinished journals remain: " + status().message());
         }, "LuxAtlas-DrainOnExit"));
     }
 
     private AtlasWriteQueue() {}
 
-    /** Non-blocking capture of the caller's dirty samples, partitioned by world/dimension. */
-    public static void enqueue(Path scope, Map<Long, Integer> changes) {
-        if (scope == null || changes.isEmpty()) return;
+    /** Discover previous interrupted journal files before accepting newer updates. */
+    public static boolean registerScope(Path scope) {
+        if (scope == null) return false;
         synchronized (LOCK) {
-            PENDING.computeIfAbsent(scope, ignored -> new HashMap<>()).putAll(changes);
-            scheduleLocked();
+            if (REGISTERED.contains(scope)) return true;
+            try {
+                for (Path journal : AtlasWriteJournal.find(scope)) {
+                    // Corrupt journals must remain on disk for diagnosis,
+                    // never silently disappear or be applied partially.
+                    int count = AtlasWriteJournal.read(journal).size();
+                    PENDING.putIfAbsent(journal, new Job(scope, count));
+                }
+                REGISTERED.add(scope);
+                scheduleLocked();
+                return true;
+            } catch (IOException failure) {
+                failed = true;
+                error = "Falha ao recuperar diário: " + scope.getFileName();
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Durable acknowledgement: returns false if no journal was written.
+     * Caller MUST retain its own dirty map when this method returns false.
+     */
+    public static boolean enqueue(Path scope, Map<Long, Integer> changes) {
+        if (scope == null || changes.isEmpty()) return changes.isEmpty();
+        synchronized (LOCK) {
+            if (!registerScope(scope)) return false;
+            try {
+                Path journal = AtlasWriteJournal.create(scope, changes);
+                PENDING.put(journal, new Job(scope, changes.size()));
+                failed = false;
+                error = "";
+                scheduleLocked();
+                return true;
+            } catch (IOException failure) {
+                failed = true;
+                error = "Falha ao criar diário: " + scope.getFileName();
+                return false;
+            }
         }
     }
 
@@ -64,26 +96,29 @@ public final class AtlasWriteQueue {
 
     private static void process() {
         while (true) {
-            Path scope;
-            Map<Long, Integer> batch;
+            Path journal;
+            Job job;
             synchronized (LOCK) {
-                var first = PENDING.entrySet().iterator();
-                if (!first.hasNext()) {
+                var iterator = PENDING.entrySet().iterator();
+                if (!iterator.hasNext()) {
                     running = false;
                     LOCK.notifyAll();
                     return;
                 }
-                var entry = first.next();
-                scope = entry.getKey();
-                batch = entry.getValue();
-                first.remove();
+                var next = iterator.next();
+                journal = next.getKey();
+                job = next.getValue();
+                iterator.remove();
             }
-
-            boolean ok;
+            boolean ok = false;
             try {
-                ok = AtlasTerrainCache.saveToScope(scope, batch);
-            } catch (RuntimeException exception) {
-                ok = false; // never discard dirty data on unexpected IO failures
+                Map<Long, Integer> updates = AtlasWriteJournal.read(journal);
+                if (AtlasTerrainCache.saveToScope(job.scope(), updates)) {
+                    AtlasWriteJournal.complete(journal);
+                    ok = true;
+                }
+            } catch (IOException | RuntimeException failure) {
+                ok = false;
             }
             synchronized (LOCK) {
                 if (ok) {
@@ -91,23 +126,23 @@ public final class AtlasWriteQueue {
                     failed = false;
                     error = "";
                 } else {
-                    // Newer queued values take precedence over failed older writes.
-                    Map<Long, Integer> newer = PENDING.computeIfAbsent(scope, ignored -> new HashMap<>());
-                    for (var item : batch.entrySet()) newer.putIfAbsent(item.getKey(), item.getValue());
+                    // Reinsert failed journal at FRONT to preserve update
+                    // ordering; never process later writes ahead of it.
+                    Map<Path, Job> reordered = new LinkedHashMap<>();
+                    reordered.put(journal, job);
+                    reordered.putAll(PENDING);
+                    PENDING.clear();
+                    PENDING.putAll(reordered);
                     failed = true;
-                    error = "Falha ao gravar: " + scope.getFileName();
+                    error = "Falha ao aplicar diário: " + job.scope().getFileName();
                     running = false;
                     LOCK.notifyAll();
-                    return; // Do not busy-loop while storage is unavailable.
+                    return;
                 }
             }
         }
     }
 
-    /**
-     * Periodic retry, normally called every few seconds while exploring.
-     * Does not perform filesystem operations on the client thread.
-     */
     public static void retry() {
         synchronized (LOCK) { scheduleLocked(); }
     }
@@ -118,16 +153,12 @@ public final class AtlasWriteQueue {
     public static Status status() {
         synchronized (LOCK) {
             int count = 0;
-            for (var batch : PENDING.values()) count += batch.size();
+            for (Job job : PENDING.values()) count += job.samples();
             return new Status(count, running, failed, error, savedBatches);
         }
     }
 
-    /**
-     * Drain pending writes at world disconnect. Waits for disk completion,
-     * not merely for a task to be accepted. False means there are unsaved
-     * samples or an IO error. The bounded wait avoids an infinite game hang.
-     */
+    /** Best-effort bounded drain. Never claims success while work is unfinished. */
     public static boolean drain(long timeoutMillis) {
         retry();
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
