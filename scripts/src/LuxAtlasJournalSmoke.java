@@ -40,6 +40,27 @@ public final class LuxAtlasJournalSmoke {
             if (!AtlasWriteJournal.read(b).equals(Map.of(one, 0xff654321)))
                 throw new AssertionError("Other dimension damaged");
 
+            // Corrupt length must be rejected without removing the original
+            // journal; recovery can be retried after an operator restores it.
+            Path truncated = AtlasWriteJournal.folder(nether).resolve("truncated.lxj");
+            byte[] intact = Files.readAllBytes(b);
+            Files.write(truncated, java.util.Arrays.copyOf(intact, intact.length - 1));
+            boolean truncatedRejected = false;
+            try { AtlasWriteJournal.read(truncated); }
+            catch (java.io.IOException expected) { truncatedRejected = true; }
+            if (!truncatedRejected || !Files.exists(truncated))
+                throw new AssertionError("Truncated journal was accepted or deleted");
+            Files.delete(truncated);
+
+            Path oversized = AtlasWriteJournal.folder(nether).resolve("oversized.lxj");
+            Files.write(oversized, java.util.Arrays.copyOf(intact, intact.length + 1));
+            boolean oversizedRejected = false;
+            try { AtlasWriteJournal.read(oversized); }
+            catch (java.io.IOException expected) { oversizedRejected = true; }
+            if (!oversizedRejected || !Files.exists(oversized))
+                throw new AssertionError("Oversized journal was accepted or deleted");
+            Files.delete(oversized);
+
             // Simulate a pending file created while the computer clock was
             // far ahead. New changes must still sort AFTER it.
             Path futureScope = base.resolve("clock_rollback_regions");
