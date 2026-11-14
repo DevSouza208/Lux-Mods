@@ -141,8 +141,9 @@ class JarValidatorTests(unittest.TestCase):
                          "dev/luxmods/discovery/LuxDiscovery.class", {"lux_engine"})
 
     def test_invalid_class_signature(self):
-        self.fixture()
-        with zipfile.ZipFile(self.path, "a") as jar:
+        with zipfile.ZipFile(self.path, "w") as jar:
+            jar.writestr("META-INF/neoforge.mods.toml",
+                         metadata("lux_engine", ("minecraft", "neoforge")))
             jar.writestr("dev/luxmods/engine/LuxEngine.class", b"not java")
         with self.assertRaises(InvalidArtifact):
             validate_jar(self.path, "lux_engine", "dev/luxmods/engine/LuxEngine.class")
