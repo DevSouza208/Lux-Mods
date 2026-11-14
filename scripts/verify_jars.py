@@ -37,6 +37,11 @@ def validate_jar(path, expected_id, expected_class, extra_deps=()):
                 raise InvalidArtifact(f"{path}: {name} ausente")
             if expected_class not in entries:
                 raise InvalidArtifact(f"{path}: classe obrigatória ausente: {expected_class}")
+            bytecode = jar.read(expected_class)
+            # Minecraft 1.21.1 uses Java 21 (class file major version 65).
+            if (len(bytecode) < 8 or bytecode[:4] != b"\\xca\\xfe\\xba\\xbe"
+                    or int.from_bytes(bytecode[6:8], "big") != 65):
+                raise InvalidArtifact(f"{path}: classe principal não é bytecode Java 21 válido")
             manifest = tomllib.loads(jar.read(name).decode("utf-8"))
     except (OSError, zipfile.BadZipFile, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise InvalidArtifact(f"{path}: arquivo JAR ou TOML inválido: {exc}") from exc
