@@ -30,6 +30,8 @@ public final class AtlasMapScreen extends Screen {
     private final Map<Long, Integer> tiles = new LinkedHashMap<>();
     // LRU is just a RAM optimization; every discovered cell persists on disk.
     private final Set<Long> loadedRegions = new HashSet<>();
+    private final Map<Long, Integer> failedRegionRetry = new LinkedHashMap<>();
+    private int screenTicks;
     private final Map<Long, Integer> unsavedTiles = new LinkedHashMap<>();
     private final List<AtlasMarkers.Marker> markers = new ArrayList<>();
 
@@ -301,6 +303,10 @@ public final class AtlasMapScreen extends Screen {
                 int rx = (int) (id >> 32), rz = (int) (long) id;
                 return rx < left || rx > right || rz < top || rz > bottom;
             });
+            failedRegionRetry.keySet().removeIf(id -> {
+                int rx = (int) (id >> 32), rz = (int) (long) id;
+                return rx < left || rx > right || rz < top || rz > bottom;
+            });
             tiles.keySet().removeIf(id -> {
                 int bx = (int) ((id >>> 36) & 0x0fffffffL);
                 int bz = (int) ((id >>> 8) & 0x0fffffffL);
@@ -325,10 +331,18 @@ public final class AtlasMapScreen extends Screen {
                         rx <= Math.min(maxRx, middleRx + radius) && budget > 0; rx++) {
                     if (Math.max(Math.abs(rx - middleRx), Math.abs(rz - middleRz)) != radius) continue;
                     long regionId = AtlasTerrainCache.regionKey(rx, rz);
-                    if (loadedRegions.add(regionId)) {
-                        AtlasTerrainCache.loadRegion(minecraft, minecraft.level, rx, rz, tiles);
-                        // A user's just-discovered samples take precedence.
-                        tiles.putAll(unsavedTiles);
+                    if (!loadedRegions.contains(regionId)
+                            && screenTicks >= failedRegionRetry.getOrDefault(regionId, 0)) {
+                        boolean loaded = AtlasTerrainCache.loadRegion(
+                                minecraft, minecraft.level, rx, rz, tiles);
+                        if (loaded) {
+                            loadedRegions.add(regionId);
+                            failedRegionRetry.remove(regionId);
+                            // Unsaved samples must override older disk colors.
+                            tiles.putAll(unsavedTiles);
+                        } else {
+                            failedRegionRetry.put(regionId, screenTicks + 100);
+                        }
                         budget--;
                     }
                 }
@@ -495,6 +509,7 @@ public final class AtlasMapScreen extends Screen {
     }
 
     @Override public void tick() {
+        screenTicks++;
         // Region files are loaded during screen ticks, not once per rendered
         // frame, so uncached disk IO does not repeat at the monitor refresh rate.
         loadVisibleRegions(startX(), startZ());
