@@ -53,14 +53,15 @@ public final class LuxQuestTracker {
     public static synchronized List<Contract> nearest(String dimension, int playerX, int playerZ) {
         List<Contract> result = new ArrayList<>(inDimension(dimension));
         result.sort(Comparator
-                .comparingLong((Contract contract) -> distanceSquared(contract, playerX, playerZ))
+                .comparingDouble((Contract contract) -> distanceSquared(contract, playerX, playerZ))
                 .thenComparing(contract -> contract.npc().toString()));
         return List.copyOf(result);
     }
 
-    private static long distanceSquared(Contract contract, int x, int z) {
-        long dx = (long) contract.x() - x;
-        long dz = (long) contract.z() - z;
+    private static double distanceSquared(Contract contract, int x, int z) {
+        // Integer-coordinate extremes can overflow even 64-bit squared sums.
+        double dx = (double) contract.x() - x;
+        double dz = (double) contract.z() - z;
         return dx * dx + dz * dz;
     }
 
