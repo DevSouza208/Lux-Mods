@@ -30,6 +30,8 @@ public final class AtlasMapScreen extends Screen {
     private final Map<Long, Integer> tiles = new LinkedHashMap<>();
     // LRU is just a RAM optimization; every discovered cell persists on disk.
     private final Set<Long> loadedRegions = new HashSet<>();
+    private final AtlasLevelOfDetail lod = new AtlasLevelOfDetail();
+    private boolean lodDirty = true;
     private final Map<Long, Integer> failedRegionRetry = new LinkedHashMap<>();
     private int screenTicks;
     private final Map<Long, Integer> unsavedTiles = new LinkedHashMap<>();
@@ -316,6 +318,7 @@ public final class AtlasMapScreen extends Screen {
                 return rx < left || rx > right || rz < top || rz > bottom;
             });
             tiles.putAll(unsavedTiles);
+            lodDirty = true;
         }
         int budget = 1; // one compressed region per client tick
         // Load from the player's camera center outward to avoid a visible
@@ -340,6 +343,7 @@ public final class AtlasMapScreen extends Screen {
                             failedRegionRetry.remove(regionId);
                             // Unsaved samples must override older disk colors.
                             tiles.putAll(unsavedTiles);
+                            lodDirty = true;
                         } else {
                             failedRegionRetry.put(regionId, screenTicks + 100);
                         }
@@ -378,6 +382,7 @@ public final class AtlasMapScreen extends Screen {
                 && minecraft.player.tickCount % 40 == 0) {
             lastMergedTick = minecraft.player.tickCount;
             AtlasWalkDiscovery.mergeInto(tiles);
+            lodDirty = true;
         }
         // Region IO occurs in tick(); rendering only reads the RAM snapshot.
         lastStartX = startX;
@@ -391,24 +396,21 @@ public final class AtlasMapScreen extends Screen {
                     for (int px = 0; px < cellsX; px++) {
                         int wx = startX + px * step;
                         int wz = startZ + py * step;
-                        // Exact one-block sample; previously archived 2x2
-                        // samples are used only as a fallback during migration.
+                        // Zoomed-out cells use observed regional averages,
+                        // rather than requiring a lucky sample at the top-left
+                        // corner. No unknown terrain is synthesized.
                         int sampleX = wx, sampleZ = wz;
                         long id = key(sampleX, sampleZ, 1);
-                        Integer color = tiles.get(id);
-                        if (color == null) {
-                            color = tiles.get(key(Math.floorDiv(wx, 2) * 2,
-                                    Math.floorDiv(wz, 2) * 2, 2));
-                        }
+                        Integer color = lod.color(wx, wz, step, tiles);
                         if (color == null && budget > 0 && minecraft != null
                                 && minecraft.level != null
                                 && minecraft.level.getChunkSource().hasChunk(sampleX >> 4, sampleZ >> 4)) {
-                            // Do not cache unloaded regions as empty terrain:
-                            // when the player explores them later they can be sampled.
+                            // Only sample terrain already sent to the client.
                             budget--;
                             color = sample(sampleX, sampleZ);
                             tiles.put(id, color);
                             unsavedTiles.put(id, color);
+                            lodDirty = true;
                         }
                         if (color != null) {
                             int sx = mapX + px * drawSize;
@@ -513,6 +515,12 @@ public final class AtlasMapScreen extends Screen {
         // Region files are loaded during screen ticks, not once per rendered
         // frame, so uncached disk IO does not repeat at the monitor refresh rate.
         loadVisibleRegions(startX(), startZ());
+        // Build only from loaded and discovered samples. Avoid rebuilding
+        // hundreds of thousands of aggregates at display refresh speed.
+        if (lodDirty && screenTicks % 20 == 0) {
+            lod.rebuild(tiles);
+            lodDirty = false;
+        }
         if (++autosaveTicks >= 200) {
             autosaveTicks = 0;
             if (minecraft != null && minecraft.level != null && !unsavedTiles.isEmpty()
