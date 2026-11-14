@@ -6,6 +6,10 @@ import dev.luxmods.engine.client.LuxGuiStyle;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.phys.AABB;
 
 /** The Lux Atlas mini-compass: narrow, slim and snapped just above the hotbar. */
 public final class AtlasCompassHud {
@@ -46,8 +50,47 @@ public final class AtlasCompassHud {
                         y + 9, LuxGuiStyle.AMBER, true);
             }
         }
+        drawNearbyEntities(g, mc, centerX, y, heading);
         // Fine stationary needle at current heading, plus pixel jewel.
         g.fill(centerX, y + 2, centerX + 1, y + 8, 0xFFF3DAFF);
         LuxGuiStyle.icon(g, "compass_needle", centerX - 3, y - 3, 7, 9);
+    }
+
+    /**
+     * Only client-known entities are drawn, never hidden/unloaded enemies.
+     * Red dots = hostile monsters. Gold H = a tamed horse owned by the
+     * player; other players' horses and wild horses are omitted.
+     */
+    private static void drawNearbyEntities(GuiGraphics g, Minecraft mc,
+                                           int centerX, int y, float heading) {
+        var player = mc.player;
+        if (player == null || mc.level == null) return;
+        AABB region = player.getBoundingBox().inflate(32.0D);
+        int threats = 0;
+        for (Entity entity : mc.level.getEntities(player, region, e ->
+                e instanceof Monster || e instanceof AbstractHorse)) {
+            boolean hostile = entity instanceof Monster monster && monster.isAlive();
+            boolean ownedHorse = entity instanceof AbstractHorse horse
+                    && horse.isAlive() && horse.isTamed()
+                    && player.getUUID().equals(horse.getOwnerUUID());
+            if (!hostile && !ownedHorse) continue;
+            if (hostile && ++threats > 24) continue; // avoid unreadable dot clusters
+            double dx = entity.getX() - player.getX();
+            double dz = entity.getZ() - player.getZ();
+            if (dx * dx + dz * dz > 32.0D * 32.0D) continue;
+            // Absolute compass bearing: N=0, E=90, S=180, W=270.
+            float bearing = CompassMath.normalize(
+                    (float) Math.toDegrees(Math.atan2(dx, -dz)));
+            float offset = CompassMath.signedOffset(bearing, heading);
+            if (Math.abs(offset) > HALF_WINDOW_DEGREES) continue;
+            int px = Math.round(centerX + offset * PIXELS_PER_DEGREE);
+            if (hostile) {
+                g.fill(px - 2, y + 1, px + 3, y + 6, 0xFF33121A);
+                g.fill(px - 1, y + 2, px + 2, y + 5, 0xFFF04C59);
+            } else {
+                g.fill(px - 5, y, px + 6, y + 9, 0xE021192F);
+                g.drawString(mc.font, "H", px - 3, y + 1, 0xFFECC37C, true);
+            }
+        }
     }
 }
