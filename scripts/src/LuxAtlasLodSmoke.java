@@ -18,7 +18,7 @@ public final class LuxAtlasLodSmoke {
         samples.put(AtlasViewport.sampleKey(7, 9, 1), 0xffff0000);
         samples.put(AtlasViewport.sampleKey(8, 9, 1), 0xff0000ff);
         samples.put(AtlasViewport.sampleKey(-7, -9, 1), 0xff00ff00);
-        samples.put(AtlasViewport.sampleKey(23, 18, 2), 0xffaa8844); // old snapshot
+        samples.put(AtlasViewport.sampleKey(22, 18, 2), 0xffaa8844); // old snapshot
         AtlasLevelOfDetail lod = new AtlasLevelOfDetail();
         lod.rebuild(samples);
 
