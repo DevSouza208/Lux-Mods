@@ -14,12 +14,22 @@ public class LuxNpcContractSmoke {
         check(NpcContractLifecycle.accept(offered, player, offered.expiresDay()).status() == NpcContractLifecycle.Status.EXPIRED);
         var accepted = NpcContractLifecycle.accept(offered, player, 12);
         check(accepted.status() == NpcContractLifecycle.Status.ACCEPTED);
+        check(NpcContractLifecycle.validTransition(offered, accepted));
+        check(!NpcContractLifecycle.validTransition(offered, offered));
+        check(!NpcContractLifecycle.validTransition(accepted, offered));
+        check(!NpcContractLifecycle.validTransition(accepted,
+                new NpcContractLifecycle.Offer(npc, offered.issuedDay(),
+                        offered.expiresDay(), "minecraft:diamond", offered.quantity(),
+                        NpcContractLifecycle.Status.COMPLETED, player)));
+
         check(NpcContractLifecycle.accept(accepted, another, 12).equals(accepted));
         check(NpcContractLifecycle.refresh(accepted, 1000).equals(accepted));
         check(NpcContractLifecycle.complete(accepted, another, true).equals(accepted));
         check(NpcContractLifecycle.complete(accepted, player, false).equals(accepted));
         var completed = NpcContractLifecycle.complete(accepted, player, true);
         check(completed.status() == NpcContractLifecycle.Status.COMPLETED);
+        check(NpcContractLifecycle.validTransition(accepted, completed));
+        check(!NpcContractLifecycle.validTransition(completed, accepted));
         check(NpcContractLifecycle.complete(completed, player, true).equals(completed));
         System.out.println("Lux NPC contract lifecycle smoke OK");
     }
