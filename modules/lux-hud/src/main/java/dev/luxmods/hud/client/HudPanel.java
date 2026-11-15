@@ -50,7 +50,7 @@ public final class HudPanel {
 
         // Upgrades are frozen. Display the genuine vanilla XP level instead
         // of a stale or permanently missing RPG snapshot.
-        String level = "XP " + player.experienceLevel;
+        String level = Integer.toString(player.experienceLevel);
         int levelX = x + WIDTH - 10 - mc.font.width(level);
         g.drawString(mc.font, level, levelX, y + 8, LuxGuiStyle.MUTED_TEXT, false);
 
@@ -65,8 +65,15 @@ public final class HudPanel {
         g.drawString(mc.font, name, x + 65, y + 8, LuxGuiStyle.FOREGROUND, true);
 
         // Three icons, three bars, identical x alignment and row spacing.
-        drawStat(g, mc, x + 63, y + 25, "stat_health", player.getHealth(),
-                player.getMaxHealth(), LuxGuiStyle.HEALTH, false);
+        // While submerged, oxygen takes the first status row; health returns
+        // immediately on surfacing. The real drowning mechanic is untouched.
+        if (player.isUnderWater()) {
+            drawBreath(g, mc, x + 63, y + 25, player.getAirSupply(),
+                    player.getMaxAirSupply());
+        } else {
+            drawStat(g, mc, x + 63, y + 25, "stat_health", player.getHealth(),
+                    player.getMaxHealth(), LuxGuiStyle.HEALTH, false);
+        }
         drawStat(g, mc, x + 63, y + 43, "stat_hunger",
                 player.getFoodData().getFoodLevel(), 20f, LuxGuiStyle.HUNGER, false);
         Integer hydration = HudThirstCompat.readThirst();
@@ -108,6 +115,26 @@ public final class HudPanel {
                 : Math.round(value) + "/" + Math.round(max);
         // Keep the numeric value readable even when the fill is empty.
         g.drawString(mc.font, amount, bx + 6, y + 1, 0xFFFFFFFF, true);
+    }
+
+    private static void drawBreath(GuiGraphics g, Minecraft mc, int x, int y,
+                                   int airTicks, int maxAirTicks) {
+        int current = Math.max(0, airTicks);
+        int maximum = Math.max(1, maxAirTicks);
+        int blue = 0xFF63B5E1;
+        // Ten little bubbles above a genuine 0..maxAir air bar.
+        LuxGuiStyle.bar(g, x + 17, y, 143, 11, current, maximum, blue);
+        int bubbles = (int) Math.ceil(10.0 * current / maximum);
+        for (int i = 0; i < 10; i++) {
+            int bx = x + 20 + i * 13;
+            int by = y + 3;
+            int edge = i < bubbles ? 0xFFE1F6FF : 0xFF466078;
+            int center = i < bubbles ? 0xFF4CAAD9 : 0xFF27384C;
+            g.fill(bx + 1, by, bx + 5, by + 1, edge);
+            g.fill(bx, by + 1, bx + 6, by + 5, edge);
+            g.fill(bx + 1, by + 2, bx + 5, by + 5, center);
+            g.fill(bx + 2, by + 1, bx + 3, by + 3, 0xFFE7F8FF);
+        }
     }
 
     private static void drawThirst(GuiGraphics g, Minecraft mc, int x, int y, int hydration) {
