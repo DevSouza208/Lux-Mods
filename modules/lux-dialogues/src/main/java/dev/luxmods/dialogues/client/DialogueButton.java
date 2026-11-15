@@ -27,7 +27,18 @@ public final class DialogueButton extends Button {
             LuxGuiStyle.icon(g, "ornament_diamond", x + 4, y + h / 2 - 4, 8, 8);
             LuxGuiStyle.icon(g, "ornament_diamond", x + w - 12, y + h / 2 - 4, 8, 8);
         }
-        g.drawCenteredString(Minecraft.getInstance().font, getMessage(),
-                x + w / 2, y + (h - 8) / 2, !active ? 0xFF9C93AB : 0xFFF8ECFF);
+        // Long names from other mods must never overflow into adjacent buttons.
+        var font = Minecraft.getInstance().font;
+        String full = getMessage().getString();
+        int maxTextWidth = Math.max(8, w - (hover && active ? 32 : 14));
+        String visible = full;
+        if (font.width(visible) > maxTextWidth) {
+            while (!visible.isEmpty() && font.width(visible + "…") > maxTextWidth) {
+                visible = visible.substring(0, visible.length() - 1);
+            }
+            visible += "…";
+        }
+        g.drawCenteredString(font, visible, x + w / 2, y + (h - 8) / 2,
+                !active ? 0xFF9C93AB : 0xFFF8ECFF);
     }
 }
