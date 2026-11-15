@@ -68,13 +68,13 @@ public final class LuxUpgradesScreen extends Screen {
             if (buttons[i] == null) continue;
             int cost = LuxUpgradeState.price(i);
             buttons[i].setMessage(Component.literal(cost < 0 ? "Bloqueado"
-                    : "Evoluir · " + cost + " XP"));
+                    : "Evoluir · " + cost + " níveis"));
             buttons[i].active = pendingRevision < 0 && LuxUpgradeState.canBuy(i);
         }
         if (promoteButton != null) {
             int cost = LuxUpgradeState.promotionCost();
             promoteButton.setMessage(Component.literal(cost < 0 ? "Complete as melhorias"
-                    : "Subir nível do personagem · " + cost + " XP"));
+                    : "Subir personagem · " + cost + " níveis"));
             promoteButton.active = pendingRevision < 0 && LuxUpgradeState.canPromote();
         }
     }
@@ -103,7 +103,7 @@ public final class LuxUpgradesScreen extends Screen {
                 : "Sincronizando com servidor...";
         g.drawCenteredString(font, status, width / 2,
                 panelTop + 27, LuxGuiStyle.FOREGROUND);
-        g.drawCenteredString(font, "Aprimore seus atributos gastando níveis de XP",
+        g.drawCenteredString(font, "Melhore atributos gastando níveis de XP",
                 width / 2, panelTop + 41, LuxGuiStyle.MUTED_TEXT);
         for (int perk = 0; perk < 4; perk++) {
             int x = panelLeft + 15 + (perk % 2) * (cardWidth + 10);
