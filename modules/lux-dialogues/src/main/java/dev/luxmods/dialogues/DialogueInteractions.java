@@ -7,7 +7,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.npc.Villager;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/** Empty-hand interaction opens Lux conversation; shift-click keeps the original mod behavior. */
+/** Dialogue by right-click; shift-click keeps the original mod behavior. */
 public final class DialogueInteractions {
     private DialogueInteractions() {}
 
@@ -24,7 +24,10 @@ public final class DialogueInteractions {
                     NpcContractStorage.current(villager, Math.max(0L, villager.level().getDayTime() / 24000L));
                     DialogueSessions.start(villager, player);
                 }
-                else if (npc instanceof Mob guard) GuardDialogueSessions.start(guard, player);
+                else if (DialogueNpcTypes.isGuard(npc) && npc instanceof Mob guard)
+                    GuardDialogueSessions.start(guard, player);
+                // Other Companions! mobs remain free to move and follow;
+                // do not use the guard/villager movement-freeze sessions.
                 event.setCancellationResult(InteractionResult.SUCCESS);
                 event.setCanceled(true);
             }
