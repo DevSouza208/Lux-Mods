@@ -2,7 +2,7 @@ package dev.luxmods.luxupgrades;
 
 import dev.luxmods.upgrades.LuxUpgradeNetwork;
 import dev.luxmods.upgrades.LuxUpgradeServerEvents;
-import dev.luxmods.upgrades.client.LuxUpgradeMenuEntry;
+import dev.luxmods.upgrades.client.LuxUpgradeShortcut;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -16,7 +16,8 @@ public final class LuxUpgrades {
         modBus.addListener(LuxUpgradeNetwork::register);
         NeoForge.EVENT_BUS.register(new LuxUpgradeServerEvents());
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            NeoForge.EVENT_BUS.addListener(LuxUpgradeMenuEntry::onPauseInit);
+            modBus.addListener(LuxUpgradeShortcut::register);
+            NeoForge.EVENT_BUS.addListener(LuxUpgradeShortcut::onTick);
         }
     }
 }
