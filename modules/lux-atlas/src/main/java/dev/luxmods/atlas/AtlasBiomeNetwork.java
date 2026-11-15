@@ -28,18 +28,19 @@ public final class AtlasBiomeNetwork {
 
     private AtlasBiomeNetwork() {}
 
-    public record Request(int originX, int originZ) implements CustomPacketPayload {
+    public record Request(int originX, int originZ, int requestId) implements CustomPacketPayload {
         public static final Type<Request> TYPE = new Type<>(
                 ResourceLocation.fromNamespaceAndPath(LuxAtlas.MOD_ID, "biome_preview_request"));
         public static final StreamCodec<FriendlyByteBuf, Request> CODEC =
                 StreamCodec.of((buf, value) -> {
                     buf.writeInt(value.originX());
                     buf.writeInt(value.originZ());
-                }, buf -> new Request(buf.readInt(), buf.readInt()));
+                    buf.writeInt(value.requestId());
+                }, buf -> new Request(buf.readInt(), buf.readInt(), buf.readInt()));
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
-    public record Preview(int originX, int originZ, String dimension, int[] colors)
+    public record Preview(int originX, int originZ, int requestId, String dimension, int[] colors)
             implements CustomPacketPayload {
         public static final Type<Preview> TYPE = new Type<>(
                 ResourceLocation.fromNamespaceAndPath(LuxAtlas.MOD_ID, "biome_preview"));
@@ -47,14 +48,15 @@ public final class AtlasBiomeNetwork {
                 StreamCodec.of((buf, value) -> {
                     buf.writeInt(value.originX());
                     buf.writeInt(value.originZ());
+                    buf.writeInt(value.requestId());
                     buf.writeUtf(value.dimension(), 128);
                     for (int color : value.colors()) buf.writeInt(color);
                 }, buf -> {
-                    int x = buf.readInt(), z = buf.readInt();
+                    int x = buf.readInt(), z = buf.readInt(), requestId = buf.readInt();
                     String dimension = buf.readUtf(128);
                     int[] colors = new int[CELLS];
                     for (int i = 0; i < CELLS; i++) colors[i] = buf.readInt();
-                    return new Preview(x, z, dimension, colors);
+                    return new Preview(x, z, requestId, dimension, colors);
                 });
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
@@ -100,7 +102,7 @@ public final class AtlasBiomeNetwork {
                 }
             }
             PacketDistributor.sendToPlayer(player,
-                    new Preview(ox, oz, level.dimension().location().toString(), colors));
+                    new Preview(ox, oz, request.requestId(), level.dimension().location().toString(), colors));
         });
     }
 
