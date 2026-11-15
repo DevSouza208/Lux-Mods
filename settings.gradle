@@ -5,10 +5,12 @@ plugins {
 }
 
 rootProject.name = 'Lux-Mods'
-include ':lux-engine', ':lux-discovery', ':lux-compass', ':lux-hud', ':lux-menu', ':lux-borderless', ':lux-dialogues'
+include ':lux-engine', ':lux-discovery', ':lux-compass', ':lux-quests', ':lux-upgrades', ':lux-hud', ':lux-menu', ':lux-borderless', ':lux-dialogues'
 project(':lux-engine').projectDir = file('modules/lux-engine')
 project(':lux-discovery').projectDir = file('modules/lux-discovery')
 project(':lux-compass').projectDir = file('modules/lux-compass')
+project(':lux-quests').projectDir = file('modules/lux-quests')
+project(':lux-upgrades').projectDir = file('modules/lux-upgrades')
 project(':lux-hud').projectDir = file('modules/lux-hud')
 project(':lux-menu').projectDir = file('modules/lux-menu')
 project(':lux-borderless').projectDir = file('modules/lux-borderless')
