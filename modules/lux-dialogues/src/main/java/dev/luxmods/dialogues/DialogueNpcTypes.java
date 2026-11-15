@@ -26,7 +26,8 @@ public final class DialogueNpcTypes {
         if (!(entity instanceof Mob mob) || entity instanceof Monster
                 || mob.getTarget() != null) return false;
         var id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-        return "companions".equals(id.getNamespace())
+        return "modern_companions".equals(id.getNamespace())
+                || "companions".equals(id.getNamespace())
                 || "companions_mod".equals(id.getNamespace())
                 || "azscompanions".equals(id.getNamespace());
     }
