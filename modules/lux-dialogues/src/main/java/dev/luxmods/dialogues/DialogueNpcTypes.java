@@ -27,7 +27,8 @@ public final class DialogueNpcTypes {
                 || mob.getTarget() != null) return false;
         var id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         return "companions".equals(id.getNamespace())
-                || "companions_mod".equals(id.getNamespace());
+                || "companions_mod".equals(id.getNamespace())
+                || "azscompanions".equals(id.getNamespace());
     }
 
     public static boolean supported(Entity entity) {
