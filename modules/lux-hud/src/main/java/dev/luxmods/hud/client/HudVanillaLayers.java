@@ -29,8 +29,12 @@ public final class HudVanillaLayers {
                 || mc.options.hideGui || HudConfig.MODE.get() != HudConfig.Mode.RPG) return;
 
         var name = event.getName();
-        // Thirst Was Taken was removed from the pack. Only vanilla
-        // stat layers are suppressed; keep the actual hotbar and gameplay.
+        // Keep the real inventory HOTBAR, chat, crosshair and interaction cues.
+        // AppleSkin is optional; disable its HUD overlays only, not tooltips.
+        if ("appleskin".equals(name.getNamespace())) {
+            event.setCanceled(true);
+            return;
+        }
         if (VanillaGuiLayers.EXPERIENCE_BAR.equals(name)
                 || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name)
                 || VanillaGuiLayers.PLAYER_HEALTH.equals(name)

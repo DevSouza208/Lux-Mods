@@ -13,11 +13,11 @@ public final class HudConfig {
             .defineEnum("mode", Mode.RPG);
 
     public static final ModConfigSpec.DoubleValue HUD_SCALE = BUILDER
-            .comment("Escala do painel Lux e do rastreador de missoes. F8 alterna entre 60%, 75%, 85% e 100%.")
+            .comment("Escala do painel Lux. F8 alterna entre 60%, 75%, 85% e 100%.")
             .defineInRange("hudScale", 0.75D, 0.60D, 1.00D);
 
     public static final ModConfigSpec.BooleanValue REPLACE_VANILLA_BARS = BUILDER
-            .comment("Ocultar barras vanilla de vida, fome e XP quando o painel RPG estiver visivel.")
+            .comment("Compatibilidade de config antiga: em modo RPG, os indicadores vanilla ficam ocultos.")
             .define("replaceVanillaBars", true);
 
     public static final ModConfigSpec.BooleanValue SHOW_EFFECTS = BUILDER
@@ -45,8 +45,8 @@ public final class HudConfig {
             .define("showTeammates", true);
 
     public static final ModConfigSpec.BooleanValue SHOW_QUESTS = BUILDER
-            .comment("Mostrar rastreador de missoes a direita; sem tarefas ficticias.")
-            .define("showQuests", true);
+            .comment("Opcao legada desativada: o Lux Quests nao desenha missoes nesta HUD.")
+            .define("showQuests", false);
 
     public static final ModConfigSpec.BooleanValue DECORATE_HOTBAR = BUILDER
             .comment("Moldura pixel art Clean Fantasy na hotbar, sem substituir os slots/items vanilla.")
