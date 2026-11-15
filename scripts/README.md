@@ -1,20 +1,16 @@
 # Lux Mods — compilação e instalação
 
-## Instalação fácil no SKlauncher
+## Atualização local no SKlauncher
 
-No Windows, com JDK 21 e a instância `teste` fechada, use o atalho **Atualizar Lux Mods.bat**.
-Ele faz `git pull` e chama `scripts/install-to-sklauncher.ps1`, que roda `assembleTestPack` e
-copia **Lux Engine, Lux Discovery, Lux Atlas, Lux HUD e Lux Menu** para `%APPDATA%\.sklauncher\instances\teste\mods`
-somente se o build e a verificação dos JARs passarem. Faz backup externo em
-`%APPDATA%\.sklauncher\instances\teste\lux-mods-backup`.
-
-Manual no PowerShell:
+Com Minecraft fechado, execute a partir da cópia local do repositório:
 
 ```powershell
-cd "$env:USERPROFILE\LuxModsDev"
-git pull --ff-only
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-to-sklauncher.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-to-sklauncher.ps1
 ```
+
+O script usa por padrão `%APPDATA%\.sklauncher\instances\lux-mods\mods` (ou `-Instance nome`), atualiza a `main` via `git pull --ff-only origin main`, exige JDK 21, compila localmente `assembleTestPack` e instala os nove JARs: engine, discovery, compass, quests, upgrades, hud, menu, borderless e dialogues. Remove versões antigas desses módulos e `lux-atlas-*.jar`, faz backup e verifica SHA256 de cada cópia. Se houver erro antes da cópia, não instala; se houver erro durante a cópia, tenta restaurar o backup.
+
+**Atalho Windows:** o arquivo `Atualizar Lux Mods.bat` não está versionado neste repositório. Portanto, não é possível garantir que um atalho já existente no computador invoque este instalador. Confira o campo *Destino* do atalho e se ele aponta para o script acima, no checkout correto. O script `TESTAR-PACOTE-LUX.bat` apenas reúne evidências; não instala mods. `build-testpack-windows.ps1` apenas gera ZIP e hashes; não copia para a instância.
 
 ## Testes individuais
 
