@@ -28,10 +28,12 @@ public final class AtlasCompassHud {
                 || !AtlasConfig.SHOW_COMPASS.get()) return;
 
         int centerX = g.guiWidth() / 2;
-        // The primary exploration compass belongs at the TOP of the screen.
-        // Keep legacy manual positioning only for users who disabled snapping.
-        int y = AtlasConfig.SNAP_TO_HOTBAR.get() ? 8
-                : Math.max(4, g.guiHeight() - AtlasConfig.DISTANCE_FROM_BOTTOM.get());
+        // Snap ON: place the compass directly above the hotbar.
+        // Snap OFF: let the player choose the distance from the bottom.
+        // Both modes are bottom-anchored; never send Snap ON to screen top.
+        int bottomOffset = AtlasConfig.SNAP_TO_HOTBAR.get()
+                ? 47 : AtlasConfig.DISTANCE_FROM_BOTTOM.get();
+        int y = Math.max(4, g.guiHeight() - bottomOffset);
         int x = centerX - WIDTH / 2;
         float heading = CompassMath.fromMinecraftYaw(mc.player.getYRot());
 
