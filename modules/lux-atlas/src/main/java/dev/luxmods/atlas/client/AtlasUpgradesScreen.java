@@ -17,6 +17,7 @@ public final class AtlasUpgradesScreen extends Screen {
             "+0,004 velocidade por nível", "+1 armadura por nível"
     };
     private final Button[] buttons = new Button[4];
+    private Button promoteButton;
     private int pendingRevision = -1;
 
     public AtlasUpgradesScreen() {
@@ -33,13 +34,17 @@ public final class AtlasUpgradesScreen extends Screen {
                     Component.literal("Comprar " + NAMES[perk]), b -> buy(selected))
                     .bounds(x, y, 160, 20).build());
         }
+        promoteButton = addRenderableWidget(Button.builder(
+                Component.literal("Subir nível do personagem"), b -> buy(4))
+                .bounds(center - 114, height - 59, 228, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Fechar"), b -> onClose())
                 .bounds(center - 45, height - 32, 90, 20).build());
         updateButtons();
     }
 
     private void buy(int perk) {
-        if (!LuxUpgradeState.canBuy(perk) || pendingRevision >= 0) return;
+        if ((perk == 4 ? !LuxUpgradeState.canPromote() : !LuxUpgradeState.canBuy(perk))
+                || pendingRevision >= 0) return;
         pendingRevision = LuxUpgradeState.revision();
         PacketDistributor.sendToServer(new LuxUpgradeNetwork.Purchase(perk));
         updateButtons();
@@ -53,6 +58,8 @@ public final class AtlasUpgradesScreen extends Screen {
             if (buttons[i] != null)
                 buttons[i].active = pendingRevision < 0 && LuxUpgradeState.canBuy(i);
         }
+        if (promoteButton != null)
+            promoteButton.active = pendingRevision < 0 && LuxUpgradeState.canPromote();
     }
 
     @Override public void tick() { updateButtons(); }
@@ -64,19 +71,29 @@ public final class AtlasUpgradesScreen extends Screen {
         LuxGuiStyle.panel(g, left, 8, right - left, height - 12);
         g.drawCenteredString(font, "UPGRADES", width / 2, 18, LuxGuiStyle.AMBER);
         String level = LuxUpgradeState.received()
-                ? "Nível de XP: " + LuxUpgradeState.xpLevel()
+                ? "Personagem " + LuxUpgradeState.characterLevel() + "/20  |  XP Minecraft: " + LuxUpgradeState.xpLevel()
                 : "Sincronizando XP com servidor...";
         g.drawCenteredString(font, level, width / 2, 36, LuxGuiStyle.FOREGROUND);
-        g.drawCenteredString(font, "Cada compra desconta níveis reais de XP.",
+        g.drawCenteredString(font, "Complete 4 melhorias para liberar a promoção.",
                 width / 2, 49, LuxGuiStyle.MUTED_TEXT);
         for (int i = 0; i < 4; i++) {
             int x = width / 2 + (i % 2 == 0 ? -164 : 6);
             int y = height / 2 - 47 + (i / 2) * 58;
-            String cost = LuxUpgradeState.price(i) < 0 ? "Máximo"
-                    : "Custo " + LuxUpgradeState.price(i) + " níveis";
-            g.drawString(font, NAMES[i] + " " + LuxUpgradeState.rank(i) + "/3  ·  " + cost,
+            String cost = LuxUpgradeState.rank(i) >= 20 ? "Máximo"
+                    : LuxUpgradeState.price(i) < 0 ? "Próxima etapa"
+                    : "Custo " + LuxUpgradeState.price(i) + " XP";
+            g.drawString(font, NAMES[i] + " " + LuxUpgradeState.rank(i) + "/20  ·  " + cost,
                     x, y, LuxGuiStyle.AMBER, false);
             g.drawString(font, BONUSES[i], x, y + 12, LuxGuiStyle.FOREGROUND, false);
+        }
+        if (LuxUpgradeState.received()) {
+            int cost = LuxUpgradeState.promotionCost();
+            String status = LuxUpgradeState.characterLevel() >= 20
+                    ? "Nível máximo de personagem"
+                    : cost < 0 ? "Complete as 4 melhorias desta etapa"
+                    : "Promoção custa " + cost + " níveis de XP";
+            g.drawCenteredString(font, status, width / 2, height - 71,
+                    LuxGuiStyle.AMBER);
         }
         super.render(g, mouseX, mouseY, partialTick);
     }
