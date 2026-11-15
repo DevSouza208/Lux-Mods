@@ -43,7 +43,7 @@ public final class HudPanel {
 
         LuxGuiStyle.panel(g, x, y, WIDTH, HEIGHT);
 
-        // Portrait height is precisely the three rows: y+24 through y+72.
+        // Portrait occupies the same compact panel; just two status bars remain.
         g.fill(x + 8, y + 23, x + 58, y + 73, 0xFF282234);
         PlayerFaceRenderer.draw(g, player.getSkin(), x + 10, y + 25, 46);
         LuxGuiStyle.icon(g, "portrait_frame", x + 7, y + 22, 52, 52);
@@ -64,28 +64,19 @@ public final class HudPanel {
         }
         g.drawString(mc.font, name, x + 65, y + 8, LuxGuiStyle.FOREGROUND, true);
 
-        // Three icons, three bars, identical x alignment and row spacing.
+        // Only real, currently installed player stats: health and hunger.
+        // Breath temporarily replaces health underwater. No phantom thirst.
         // While submerged, oxygen takes the first status row; health returns
         // immediately on surfacing. The real drowning mechanic is untouched.
         if (player.isUnderWater()) {
-            drawBreath(g, mc, x + 63, y + 25, player.getAirSupply(),
+            drawBreath(g, mc, x + 63, y + 31, player.getAirSupply(),
                     player.getMaxAirSupply());
         } else {
-            drawStat(g, mc, x + 63, y + 25, "stat_health", player.getHealth(),
+            drawStat(g, mc, x + 63, y + 31, "stat_health", player.getHealth(),
                     player.getMaxHealth(), LuxGuiStyle.HEALTH, false);
         }
-        drawStat(g, mc, x + 63, y + 43, "stat_hunger",
+        drawStat(g, mc, x + 63, y + 51, "stat_hunger",
                 player.getFoodData().getFoodLevel(), 20f, LuxGuiStyle.HUNGER, false);
-        Integer hydration = HudThirstCompat.readThirst();
-        if (hydration != null) {
-            drawThirst(g, mc, x + 63, y + 61, hydration);
-        } else {
-            // Never substitute XP for thirst. If the installed hydration mod
-            // does not expose a readable value, keep its own overlay visible.
-            g.drawString(mc.font, "Sede: --", x + 80, y + 63,
-                    LuxGuiStyle.MUTED_TEXT, false);
-        }
-
         if (HudConfig.SHOW_EFFECTS.get()) {
             // Align active conditions with the right-side quests panel.
             // Placing them below its maximum 104px height prevents overlap
@@ -135,18 +126,6 @@ public final class HudPanel {
             g.fill(bx + 1, by + 2, bx + 5, by + 5, center);
             g.fill(bx + 2, by + 1, bx + 3, by + 3, 0xFFE7F8FF);
         }
-    }
-
-    private static void drawThirst(GuiGraphics g, Minecraft mc, int x, int y, int hydration) {
-        // A tiny procedural water-drop silhouette, no extra texture pack needed.
-        int blue = 0xFF63B5E1;
-        g.fill(x + 5, y, x + 7, y + 2, blue);
-        g.fill(x + 4, y + 2, x + 8, y + 5, blue);
-        g.fill(x + 3, y + 5, x + 9, y + 9, blue);
-        g.fill(x + 4, y + 9, x + 8, y + 11, blue);
-        g.fill(x + 5, y + 11, x + 7, y + 12, blue);
-        LuxGuiStyle.bar(g, x + 17, y, 143, 11, hydration, 20f, blue);
-        g.drawString(mc.font, hydration + "/20", x + 23, y + 1, 0xFFFFFFFF, true);
     }
 
     private static void drawEffects(GuiGraphics g, Minecraft mc, int x, int y, int virtualWidth, int virtualHeight) {
