@@ -1,0 +1,57 @@
+{
+  "general": {
+    "disable_all_structures": false,
+    "prevent_structure_overlap": false,
+    "enable_global_spacing_and_separation_modifier": false,
+    "global_spacing_and_separation_modifier": 1
+  },
+  "structure_namespaces": [
+    {
+      "name": "global",
+      "enable_flatness_check": false
+    }
+  ],
+  "structures": [
+    {
+      "name": "minecraft:village_plains",
+      "override_global_flatness_check": true,
+      "enable_flatness_check": true,
+      "flatness_check_allow_non_solid_blocks": false,
+      "flatness_check_mode": "MANUAL",
+      "flatness_check_max_height_difference": 12
+    },
+    {
+      "name": "minecraft:village_desert",
+      "override_global_flatness_check": true,
+      "enable_flatness_check": true,
+      "flatness_check_allow_non_solid_blocks": false,
+      "flatness_check_mode": "MANUAL",
+      "flatness_check_max_height_difference": 12
+    },
+    {
+      "name": "minecraft:village_savanna",
+      "override_global_flatness_check": true,
+      "enable_flatness_check": true,
+      "flatness_check_allow_non_solid_blocks": false,
+      "flatness_check_mode": "MANUAL",
+      "flatness_check_max_height_difference": 12
+    },
+    {
+      "name": "minecraft:village_snowy",
+      "override_global_flatness_check": true,
+      "enable_flatness_check": true,
+      "flatness_check_allow_non_solid_blocks": false,
+      "flatness_check_mode": "MANUAL",
+      "flatness_check_max_height_difference": 12
+    },
+    {
+      "name": "minecraft:village_taiga",
+      "override_global_flatness_check": true,
+      "enable_flatness_check": true,
+      "flatness_check_allow_non_solid_blocks": false,
+      "flatness_check_mode": "MANUAL",
+      "flatness_check_max_height_difference": 12
+    }
+  ],
+  "structure_sets": []
+}
