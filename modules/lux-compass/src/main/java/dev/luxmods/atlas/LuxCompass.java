@@ -1,0 +1,37 @@
+package dev.luxmods.atlas;
+
+import dev.luxmods.atlas.client.AtlasClientLayers;
+import dev.luxmods.atlas.client.AtlasHorseMemory;
+import dev.luxmods.atlas.client.AtlasMenusKey;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/** Lux Compass depends only on Engine; all rendering lives on the physical client. */
+@Mod(LuxCompass.MOD_ID)
+public final class LuxCompass {
+    public static final String MOD_ID = "lux_compass";
+    private static final Logger LOGGER = LoggerFactory.getLogger(LuxCompass.class);
+
+    public LuxCompass(IEventBus modBus, ModContainer container) {
+        container.registerConfig(ModConfig.Type.CLIENT, AtlasConfig.SPEC);
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClientSetup.register(modBus);
+        }
+        LOGGER.info("Lux Compass carregado.");
+    }
+
+    private static final class ClientSetup {
+        private static void register(IEventBus modBus) {
+            modBus.addListener(AtlasClientLayers::register);
+            modBus.addListener(AtlasMenusKey::register);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasMenusKey::onTick);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasHorseMemory::onTick);
+        }
+    }
+}
