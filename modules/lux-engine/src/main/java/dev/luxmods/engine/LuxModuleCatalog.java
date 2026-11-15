@@ -5,19 +5,28 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * Catálogo estático de IDs Lux reconhecidos na primeira fase.
- * isInstalled só depende de um Predicado para ser testável sem Minecraft.
+ * Exact mod IDs currently shipped as standalone JARs by assembleTestPack.
+ * A catalog entry does not force the module to be installed.
+ *
+ * This list is deliberately small: planned modules must not be reported as
+ * implemented, and the removed lux_atlas must never return.
  */
 public final class LuxModuleCatalog {
     public static final List<String> KNOWN_MODULE_IDS = List.of(
-            "lux_engine", "lux_discovery", "lux_atlas", "lux_hud", "lux_menu",
-            "lux_npc", "lux_lore", "lux_quests", "lux_villages",
-            "lux_progression", "lux_inventory", "lux_items", "lux_food",
-            "lux_materials");
+            "lux_engine",
+            "lux_discovery",
+            "lux_compass",
+            "lux_quests",
+            "lux_upgrades",
+            "lux_hud",
+            "lux_menu",
+            "lux_borderless",
+            "lux_dialogues"
+    );
 
-    private LuxModuleCatalog() {
-    }
+    private LuxModuleCatalog() {}
 
+    /** Pure query; no Minecraft dependency, reflection, or mod loading. */
     public static List<String> installedModules(Predicate<String> isInstalled) {
         Objects.requireNonNull(isInstalled, "isInstalled");
         return KNOWN_MODULE_IDS.stream().filter(isInstalled).toList();
