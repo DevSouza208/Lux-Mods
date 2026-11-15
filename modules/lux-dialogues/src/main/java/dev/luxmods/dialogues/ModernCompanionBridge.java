@@ -85,8 +85,13 @@ public final class ModernCompanionBridge {
             return new State(animal.isTame(), owner, following, patrolling, guarding,
                     List.copyOf(materials));
         } catch (ReflectiveOperationException | ClassCastException ex) {
-            // An incompatible optional mod revision must not crash the game.
-            return null;
+            // Keep the factual ownership state even if an optional mod method
+            // changed. The Lux dialogue will indicate unknown requirements
+            // instead of hanging indefinitely on "loading".
+            TamableAnimal animal = (TamableAnimal) npc;
+            return new State(animal.isTame(),
+                    animal.isTame() && player.getUUID().equals(animal.getOwnerUUID()),
+                    false, false, false, List.of());
         }
     }
 
