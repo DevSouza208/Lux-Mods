@@ -19,8 +19,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Gradle build failed (exit $LASTEXITCODE). See errors above." }
 
     $output = Join-Path $root 'build\lux-testpack\mods'
-    $mods = @('lux-engine', 'lux-discovery', 'lux-atlas', 'lux-hud',
-              'lux-menu', 'lux-borderless', 'lux-dialogues')
+    $mods = @('lux-engine', 'lux-discovery', 'lux-compass', 'lux-quests',
+              'lux-upgrades', 'lux-hud', 'lux-menu', 'lux-borderless', 'lux-dialogues')
     $files = @(Get-ChildItem -LiteralPath $output -Filter '*.jar' -File)
     foreach ($mod in $mods) {
         $matching = @($files | Where-Object { $_.Name -match "^$([regex]::Escape($mod))-[0-9]" })
