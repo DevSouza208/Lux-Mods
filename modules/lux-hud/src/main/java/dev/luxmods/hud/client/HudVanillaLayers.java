@@ -32,7 +32,9 @@ public final class HudVanillaLayers {
             event.setCanceled(true);
             return;
         }
-        if (VanillaGuiLayers.PLAYER_HEALTH.equals(name)
+        if (VanillaGuiLayers.EXPERIENCE_BAR.equals(name)
+                || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name)
+                || VanillaGuiLayers.PLAYER_HEALTH.equals(name)
                 || VanillaGuiLayers.ARMOR_LEVEL.equals(name)
                 || VanillaGuiLayers.FOOD_LEVEL.equals(name)
                 || VanillaGuiLayers.AIR_LEVEL.equals(name)
