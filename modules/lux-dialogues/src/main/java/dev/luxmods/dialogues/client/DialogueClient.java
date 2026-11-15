@@ -49,6 +49,13 @@ public final class DialogueClient {
         }
     }
 
+    public static void onCompanionState(DialogueNetwork.CompanionState state) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof VillagerDialogueScreen screen) {
+            screen.receiveCompanionState(state);
+        }
+    }
+
     public static void onDeliveryResult(DialogueNetwork.ContractDeliveryResult result) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof VillagerDialogueScreen screen) {
@@ -79,13 +86,12 @@ public final class DialogueClient {
         if (!(event.getTarget() instanceof LivingEntity npc)
                 || !DialogueNpcTypes.supported(npc)
                 || event.getHand() != InteractionHand.MAIN_HAND) return;
-        // Preserve Modern Companions' native right-click actions. The Lux
-        // conversation is deliberately Shift + empty-hand right-click only.
+        // Empty-hand conversation is the Lux entry point for ModernCompanions.
+        // Held items and sneaking remain native (tools, food, emergency items,
+        // companion mover and the original sit command).
         boolean companion = DialogueNpcTypes.isCompanion(npc);
-        if (companion) {
-            if (!event.getEntity().isShiftKeyDown()
-                    || !event.getEntity().getMainHandItem().isEmpty()) return;
-        } else if (event.getEntity().isShiftKeyDown()) return;
+        if (companion && !event.getEntity().getMainHandItem().isEmpty()) return;
+        if (event.getEntity().isShiftKeyDown()) return;
         if (DialogueNpcTypes.guardInCombat(npc) || !event.getLevel().isClientSide()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != null) return;
