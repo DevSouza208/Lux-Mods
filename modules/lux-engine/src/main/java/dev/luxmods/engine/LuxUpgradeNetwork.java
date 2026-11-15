@@ -24,16 +24,19 @@ public final class LuxUpgradeNetwork {
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
-    public record Snapshot(int highestLevel, boolean health, boolean speed)
-            implements CustomPacketPayload {
+    public record Snapshot(int xpLevel, int healthRank, int strengthRank,
+                           int speedRank, int armorRank) implements CustomPacketPayload {
         public static final Type<Snapshot> TYPE = new Type<>(
                 ResourceLocation.fromNamespaceAndPath(LuxEngine.MOD_ID, "upgrade_snapshot"));
         public static final StreamCodec<FriendlyByteBuf, Snapshot> CODEC =
                 StreamCodec.of((buf, p) -> {
-                    buf.writeVarInt(p.highestLevel());
-                    buf.writeBoolean(p.health());
-                    buf.writeBoolean(p.speed());
-                }, buf -> new Snapshot(buf.readVarInt(), buf.readBoolean(), buf.readBoolean()));
+                    buf.writeVarInt(p.xpLevel());
+                    buf.writeVarInt(p.healthRank());
+                    buf.writeVarInt(p.strengthRank());
+                    buf.writeVarInt(p.speedRank());
+                    buf.writeVarInt(p.armorRank());
+                }, buf -> new Snapshot(buf.readVarInt(), buf.readVarInt(),
+                        buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
@@ -52,6 +55,6 @@ public final class LuxUpgradeNetwork {
 
     private static void onSnapshot(Snapshot packet, IPayloadContext context) {
         context.enqueueWork(() ->
-                LuxUpgradeState.receive(packet.highestLevel(), packet.health(), packet.speed()));
+                LuxUpgradeState.receive(packet.xpLevel(), packet.healthRank(), packet.strengthRank(), packet.speedRank(), packet.armorRank()));
     }
 }
