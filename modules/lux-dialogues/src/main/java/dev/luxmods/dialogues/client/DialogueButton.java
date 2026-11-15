@@ -27,18 +27,24 @@ public final class DialogueButton extends Button {
             LuxGuiStyle.icon(g, "ornament_diamond", x + 4, y + h / 2 - 4, 8, 8);
             LuxGuiStyle.icon(g, "ornament_diamond", x + w - 12, y + h / 2 - 4, 8, 8);
         }
-        // Long names from other mods must never overflow into adjacent buttons.
+        // Two-line labels stay inside the button; single-line labels keep the
+        // classic look. Never draw long text across adjacent choices.
         var font = Minecraft.getInstance().font;
-        String full = getMessage().getString();
+        String[] lines = getMessage().getString().split("\\n", -1);
         int maxTextWidth = Math.max(8, w - (hover && active ? 32 : 14));
-        String visible = full;
-        if (font.width(visible) > maxTextWidth) {
-            while (!visible.isEmpty() && font.width(visible + "…") > maxTextWidth) {
-                visible = visible.substring(0, visible.length() - 1);
+        int lineHeight = 10;
+        int textTop = y + (h - lines.length * lineHeight) / 2 + 1;
+        for (int index = 0; index < lines.length; index++) {
+            String visible = lines[index];
+            if (font.width(visible) > maxTextWidth) {
+                while (!visible.isEmpty() && font.width(visible + "…") > maxTextWidth) {
+                    visible = visible.substring(0, visible.length() - 1);
+                }
+                visible += "…";
             }
-            visible += "…";
+            g.drawCenteredString(font, visible, x + w / 2,
+                    textTop + index * lineHeight,
+                    !active ? 0xFF9C93AB : 0xFFF8ECFF);
         }
-        g.drawCenteredString(font, visible, x + w / 2, y + (h - 8) / 2,
-                !active ? 0xFF9C93AB : 0xFFF8ECFF);
     }
 }
