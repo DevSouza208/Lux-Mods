@@ -9,8 +9,9 @@ import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
- * Guards face the player during a conversation but keep their own patrol AI.
- * Never freeze navigation, overwrite the combat target, or cancel guard AI.
+ * Guards hold their position and face the player only during an active dialogue.
+ * Combat, distance, logout and closing the screen release the guard immediately.
+ * Patrol/navigation resumes normally after the session; no AI goals are removed.
  */
 public final class GuardDialogueSessions {
     private record Session(UUID player, long expires) {}
@@ -20,6 +21,24 @@ public final class GuardDialogueSessions {
     public static void start(Mob guard, ServerPlayer player) {
         if (guard.getTarget() != null || player.distanceToSqr(guard) > 64D) return;
         ACTIVE.put(guard.getUUID(), new Session(player.getUUID(), guard.level().getGameTime() + 600L));
+        hold(guard, player);
+    }
+
+    private static void hold(Mob guard, ServerPlayer player) {
+        // Stop navigation without teleporting the guard or disabling its AI.
+        // Preserve vertical velocity for gravity and swimming.
+        guard.getNavigation().stop();
+        var velocity = guard.getDeltaMovement();
+        guard.setDeltaMovement(0.0D, velocity.y, 0.0D);
+
+        double dx = player.getX() - guard.getX();
+        double dz = player.getZ() - guard.getZ();
+        if (dx * dx + dz * dz > 0.0001D) {
+            float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
+            guard.setYRot(yaw);
+            guard.setYHeadRot(yaw);
+            guard.setYBodyRot(yaw);
+        }
         guard.getLookControl().setLookAt(player, 30.0F, 30.0F);
     }
 
@@ -50,6 +69,6 @@ public final class GuardDialogueSessions {
             ACTIVE.remove(guard.getUUID());
             return;
         }
-        guard.getLookControl().setLookAt(player, 30.0F, 30.0F);
+        hold(guard, player);
     }
 }
