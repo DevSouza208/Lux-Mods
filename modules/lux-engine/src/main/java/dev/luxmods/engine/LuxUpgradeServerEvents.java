@@ -58,7 +58,7 @@ public final class LuxUpgradeServerEvents {
     }
 
     public static void buy(ServerPlayer player, int perk) {
-        if (!player.isAlive() || player.isSpectator() || player.isCreative()
+        if (!player.isAlive() || player.isSpectator()
                 || (perk != 0 && perk != 1)) return;
         updateLevels(player);
         var data = player.getPersistentData();
@@ -71,6 +71,7 @@ public final class LuxUpgradeServerEvents {
         }
         data.putBoolean(key, true);
         apply(player);
+        if (perk == 0) player.heal(2.0F);
         sync(player);
     }
 
