@@ -74,7 +74,203 @@ foreach ($file in $files) {
 $allNames = @($names) + @($obsolete)
 $old = @()
 foreach ($name in $allNames) {
-    $old += @(Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction Stop)
+    $old += @(Get-ChildItem $mods -Filter '*.jar' -File -ErrorAction Stop |
+        Where-Object { $_.Name -match ('^' + [regex]::Escape($name) + '(-.*)?\.jar
+$backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+if ($old.Count -gt 0) {
+    New-Item -ItemType Directory -Force -Path $backup | Out-Null
+    foreach ($file in $old) { Copy-Item $file.FullName -Destination $backup -Force }
+}
+try {
+    foreach ($file in $old) { Remove-Item $file.FullName -Force }
+    foreach ($file in $files) {
+        Copy-Item $file.FullName -Destination $mods -Force
+        $actual = Get-FileHash (Join-Path $mods $file.Name) -Algorithm SHA256
+        $expected = Get-FileHash $file.FullName -Algorithm SHA256
+        if ($actual.Hash -ne $expected.Hash) { throw "HASH INCORRETO: $($file.Name)" }
+        Write-Host ("OK INSTALADO: " + $file.Name + "  sha256=" + $actual.Hash.Substring(0,12)) -ForegroundColor Green
+    }
+    foreach ($name in $obsolete) {
+        if (@(Get-ChildItem $mods -Filter '*.jar' -File |
+            Where-Object { $_.Name -match ('^' + [regex]::Escape($name) + '(-.*)?\.jar
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter '*.jar' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match ('^' + [regex]::Escape($name) + '(-.*)?\.jar
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) })
+}
+$backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+if ($old.Count -gt 0) {
+    New-Item -ItemType Directory -Force -Path $backup | Out-Null
+    foreach ($file in $old) { Copy-Item $file.FullName -Destination $backup -Force }
+}
+try {
+    foreach ($file in $old) { Remove-Item $file.FullName -Force }
+    foreach ($file in $files) {
+        Copy-Item $file.FullName -Destination $mods -Force
+        $actual = Get-FileHash (Join-Path $mods $file.Name) -Algorithm SHA256
+        $expected = Get-FileHash $file.FullName -Algorithm SHA256
+        if ($actual.Hash -ne $expected.Hash) { throw "HASH INCORRETO: $($file.Name)" }
+        Write-Host ("OK INSTALADO: " + $file.Name + "  sha256=" + $actual.Hash.Substring(0,12)) -ForegroundColor Green
+    }
+    foreach ($name in $obsolete) {
+        if (@(Get-ChildItem $mods -Filter "$name-*.jar" -File).Count -ne 0) {
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) }).Count -ne 0) {
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) })
+}
+$backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+if ($old.Count -gt 0) {
+    New-Item -ItemType Directory -Force -Path $backup | Out-Null
+    foreach ($file in $old) { Copy-Item $file.FullName -Destination $backup -Force }
+}
+try {
+    foreach ($file in $old) { Remove-Item $file.FullName -Force }
+    foreach ($file in $files) {
+        Copy-Item $file.FullName -Destination $mods -Force
+        $actual = Get-FileHash (Join-Path $mods $file.Name) -Algorithm SHA256
+        $expected = Get-FileHash $file.FullName -Algorithm SHA256
+        if ($actual.Hash -ne $expected.Hash) { throw "HASH INCORRETO: $($file.Name)" }
+        Write-Host ("OK INSTALADO: " + $file.Name + "  sha256=" + $actual.Hash.Substring(0,12)) -ForegroundColor Green
+    }
+    foreach ($name in $obsolete) {
+        if (@(Get-ChildItem $mods -Filter "$name-*.jar" -File).Count -ne 0) {
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) } |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) })
+}
+$backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+if ($old.Count -gt 0) {
+    New-Item -ItemType Directory -Force -Path $backup | Out-Null
+    foreach ($file in $old) { Copy-Item $file.FullName -Destination $backup -Force }
+}
+try {
+    foreach ($file in $old) { Remove-Item $file.FullName -Force }
+    foreach ($file in $files) {
+        Copy-Item $file.FullName -Destination $mods -Force
+        $actual = Get-FileHash (Join-Path $mods $file.Name) -Algorithm SHA256
+        $expected = Get-FileHash $file.FullName -Algorithm SHA256
+        if ($actual.Hash -ne $expected.Hash) { throw "HASH INCORRETO: $($file.Name)" }
+        Write-Host ("OK INSTALADO: " + $file.Name + "  sha256=" + $actual.Hash.Substring(0,12)) -ForegroundColor Green
+    }
+    foreach ($name in $obsolete) {
+        if (@(Get-ChildItem $mods -Filter "$name-*.jar" -File).Count -ne 0) {
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) }).Count -ne 0) {
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+    if ($old.Count -gt 0) {
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
+    }
+    throw
+}
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
+explorer.exe $mods
+) })
 }
 $backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 if ($old.Count -gt 0) {
