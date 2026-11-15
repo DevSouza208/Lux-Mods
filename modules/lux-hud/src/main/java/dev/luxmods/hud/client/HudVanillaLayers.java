@@ -36,8 +36,6 @@ public final class HudVanillaLayers {
                 || VanillaGuiLayers.ARMOR_LEVEL.equals(name)
                 || VanillaGuiLayers.FOOD_LEVEL.equals(name)
                 || VanillaGuiLayers.AIR_LEVEL.equals(name)
-                || VanillaGuiLayers.EXPERIENCE_BAR.equals(name)
-                || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name)
                 || VanillaGuiLayers.VEHICLE_HEALTH.equals(name)
                 || VanillaGuiLayers.JUMP_METER.equals(name)
                 || VanillaGuiLayers.SELECTED_ITEM_NAME.equals(name)) {
