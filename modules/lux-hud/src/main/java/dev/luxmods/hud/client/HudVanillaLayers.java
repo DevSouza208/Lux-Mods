@@ -29,16 +29,8 @@ public final class HudVanillaLayers {
                 || mc.options.hideGui || HudConfig.MODE.get() != HudConfig.Mode.RPG) return;
 
         var name = event.getName();
-        // Third-party thirst indicator is hidden ONLY after reading a real
-        // hydration value. Until then it stays visible for player safety.
-        // NeoForge assigns the overlay's namespace from the registering mod.
-        // Do not assume it is literally "thirst": only the thirst path is
-        // meaningful. Never cancel it unless the real hydration value is read.
-        if (name.getPath().contains("thirst")
-                && HudThirstCompat.readThirst() != null) {
-            event.setCanceled(true);
-            return;
-        }
+        // Thirst Was Taken was removed from the pack. Only vanilla
+        // stat layers are suppressed; keep the actual hotbar and gameplay.
         if (VanillaGuiLayers.EXPERIENCE_BAR.equals(name)
                 || VanillaGuiLayers.EXPERIENCE_LEVEL.equals(name)
                 || VanillaGuiLayers.PLAYER_HEALTH.equals(name)
