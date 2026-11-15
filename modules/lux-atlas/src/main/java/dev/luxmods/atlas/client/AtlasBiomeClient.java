@@ -22,9 +22,11 @@ public final class AtlasBiomeClient {
             return size() > MAX_REGIONS;
         }
     };
-    private static final Map<Long, Integer> REQUESTED =
+    private record Pending(int tick, int requestId) {}
+    private static int nextRequestId;
+    private static final Map<Long, Pending> REQUESTED =
             new LinkedHashMap<>(128, .75f, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<Long, Integer> entry) {
+                @Override protected boolean removeEldestEntry(Map.Entry<Long, Pending> entry) {
                     return size() > 128;
                 }
             };
@@ -91,12 +93,15 @@ public final class AtlasBiomeClient {
                     if (++candidates > MAX_REGIONS) return;
                     long id = key((int) x, (int) z);
                     if (REGIONS.containsKey(id)) continue;
-                    Integer last = REQUESTED.get(id);
-                    if (last != null && ticks >= last && ticks - last < 200) continue;
-                    REQUESTED.put(id, ticks);
+                    Pending last = REQUESTED.get(id);
+                    if (last != null && ticks >= last.tick() && ticks - last.tick() < 200) continue;
+                    // Never reuse a request identity after changing worlds.
+                    // A late reply for the same coordinates cannot match a new request.
+                    int requestId = ++nextRequestId;
+                    REQUESTED.put(id, new Pending(ticks, requestId));
                     PacketDistributor.sendToServer(new AtlasBiomeNetwork.Request(
                             (int) x * AtlasBiomeNetwork.REGION_BLOCKS,
-                            (int) z * AtlasBiomeNetwork.REGION_BLOCKS));
+                            (int) z * AtlasBiomeNetwork.REGION_BLOCKS, requestId));
                     return;
                 }
             }
@@ -116,7 +121,8 @@ public final class AtlasBiomeClient {
         // Only accept a reply to a request made in this ClientLevel. A delayed
         // packet from a previous connection using the same dimension name
         // must not populate the new world's biome preview.
-        if (!REQUESTED.containsKey(key)) return;
+        Pending pending = REQUESTED.get(key);
+        if (pending == null || pending.requestId() != response.requestId()) return;
         REGIONS.put(key, response.colors().clone());
         REQUESTED.remove(key);
     }
