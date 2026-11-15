@@ -31,8 +31,10 @@ public final class HudVanillaLayers {
         var name = event.getName();
         // Third-party thirst indicator is hidden ONLY after reading a real
         // hydration value. Until then it stays visible for player safety.
-        if ("thirst".equals(name.getNamespace())
-                && name.getPath().contains("thirst")
+        // NeoForge assigns the overlay's namespace from the registering mod.
+        // Do not assume it is literally "thirst": only the thirst path is
+        // meaningful. Never cancel it unless the real hydration value is read.
+        if (name.getPath().contains("thirst")
                 && HudThirstCompat.readThirst() != null) {
             event.setCanceled(true);
             return;
