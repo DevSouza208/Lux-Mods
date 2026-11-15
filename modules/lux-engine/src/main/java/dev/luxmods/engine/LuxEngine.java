@@ -25,8 +25,6 @@ public final class LuxEngine {
     public LuxEngine(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.COMMON, EngineConfig.SPEC);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
-        modBus.addListener(LuxUpgradeNetwork::register);
-        NeoForge.EVENT_BUS.register(new LuxUpgradeServerEvents());
         if (FMLEnvironment.dist == Dist.CLIENT) {
             NeoForge.EVENT_BUS.addListener(
                     dev.luxmods.engine.client.LuxProgressClientEvents::onLogout);
