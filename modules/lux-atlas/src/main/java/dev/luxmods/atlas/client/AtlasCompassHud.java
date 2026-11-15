@@ -9,6 +9,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.phys.AABB;
 
 /** Direction compass at the upper center; legacy manual-bottom placement remains optional. */
@@ -69,18 +71,29 @@ public final class AtlasCompassHud {
         if (player == null || mc.level == null) return;
         AABB region = player.getBoundingBox().inflate(32.0D);
         int threats = 0;
+        int merchants = 0;
         for (Entity entity : mc.level.getEntities(player, region, e ->
-                e instanceof Monster || e instanceof AbstractHorse)) {
+                e instanceof Monster || e instanceof AbstractHorse || e instanceof Villager)) {
             boolean hostile = entity instanceof Monster monster && monster.isAlive();
             boolean ownedHorse = entity instanceof AbstractHorse horse
                     && horse.isAlive() && horse.isTamed()
                     && (player.getUUID().equals(horse.getOwnerUUID())
                         || player.getVehicle() == horse);
-            if (!hostile && !ownedHorse) continue;
-            if (hostile && ++threats > 24) continue; // avoid unreadable dot clusters
+            // Show nearby villagers who can trade on the compass only.
+            // The external Merchant Markers mod controls its own floating
+            // labels, so users can remove it without losing this compass cue.
+            boolean merchant = entity instanceof Villager villager && villager.isAlive()
+                    && !villager.isBaby()
+                    && villager.getVillagerData().getProfession() != VillagerProfession.NONE
+                    && villager.getVillagerData().getProfession() != VillagerProfession.NITWIT;
+            if (!hostile && !ownedHorse && !merchant) continue;
             double dx = entity.getX() - player.getX();
             double dz = entity.getZ() - player.getZ();
-            if (dx * dx + dz * dz > 32.0D * 32.0D) continue;
+            double distanceSq = dx * dx + dz * dz;
+            if (distanceSq > 32.0D * 32.0D) continue;
+            if (merchant && distanceSq > 24.0D * 24.0D) continue;
+            if (hostile && ++threats > 24) continue;
+            if (merchant && ++merchants > 12) continue; // no emerald spam in villages
             // Absolute compass bearing: N=0, E=90, S=180, W=270.
             float bearing = CompassMath.normalize(
                     (float) Math.toDegrees(Math.atan2(dx, -dz)));
@@ -90,8 +103,10 @@ public final class AtlasCompassHud {
             if (hostile) {
                 g.fill(px - 2, y + 1, px + 3, y + 6, 0xFF33121A);
                 g.fill(px - 1, y + 2, px + 2, y + 5, 0xFFF04C59);
-            } else {
+            } else if (ownedHorse) {
                 drawHorseIcon(g, px, y, 0xFFECC37C);
+            } else if (merchant) {
+                drawMerchantIcon(g, px, y);
             }
         }
     }
@@ -109,6 +124,17 @@ public final class AtlasCompassHud {
         // Muted color + '?' means historical position, not a live GPS signal.
         drawHorseIcon(g, px - 3, y, 0xFF957C9F);
         g.drawString(mc.font, "?", px + 2, y, 0xFFC2A4D1, true);
+    }
+
+    /** A tiny emerald on the compass only; never draws above a villager. */
+    private static void drawMerchantIcon(GuiGraphics g, int cx, int y) {
+        int top = y + 1;
+        g.fill(cx - 3, top, cx + 4, top + 9, 0xD021192F);
+        g.fill(cx, top + 1, cx + 1, top + 2, 0xFFA6E8AB);
+        g.fill(cx - 1, top + 2, cx + 2, top + 4, 0xFF72D987);
+        g.fill(cx - 2, top + 4, cx + 3, top + 6, 0xFF3CAB6A);
+        g.fill(cx - 1, top + 6, cx + 2, top + 8, 0xFF278455);
+        g.fill(cx, top + 8, cx + 1, top + 9, 0xFF1C6349);
     }
 
     /** Tiny pixel horse-head silhouette, with no external texture dependency. */
