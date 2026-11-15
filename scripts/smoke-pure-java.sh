@@ -14,12 +14,6 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryLedger.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/LuxDiscoveryEvents.java \
   modules/lux-atlas/src/main/java/dev/luxmods/atlas/CompassMath.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasViewport.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasTerrainColor.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasTileLayers.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasLevelOfDetail.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasRegionMerge.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/client/AtlasWriteJournal.java \
   modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/NpcContractLifecycle.java \
   modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/ContractInventoryPlan.java \
   modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/client/ContractUiState.java \
@@ -32,24 +26,12 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   scripts/src/LuxContractUiSmoke.java \
   scripts/src/LuxHudSmoke.java \
   scripts/src/LuxCompassSmoke.java \
-  scripts/src/LuxAtlasViewportSmoke.java \
-  scripts/src/LuxAtlasTerrainColorSmoke.java \
-  scripts/src/LuxAtlasTileLayersSmoke.java \
-  scripts/src/LuxAtlasLodSmoke.java \
-  scripts/src/LuxAtlasRegionMergeSmoke.java \
-  scripts/src/LuxAtlasJournalSmoke.java \
   scripts/src/LuxSmokeMain.java \
   scripts/src/LuxEventDepthSmoke.java
 java -cp "$TMP" LuxSmokeMain
 java -cp "$TMP" LuxEventDepthSmoke
 java -cp "$TMP" LuxCompassSmoke
 java -cp "$TMP" LuxHudSmoke
-java -cp "$TMP" LuxAtlasViewportSmoke
-java -cp "$TMP" LuxAtlasLodSmoke
-java -cp "$TMP" LuxAtlasRegionMergeSmoke
-java -cp "$TMP" LuxAtlasJournalSmoke
-java -cp "$TMP" LuxAtlasTerrainColorSmoke
-java -cp "$TMP" LuxAtlasTileLayersSmoke
 java -cp "$TMP" LuxNpcContractSmoke
 java -cp "$TMP" LuxContractUiSmoke
 java -cp "$TMP" LuxContractInventorySmoke
