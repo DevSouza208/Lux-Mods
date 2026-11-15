@@ -13,7 +13,7 @@ javac --release 21 -encoding UTF-8 -d "$TMP" \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryDebouncer.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/DiscoveryLedger.java \
   modules/lux-discovery/src/main/java/dev/luxmods/discovery/LuxDiscoveryEvents.java \
-  modules/lux-atlas/src/main/java/dev/luxmods/atlas/CompassMath.java \
+  modules/lux-compass/src/main/java/dev/luxmods/atlas/CompassMath.java \
   modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/NpcContractLifecycle.java \
   modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/ContractInventoryPlan.java \
   modules/lux-dialogues/src/main/java/dev/luxmods/dialogues/client/ContractUiState.java \
