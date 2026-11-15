@@ -2,6 +2,7 @@ package dev.luxmods.atlas.client;
 
 import dev.luxmods.engine.api.LuxQuestPage;
 import dev.luxmods.engine.api.LuxQuestTracker;
+import dev.luxmods.engine.api.LuxIntroQuestState;
 import dev.luxmods.engine.client.LuxGuiStyle;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -27,7 +28,7 @@ public final class AtlasMissionsScreen extends Screen {
     }
 
     private int pageSize() {
-        return Math.max(1, Math.min(8, (height - 110) / 45));
+        return Math.max(1, Math.min(6, (height - 190) / 45));
     }
 
     @Override protected void init() {
@@ -76,21 +77,41 @@ public final class AtlasMissionsScreen extends Screen {
         LuxGuiStyle.panel(g, left, 12, right - left, height - 18);
         g.drawCenteredString(font, "MISSÕES", width / 2, 25, LuxGuiStyle.AMBER);
 
+        // A two-node intro chain backed by the actual server-owned quest
+        // stages. No made-up branching tasks or locally awarded progress.
+        int introStage = LuxIntroQuestState.stage();
+        int introProgress = LuxIntroQuestState.progress();
+        g.drawString(font, "INÍCIO DA AVENTURA", left + 16, 49, LuxGuiStyle.AMBER, false);
+        if (!LuxIntroQuestState.received()) {
+            g.drawString(font, "Sincronizando missões...", left + 16, 65,
+                    LuxGuiStyle.MUTED_TEXT, false);
+        } else {
+            String logs = introStage > 0 ? "Concluída" : introProgress + "/16";
+            String stone = introStage > 1 ? "Concluída"
+                    : introStage == 1 ? introProgress + "/16" : "Bloqueada";
+            g.drawString(font, "1. Primeiros troncos: " + logs,
+                    left + 16, 65, LuxGuiStyle.FOREGROUND, false);
+            g.drawString(font, "        ↓", left + 16, 78, LuxGuiStyle.MUTED_TEXT, false);
+            g.drawString(font, "2. Pedras para construir: " + stone,
+                    left + 16, 91, LuxGuiStyle.FOREGROUND, false);
+        }
+        g.drawString(font, "CONTRATOS DOS ALDEÕES", left + 16, 115, LuxGuiStyle.AMBER, false);
+
         List<LuxQuestTracker.Contract> active = quests();
         page = LuxQuestPage.clamp(page, active.size(), pageSize());
         g.drawCenteredString(font, "Página " + (page + 1) + "/"
                 + LuxQuestPage.pages(active.size(), pageSize()),
-                width / 2, 42, LuxGuiStyle.MUTED_TEXT);
+                width / 2, 130, LuxGuiStyle.MUTED_TEXT);
 
         if (active.isEmpty()) {
             g.drawCenteredString(font, "Nenhum contrato aceito nesta dimensão.",
-                    width / 2, height / 2 - 12, LuxGuiStyle.FOREGROUND);
+                    width / 2, 157, LuxGuiStyle.FOREGROUND);
             g.drawCenteredString(font, "Converse com um aldeão para aceitar um contrato.",
-                    width / 2, height / 2 + 5, LuxGuiStyle.MUTED_TEXT);
+                    width / 2, 171, LuxGuiStyle.MUTED_TEXT);
         } else {
             int index = 0;
             for (var quest : LuxQuestPage.slice(active, page, pageSize())) {
-                int y = 65 + index++ * 45;
+                int y = 151 + index++ * 45;
                 int count = Math.min(quest.quantity(), inventoryCount(quest.objective()));
                 String progress = quest.status() == 4 ? "Entrega em revisão"
                         : count + "/" + quest.quantity();
