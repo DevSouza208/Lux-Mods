@@ -24,6 +24,7 @@ public final class LuxUpgradesScreen extends Screen {
     private int panelTop;
     private int panelWidth;
     private int cardWidth;
+    private int cardHeight;
 
     public LuxUpgradesScreen(Screen parent) {
         super(Component.literal("Lux Mods - Melhorias"));
@@ -33,22 +34,23 @@ public final class LuxUpgradesScreen extends Screen {
     @Override protected void init() {
         panelWidth = Math.min(388, width - 20);
         panelLeft = (width - panelWidth) / 2;
-        panelTop = Math.max(6, (height - 254) / 2);
+        panelTop = Math.max(6, (height - 216) / 2);
         int gap = 10;
         cardWidth = (panelWidth - 30 - gap) / 2;
+        cardHeight = 49;
         for (int perk = 0; perk < 4; perk++) {
             int i = perk;
             int x = panelLeft + 15 + (perk % 2) * (cardWidth + gap);
-            int y = panelTop + 59 + (perk / 2) * 70;
+            int y = panelTop + 51 + (perk / 2) * 53;
             buttons[perk] = addRenderableWidget(Button.builder(
                     Component.literal("Evoluir"), b -> buy(i))
-                    .bounds(x + 7, y + 42, cardWidth - 14, 19).build());
+                    .bounds(x + 5, y + 30, cardWidth - 10, 16).build());
         }
         promoteButton = addRenderableWidget(Button.builder(
                 Component.literal("Evoluir personagem"), b -> buy(4))
-                .bounds(panelLeft + 16, panelTop + 207, panelWidth - 32, 18).build());
+                .bounds(panelLeft + 16, panelTop + 161, panelWidth - 32, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Voltar"), b -> onClose())
-                .bounds(panelLeft + (panelWidth - 100) / 2, panelTop + 231, 100, 19).build());
+                .bounds(panelLeft + (panelWidth - 100) / 2, panelTop + 186, 100, 18).build());
         updateButtons();
     }
 
@@ -95,7 +97,7 @@ public final class LuxUpgradesScreen extends Screen {
 
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, width, height, 0xCC11101C);
-        LuxGuiStyle.panel(g, panelLeft, panelTop, panelWidth, 252);
+        LuxGuiStyle.panel(g, panelLeft, panelTop, panelWidth, 211);
         g.drawCenteredString(font, "MELHORIAS", width / 2,
                 panelTop + 11, LuxGuiStyle.AMBER);
         String status = LuxUpgradeState.received()
@@ -104,16 +106,16 @@ public final class LuxUpgradesScreen extends Screen {
         g.drawCenteredString(font, status, width / 2,
                 panelTop + 27, LuxGuiStyle.FOREGROUND);
         g.drawCenteredString(font, "Melhore atributos gastando níveis de XP",
-                width / 2, panelTop + 41, LuxGuiStyle.MUTED_TEXT);
+                width / 2, panelTop + 40, LuxGuiStyle.MUTED_TEXT);
         for (int perk = 0; perk < 4; perk++) {
             int x = panelLeft + 15 + (perk % 2) * (cardWidth + 10);
             int y = panelTop + 59 + (perk / 2) * 70;
-            g.fill(x, y, x + cardWidth, y + 65, 0xC0221A33);
+            g.fill(x, y, x + cardWidth, y + cardHeight, 0xC0221A33);
             g.fill(x, y, x + cardWidth, y + 1, LuxGuiStyle.TOP_ACCENT);
             g.drawCenteredString(font, NAMES[perk], x + cardWidth / 2,
-                    y + 6, LuxGuiStyle.AMBER);
+                    y + 3, LuxGuiStyle.AMBER);
             g.drawCenteredString(font, "Atual: " + currentValue(perk),
-                    x + cardWidth / 2, y + 21, LuxGuiStyle.FOREGROUND);
+                    x + cardWidth / 2, y + 15, LuxGuiStyle.FOREGROUND);
         }
         super.render(g, mouseX, mouseY, partialTick);
     }
