@@ -14,7 +14,14 @@ public final class DialogueInteractions {
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
         var npc = event.getTarget();
         if (!DialogueNpcTypes.supported(npc) || event.getHand() != InteractionHand.MAIN_HAND) return;
-        if (event.getEntity().isShiftKeyDown()) return;
+        // Modern Companions owns ordinary clicks (recruitment, food,
+        // inventory and commands). Offer a separate opt-in conversation:
+        // Shift + right-click with the main hand EMPTY.
+        boolean companion = DialogueNpcTypes.isCompanion(npc);
+        if (companion) {
+            if (!event.getEntity().isShiftKeyDown()
+                    || !event.getEntity().getMainHandItem().isEmpty()) return;
+        } else if (event.getEntity().isShiftKeyDown()) return;
         if (DialogueNpcTypes.guardInCombat(npc)) return;
         if (!event.getLevel().isClientSide()) {
             if (event.getEntity() instanceof ServerPlayer player && player.distanceToSqr(npc) <= 64D) {
@@ -26,8 +33,7 @@ public final class DialogueInteractions {
                 }
                 else if (DialogueNpcTypes.isGuard(npc) && npc instanceof Mob guard)
                     GuardDialogueSessions.start(guard, player);
-                // Other Companions! mobs remain free to move and follow;
-                // do not use the guard/villager movement-freeze sessions.
+                // Companions retain their own movement/command AI; no Lux freeze.
                 event.setCancellationResult(InteractionResult.SUCCESS);
                 event.setCanceled(true);
             }
