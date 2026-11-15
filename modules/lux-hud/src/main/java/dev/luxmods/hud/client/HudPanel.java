@@ -1,6 +1,7 @@
 package dev.luxmods.hud.client;
 
 import dev.luxmods.engine.client.LuxGuiStyle;
+import dev.luxmods.engine.api.LuxUpgradeState;
 import dev.luxmods.hud.HudConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -48,7 +49,11 @@ public final class HudPanel {
         PlayerFaceRenderer.draw(g, player.getSkin(), x + 10, y + 25, 46);
         LuxGuiStyle.icon(g, "portrait_frame", x + 7, y + 22, 52, 52);
 
-        String level = "Nv. " + player.experienceLevel;
+        // The vanilla XP level stays on the original hotbar; this label
+        // represents the permanent, separately purchased RPG character level.
+        String level = LuxUpgradeState.received()
+                ? "Nv. " + LuxUpgradeState.characterLevel()
+                : "Nv. --";
         int levelX = x + WIDTH - 10 - mc.font.width(level);
         g.drawString(mc.font, level, levelX, y + 8, LuxGuiStyle.MUTED_TEXT, false);
 
