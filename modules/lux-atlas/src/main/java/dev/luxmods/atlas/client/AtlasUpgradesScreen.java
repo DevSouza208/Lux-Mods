@@ -9,10 +9,15 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/** Two server-validated upgrades. No local attribute or point mutation. */
+/** Four modest, tiered upgrades; costs and purchases are validated server-side. */
 public final class AtlasUpgradesScreen extends Screen {
-    private Button healthButton;
-    private Button speedButton;
+    private static final String[] NAMES = {"Vitalidade", "Força", "Agilidade", "Proteção"};
+    private static final String[] BONUSES = {
+            "+2 HP por nível", "+0,5 dano por nível",
+            "+0,004 velocidade por nível", "+1 armadura por nível"
+    };
+    private final Button[] buttons = new Button[4];
+    private int pendingRevision = -1;
 
     public AtlasUpgradesScreen() {
         super(Component.literal("Lux Mods - Upgrades"));
@@ -20,66 +25,64 @@ public final class AtlasUpgradesScreen extends Screen {
 
     @Override protected void init() {
         int center = width / 2;
-        healthButton = addRenderableWidget(Button.builder(
-                Component.literal("Melhorar vida"), b -> buy(0))
-                .bounds(center - 150, height / 2 - 20, 140, 22).build());
-        speedButton = addRenderableWidget(Button.builder(
-                Component.literal("Melhorar velocidade"), b -> buy(1))
-                .bounds(center + 10, height / 2 - 20, 140, 22).build());
+        for (int perk = 0; perk < 4; perk++) {
+            final int selected = perk;
+            int x = center + (perk % 2 == 0 ? -165 : 5);
+            int y = height / 2 - 20 + (perk / 2) * 58;
+            buttons[perk] = addRenderableWidget(Button.builder(
+                    Component.literal("Comprar " + NAMES[perk]), b -> buy(selected))
+                    .bounds(x, y, 160, 20).build());
+        }
         addRenderableWidget(Button.builder(Component.literal("Fechar"), b -> onClose())
-                .bounds(center - 45, height - 36, 90, 20).build());
+                .bounds(center - 45, height - 32, 90, 20).build());
         updateButtons();
     }
 
     private void buy(int perk) {
-        if (!LuxUpgradeState.received() || LuxUpgradeState.available() < 1) return;
+        if (!LuxUpgradeState.canBuy(perk) || pendingRevision >= 0) return;
+        pendingRevision = LuxUpgradeState.revision();
         PacketDistributor.sendToServer(new LuxUpgradeNetwork.Purchase(perk));
-        // The server must acknowledge the new balance; buttons remain disabled
-        // until the next authoritative snapshot to prevent repeat requests.
-        healthButton.active = false;
-        speedButton.active = false;
-    }
-
-    private void updateButtons() {
-        if (healthButton == null || speedButton == null) return;
-        healthButton.active = LuxUpgradeState.received()
-                && LuxUpgradeState.available() > 0 && !LuxUpgradeState.health();
-        speedButton.active = LuxUpgradeState.received()
-                && LuxUpgradeState.available() > 0 && !LuxUpgradeState.speed();
-    }
-
-    @Override public void tick() {
         updateButtons();
     }
 
+    private void updateButtons() {
+        // A server response increments revision, including a rejected purchase.
+        if (pendingRevision >= 0 && pendingRevision != LuxUpgradeState.revision())
+            pendingRevision = -1;
+        for (int i = 0; i < buttons.length; i++) {
+            if (buttons[i] != null)
+                buttons[i].active = pendingRevision < 0 && LuxUpgradeState.canBuy(i);
+        }
+    }
+
+    @Override public void tick() { updateButtons(); }
+
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, width, height, 0xEE14111F);
-        int left = Math.max(10, width / 2 - 185);
-        int right = Math.min(width - 10, width / 2 + 185);
-        LuxGuiStyle.panel(g, left, 12, right - left, height - 18);
-        g.drawCenteredString(font, "UPGRADES", width / 2, 25, LuxGuiStyle.AMBER);
-        if (!LuxUpgradeState.received()) {
-            g.drawCenteredString(font, "Aguardando dados do servidor...",
-                    width / 2, 65, LuxGuiStyle.MUTED_TEXT);
-        } else {
-            g.drawCenteredString(font, "Maior nível: " + LuxUpgradeState.highestLevel()
-                    + "    Pontos disponíveis: " + LuxUpgradeState.available(),
-                    width / 2, 55, LuxGuiStyle.FOREGROUND);
-            g.drawCenteredString(font, "1 ponto a cada 5 níveis (até 2 pontos)",
-                    width / 2, 72, LuxGuiStyle.MUTED_TEXT);
-            int y = height / 2 - 46;
-            g.drawCenteredString(font, LuxUpgradeState.health()
-                    ? "Vida +2 HP — adquirido" : "Vida +2 HP — custa 1 ponto",
-                    width / 2 - 80, y, LuxGuiStyle.FOREGROUND);
-            g.drawCenteredString(font, LuxUpgradeState.speed()
-                    ? "Velocidade +0,005 — adquirido" : "Velocidade +0,005 — custa 1 ponto",
-                    width / 2 + 80, y, LuxGuiStyle.FOREGROUND);
+        int left = Math.max(6, width / 2 - 183);
+        int right = Math.min(width - 6, width / 2 + 183);
+        LuxGuiStyle.panel(g, left, 8, right - left, height - 12);
+        g.drawCenteredString(font, "UPGRADES", width / 2, 18, LuxGuiStyle.AMBER);
+        String level = LuxUpgradeState.received()
+                ? "Nível de XP: " + LuxUpgradeState.xpLevel()
+                : "Sincronizando XP com servidor...";
+        g.drawCenteredString(font, level, width / 2, 36, LuxGuiStyle.FOREGROUND);
+        g.drawCenteredString(font, "Cada compra desconta níveis reais de XP.",
+                width / 2, 49, LuxGuiStyle.MUTED_TEXT);
+        for (int i = 0; i < 4; i++) {
+            int x = width / 2 + (i % 2 == 0 ? -164 : 6);
+            int y = height / 2 - 47 + (i / 2) * 58;
+            String cost = LuxUpgradeState.price(i) < 0 ? "Máximo"
+                    : "Custo " + LuxUpgradeState.price(i) + " níveis";
+            g.drawString(font, NAMES[i] + " " + LuxUpgradeState.rank(i) + "/3  ·  " + cost,
+                    x, y, LuxGuiStyle.AMBER, false);
+            g.drawString(font, BONUSES[i], x, y + 12, LuxGuiStyle.FOREGROUND, false);
         }
         super.render(g, mouseX, mouseY, partialTick);
     }
 
     @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Drawn above with a full-screen background; no vanilla blur.
+        // The menu already paints its own backdrop.
     }
 
     @Override public boolean isPauseScreen() { return false; }
