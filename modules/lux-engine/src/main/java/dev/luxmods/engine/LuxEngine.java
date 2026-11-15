@@ -3,6 +3,8 @@ package dev.luxmods.engine;
 import dev.luxmods.engine.api.LuxEventBus;
 import dev.luxmods.engine.api.LuxServiceRegistry;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
@@ -25,6 +27,10 @@ public final class LuxEngine {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         modBus.addListener(LuxUpgradeNetwork::register);
         NeoForge.EVENT_BUS.register(new LuxUpgradeServerEvents());
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            NeoForge.EVENT_BUS.addListener(
+                    dev.luxmods.engine.client.LuxProgressClientEvents::onLogout);
+        }
         LOGGER.info("Lux Engine carregado.");
     }
 
