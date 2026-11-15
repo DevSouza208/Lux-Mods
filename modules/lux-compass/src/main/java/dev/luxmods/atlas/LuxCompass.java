@@ -2,7 +2,6 @@ package dev.luxmods.atlas;
 
 import dev.luxmods.atlas.client.AtlasClientLayers;
 import dev.luxmods.atlas.client.AtlasHorseMemory;
-import dev.luxmods.atlas.client.AtlasMenusKey;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -29,8 +28,6 @@ public final class LuxCompass {
     private static final class ClientSetup {
         private static void register(IEventBus modBus) {
             modBus.addListener(AtlasClientLayers::register);
-            modBus.addListener(AtlasMenusKey::register);
-            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasMenusKey::onTick);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(AtlasHorseMemory::onTick);
         }
     }
