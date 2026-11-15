@@ -95,9 +95,7 @@ public final class HudPanel {
         if (HudConfig.SHOW_TEAMMATES.get()) {
             HudPartyClientState.render(g, mc, x, y + HEIGHT + 7 + mountOffset, WIDTH);
         }
-        if (HudConfig.SHOW_QUESTS.get()) {
-            HudQuestTracker.render(g, mc, x + WIDTH + 14, y, virtualWidth);
-        }
+        // Quest HUD display moved to lux-quests and frozen by default.
         } finally {
             g.pose().popPose();
         }
