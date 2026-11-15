@@ -1,5 +1,6 @@
 package dev.luxmods.engine;
 
+import dev.luxmods.engine.api.LuxUpgradeRules;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,19 +12,27 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Player-only, server-authoritative upgrades. Every purchase consumes actual
- * Minecraft XP levels; each next rank costs more. Uses vanilla attribute
- * modifiers so equipment/Curios/Better Combat retain their own bonuses.
+ * Permanent, character-owned progression; not related to vanilla experience
+ * level. The vanilla XP levels are the currency spent for each upgrade and
+ * for promotion after all four ranks at the current character level are done.
+ *
+ * Modifiers use vanilla attributes with Lux-specific IDs: they ADD to mods'
+ * equipment/Curios/Better Combat effects rather than overwriting them.
  */
 public final class LuxUpgradeServerEvents {
+    private static final String LEVEL_KEY = "lux_character_level_v3";
     private static final String[] KEYS = {
+            "lux_upgrades_health_rank_v3", "lux_upgrades_strength_rank_v3",
+            "lux_upgrades_speed_rank_v3", "lux_upgrades_armor_rank_v3"
+    };
+    private static final String[] OLD_KEYS = {
             "lux_upgrades_health_rank_v2", "lux_upgrades_strength_rank_v2",
             "lux_upgrades_speed_rank_v2", "lux_upgrades_armor_rank_v2"
     };
-    private static final int[] BASE_COST = {15, 20, 18, 25};
-    private static final int MAX_RANK = 3;
     private static final String OLD_HEALTH = "lux_upgrades_health_v1";
     private static final String OLD_SPEED = "lux_upgrades_speed_v1";
+    // Each v2 step must retain its actual effect magnitude after migration.
+    private static final int[] V2_MULTIPLIER = {2, 2, 4, 4};
     private static final ResourceLocation[] IDS = {
             id("permanent_health"), id("permanent_strength"),
             id("permanent_speed"), id("permanent_armor")
@@ -35,29 +44,40 @@ public final class LuxUpgradeServerEvents {
         return ResourceLocation.fromNamespaceAndPath(LuxEngine.MOD_ID, name);
     }
 
-    public static int price(int perk, int currentRank) {
-        if (perk < 0 || perk >= KEYS.length || currentRank < 0 || currentRank >= MAX_RANK)
-            return -1;
-        return BASE_COST[perk] + 12 * currentRank;
-    }
-
+    /** Import saved v1/v2 purchases without charging XP or weakening bonuses. */
     private static void migrate(CompoundTag data) {
-        // Previously purchased one-time upgrades must stay purchased without
-        // another XP charge when upgrading from the v1 save format.
-        if (!data.contains(KEYS[0]) && data.getBoolean(OLD_HEALTH)) data.putInt(KEYS[0], 1);
-        if (!data.contains(KEYS[2]) && data.getBoolean(OLD_SPEED)) data.putInt(KEYS[2], 1);
+        if (data.contains(LEVEL_KEY)) return;
+        int highest = 1;
+        for (int i = 0; i < KEYS.length; i++) {
+            int oldRank = Math.max(0, data.getInt(OLD_KEYS[i]));
+            if (oldRank == 0 && i == 0 && data.getBoolean(OLD_HEALTH)) oldRank = 1;
+            if (oldRank == 0 && i == 2 && data.getBoolean(OLD_SPEED)) oldRank = 1;
+            int converted = LuxUpgradeRules.clampRank(oldRank * V2_MULTIPLIER[i]);
+            data.putInt(KEYS[i], converted);
+            highest = Math.max(highest, converted);
+        }
+        // A migrated rank must never be hidden behind a lower character level.
+        data.putInt(LEVEL_KEY, LuxUpgradeRules.clampLevel(highest));
     }
 
-    private static int rank(CompoundTag data, int perk) {
-        return Math.max(0, Math.min(MAX_RANK, data.getInt(KEYS[perk])));
+    private static int level(CompoundTag data) {
+        migrate(data);
+        return LuxUpgradeRules.clampLevel(data.getInt(LEVEL_KEY));
+    }
+
+    private static int[] ranks(CompoundTag data) {
+        int[] ranks = new int[LuxUpgradeRules.PERKS];
+        for (int i = 0; i < ranks.length; i++)
+            ranks[i] = LuxUpgradeRules.clampRank(data.getInt(KEYS[i]));
+        return ranks;
     }
 
     private static void sync(ServerPlayer player) {
-        CompoundTag data = player.getPersistentData();
-        migrate(data);
+        var data = player.getPersistentData();
+        int characterLevel = level(data);
+        int[] r = ranks(data);
         PacketDistributor.sendToPlayer(player, new LuxUpgradeNetwork.Snapshot(
-                player.experienceLevel, rank(data, 0), rank(data, 1),
-                rank(data, 2), rank(data, 3)));
+                player.experienceLevel, characterLevel, r[0], r[1], r[2], r[3]));
     }
 
     private static void modifier(ServerPlayer player, int perk, int rank) {
@@ -70,10 +90,10 @@ public final class LuxUpgradeServerEvents {
         if (attribute == null) return;
         ResourceLocation id = IDS[perk];
         double amount = switch (perk) {
-            case 0 -> 2.0 * rank;
-            case 1 -> 0.5 * rank;
-            case 2 -> 0.004 * rank;
-            default -> 1.0 * rank;
+            case 0 -> 1.0 * rank;
+            case 1 -> 0.25 * rank;
+            case 2 -> 0.001 * rank;
+            default -> 0.25 * rank;
         };
         var existing = attribute.getModifier(id);
         if (rank == 0) {
@@ -86,25 +106,37 @@ public final class LuxUpgradeServerEvents {
 
     private static void apply(ServerPlayer player) {
         var data = player.getPersistentData();
-        migrate(data);
-        for (int perk = 0; perk < KEYS.length; perk++) modifier(player, perk, rank(data, perk));
+        level(data);
+        int[] r = ranks(data);
+        for (int i = 0; i < r.length; i++) modifier(player, i, r[i]);
     }
 
+    /** Per-player requests are serialized on the server's main thread. */
     public static void buy(ServerPlayer player, int perk) {
-        if (!player.isAlive() || player.isSpectator() || perk < 0 || perk >= KEYS.length) return;
-        var data = player.getPersistentData();
-        migrate(data);
-        int current = rank(data, perk);
-        int cost = price(perk, current);
+        if (!player.isAlive() || player.isSpectator()
+                || perk < 0 || perk > LuxUpgradeRules.PROMOTE) return;
+        CompoundTag data = player.getPersistentData();
+        int characterLevel = level(data);
+        int[] current = ranks(data);
+        int cost;
+        if (perk == LuxUpgradeRules.PROMOTE) {
+            cost = LuxUpgradeRules.promotionCost(characterLevel, current);
+        } else {
+            cost = LuxUpgradeRules.upgradeCost(perk, current[perk], characterLevel);
+        }
         if (cost < 0 || player.experienceLevel < cost) {
             sync(player);
             return;
         }
-        // Must succeed on the server in one tick. Never subtract client-side.
+        // This is the vanilla XP balance, NOT a fictitious skill point counter.
         player.giveExperienceLevels(-cost);
-        data.putInt(KEYS[perk], current + 1);
+        if (perk == LuxUpgradeRules.PROMOTE) {
+            data.putInt(LEVEL_KEY, characterLevel + 1);
+        } else {
+            data.putInt(KEYS[perk], current[perk] + 1);
+        }
         apply(player);
-        if (perk == 0) player.heal(2.0F);
+        if (perk == 0) player.heal(1.0F);
         sync(player);
     }
 
@@ -118,7 +150,8 @@ public final class LuxUpgradeServerEvents {
 
     @SubscribeEvent
     public void onTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % 200 != 0) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)
+                || player.tickCount % 200 != 0) return;
         apply(player);
         sync(player);
     }
@@ -129,6 +162,11 @@ public final class LuxUpgradeServerEvents {
         var old = event.getOriginal().getPersistentData();
         var data = player.getPersistentData();
         for (String key : KEYS) {
+            if (old.contains(key)) data.putInt(key, old.getInt(key));
+        }
+        if (old.contains(LEVEL_KEY)) data.putInt(LEVEL_KEY, old.getInt(LEVEL_KEY));
+        // Existing pre-v3 players may die before a regular tick migrated them.
+        for (String key : OLD_KEYS) {
             if (old.contains(key)) data.putInt(key, old.getInt(key));
         }
         for (String key : new String[]{OLD_HEALTH, OLD_SPEED}) {
