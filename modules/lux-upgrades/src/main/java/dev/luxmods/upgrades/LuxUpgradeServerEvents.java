@@ -38,7 +38,7 @@ public final class LuxUpgradeServerEvents {
             id("permanent_speed"), id("permanent_armor")
     };
 
-    private LuxUpgradeServerEvents() {}
+    public LuxUpgradeServerEvents() {}
 
     private static ResourceLocation id(String name) {
         return ResourceLocation.fromNamespaceAndPath("lux_engine", name);
