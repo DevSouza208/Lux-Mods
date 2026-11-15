@@ -18,6 +18,7 @@ import net.minecraft.world.entity.npc.VillagerProfession;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /** Bottom-screen PT-BR RPG conversation; keeps the standard villager shop. */
 public final class VillagerDialogueScreen extends Screen {
@@ -104,44 +105,57 @@ public final class VillagerDialogueScreen extends Screen {
         rebuildWidgets();
     }
 
-    private void companionOptions(int x, int y, int width, int gap) {
+    private record CompanionChoice(String label, Runnable action) {}
+
+    /** Two contained rows: three primary actions, then secondary actions / exit. */
+    private void companionOptions() {
         if (!companionRequested) {
             companionRequested = true;
             PacketDistributor.sendToServer(new DialogueNetwork.CompanionRequest(npc.getId()));
         }
-        if (companionState == null) {
-            addOption(x, y, width, "Sair", this::onClose);
-            return;
-        }
-        int i = 0;
-        if (!companionState.recruited()) {
+
+        List<CompanionChoice> choices = new ArrayList<>();
+        if (companionState != null && !companionState.recruited()) {
             for (int index = 0; index < Math.min(3, companionState.materials().size()); index++) {
                 var material = companionState.materials().get(index);
                 if (material.remaining() <= 0) continue;
                 final int requiredIndex = index;
-                addOption(x + (width + gap) * i++, y, width,
-                        "Entregar item " + (index + 1),
-                        () -> companionAction(0, requiredIndex));
+                choices.add(new CompanionChoice("Entregar\\nitem " + (index + 1),
+                        () -> companionAction(0, requiredIndex)));
             }
-            addOption(x + (width + gap) * i++, y, width, "Atualizar",
-                    () -> PacketDistributor.sendToServer(
-                            new DialogueNetwork.CompanionRequest(npc.getId())));
-        } else if (companionState.owner()) {
-            addOption(x + (width + gap) * i++, y, width, "Acompanhar",
-                    () -> companionAction(1, 0));
-            addOption(x + (width + gap) * i++, y, width, "Guardar",
-                    () -> companionAction(2, 0));
-            addOption(x + (width + gap) * i++, y, width, "Patrulhar",
-                    () -> companionAction(3, 0));
-            addOption(x + (width + gap) * i++, y, width, "Equipamentos",
-                    () -> {
-                        closed = true;
-                        PacketDistributor.sendToServer(
-                                new DialogueNetwork.CompanionAction(npc.getId(), 4, 0));
-                        Minecraft.getInstance().setScreen(null);
-                    });
+            choices.add(new CompanionChoice("Atualizar", () ->
+                    PacketDistributor.sendToServer(
+                            new DialogueNetwork.CompanionRequest(npc.getId()))));
+        } else if (companionState != null && companionState.owner()) {
+            choices.add(new CompanionChoice("Acompanhar", () -> companionAction(1, 0)));
+            choices.add(new CompanionChoice("Ficar aqui", () -> companionAction(2, 0)));
+            choices.add(new CompanionChoice("Patrulhar", () -> companionAction(3, 0)));
+            choices.add(new CompanionChoice("Equipamentos", () -> {
+                closed = true;
+                PacketDistributor.sendToServer(
+                        new DialogueNetwork.CompanionAction(npc.getId(), 4, 0));
+                Minecraft.getInstance().setScreen(null);
+            }));
         }
-        addOption(x + (width + gap) * i, y, width, "Sair", this::onClose);
+        choices.add(new CompanionChoice("Sair", this::onClose));
+
+        int left = Math.max(8, width / 2 - 235);
+        int right = Math.min(width - 8, width / 2 + 235);
+        int usable = Math.max(1, right - left - 28);
+        int firstRow = Math.min(3, Math.max(0, choices.size() - 1));
+        for (int index = 0; index < choices.size(); index++) {
+            boolean primary = index < firstRow;
+            int rowSize = primary ? firstRow : choices.size() - firstRow;
+            int rowIndex = primary ? index : index - firstRow;
+            int gap = 9;
+            int buttonWidth = Math.max(1, (usable - gap * (rowSize - 1)) / rowSize);
+            int rowWidth = rowSize * buttonWidth + gap * (rowSize - 1);
+            int x = left + (right - left - rowWidth) / 2 + rowIndex * (buttonWidth + gap);
+            int y = height - (primary ? 81 : 45);
+            addRenderableWidget(new DialogueButton(x, y, buttonWidth, 27,
+                    Component.literal(choices.get(index).label()),
+                    b -> choices.get(index).action().run()));
+        }
     }
 
     private boolean canRequestContract() {
@@ -159,24 +173,7 @@ public final class VillagerDialogueScreen extends Screen {
         clearWidgets();
         int gap = 7;
         if (companion) {
-            int actions = 1;
-            if (companionState != null) {
-                actions += !companionState.recruited() ? 1
-                        + (int) companionState.materials().stream()
-                                .limit(3).filter(r -> r.remaining() > 0).count()
-                        : companionState.owner() ? 4 : 0;
-            }
-            int count = Math.min(5, actions);
-            // Keep ALL buttons inside the same 470px panel as the dialogue,
-            // rather than spreading them across the entire screen width.
-            int panelLeft = Math.max(8, width / 2 - 235);
-            int panelRight = Math.min(width - 8, width / 2 + 235);
-            int available = Math.max(1, panelRight - panelLeft - 28);
-            int buttonWidth = Math.min(110,
-                    Math.max(1, (available - (count - 1) * gap) / count));
-            int totalWidth = count * buttonWidth + (count - 1) * gap;
-            int x = panelLeft + Math.max(14, (panelRight - panelLeft - totalWidth) / 2);
-            companionOptions(x, height - 42, buttonWidth, gap);
+            companionOptions();
             return;
         }
         int availableActions = contractSnapshot == null ? 0 :
@@ -269,13 +266,15 @@ public final class VillagerDialogueScreen extends Screen {
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         int left = Math.max(8, width / 2 - 235);
         int right = Math.min(width - 8, width / 2 + 235);
-        int top = height - 133;
-        LuxGuiStyle.panel(g, left, top, right - left, 118);
+        // Companions use an expanded panel for two rows of buttons.
+        // Villager and guard dialogs retain their original compact layout.
+        int top = height - (companion ? 186 : 133);
+        LuxGuiStyle.panel(g, left, top, right - left, companion ? 171 : 118);
         g.fill(left + 12, top + 26, right - 12, top + 27, 0x887E619B);
         g.drawString(font, npc.getDisplayName().getString(),
                 left + 13, top + 12, 0xFFEADAF8, true);
         List<FormattedCharSequence> lines = font.split(Component.literal(message), right - left - 29);
-        for (int i = 0; i < Math.min(4, lines.size()); i++) {
+        for (int i = 0; i < Math.min(companion ? 5 : 4, lines.size()); i++) {
             g.drawString(font, lines.get(i), left + 14, top + 36 + i * 11, 0xFFFFFFFF, false);
         }
         super.render(g, mouseX, mouseY, partialTick);
