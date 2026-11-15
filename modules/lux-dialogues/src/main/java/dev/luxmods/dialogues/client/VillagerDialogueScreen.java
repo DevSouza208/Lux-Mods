@@ -120,7 +120,7 @@ public final class VillagerDialogueScreen extends Screen {
                 var material = companionState.materials().get(index);
                 if (material.remaining() <= 0) continue;
                 final int requiredIndex = index;
-                choices.add(new CompanionChoice("Entregar\\nitem " + (index + 1),
+                choices.add(new CompanionChoice("Entregar\nitem " + (index + 1),
                         () -> companionAction(0, requiredIndex)));
             }
             choices.add(new CompanionChoice("Atualizar", () ->
