@@ -8,6 +8,7 @@ import dev.luxmods.dialogues.NpcContractLifecycle;
 import dev.luxmods.dialogues.NpcContractStorage;
 import dev.luxmods.dialogues.NpcContractDelivery;
 import dev.luxmods.dialogues.PlayerQuestLedger;
+import dev.luxmods.dialogues.ModernCompanionBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.network.FriendlyByteBuf;
@@ -245,8 +246,112 @@ public final class DialogueNetwork {
                 dev.luxmods.dialogues.client.DialogueClient.onQuestLedgerSync(payload));
     }
 
+    /** Read the real 4.45 recruitment requirements and current order. */
+    public record CompanionRequest(int entityId) implements CustomPacketPayload {
+        public static final Type<CompanionRequest> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "companion_request"));
+        public static final StreamCodec<FriendlyByteBuf, CompanionRequest> CODEC =
+                StreamCodec.of((buf, p) -> buf.writeVarInt(p.entityId()),
+                        buf -> new CompanionRequest(buf.readVarInt()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /** Action 0 delivers one real item; 1/2/3 order companion; 4 opens inventory. */
+    public record CompanionAction(int entityId, int action, int materialIndex)
+            implements CustomPacketPayload {
+        public static final Type<CompanionAction> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "companion_action"));
+        public static final StreamCodec<FriendlyByteBuf, CompanionAction> CODEC =
+                StreamCodec.of((buf, p) -> {
+                    buf.writeVarInt(p.entityId());
+                    buf.writeVarInt(p.action());
+                    buf.writeVarInt(p.materialIndex());
+                }, buf -> new CompanionAction(buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record CompanionState(int entityId, boolean recruited, boolean owner,
+                                 boolean following, boolean patrolling, boolean guarding,
+                                 java.util.List<ModernCompanionBridge.Material> materials)
+            implements CustomPacketPayload {
+        public static final Type<CompanionState> TYPE = new Type<>(
+                ResourceLocation.fromNamespaceAndPath(LuxDialogues.MOD_ID, "companion_state"));
+        public static final StreamCodec<FriendlyByteBuf, CompanionState> CODEC =
+                StreamCodec.of((buf, p) -> {
+                    buf.writeVarInt(p.entityId());
+                    buf.writeBoolean(p.recruited());
+                    buf.writeBoolean(p.owner());
+                    buf.writeBoolean(p.following());
+                    buf.writeBoolean(p.patrolling());
+                    buf.writeBoolean(p.guarding());
+                    buf.writeVarInt(p.materials().size());
+                    for (var requirement : p.materials()) {
+                        buf.writeUtf(requirement.item(), 128);
+                        buf.writeVarInt(requirement.remaining());
+                    }
+                }, buf -> {
+                    int id = buf.readVarInt();
+                    boolean recruited = buf.readBoolean(), owner = buf.readBoolean();
+                    boolean follow = buf.readBoolean(), patrol = buf.readBoolean(), guard = buf.readBoolean();
+                    int count = buf.readVarInt();
+                    if (count < 0 || count > 16) throw new IllegalArgumentException("Bad companion requirements");
+                    java.util.List<ModernCompanionBridge.Material> materials = new java.util.ArrayList<>();
+                    for (int i = 0; i < count; i++)
+                        materials.add(new ModernCompanionBridge.Material(buf.readUtf(128), buf.readVarInt()));
+                    return new CompanionState(id, recruited, owner, follow, patrol, guard,
+                            java.util.List.copyOf(materials));
+                });
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    private static void sendCompanionState(ServerPlayer player, Entity entity) {
+        var state = ModernCompanionBridge.state(entity, player);
+        if (state == null) return;
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                new CompanionState(entity.getId(), state.recruited(), state.owner(),
+                        state.following(), state.patrolling(), state.guarding(), state.materials()));
+    }
+
+    private static void companionRequest(CompanionRequest payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
+            Entity entity = player.level().getEntity(payload.entityId());
+            if (entity != null && ModernCompanionBridge.supported(entity)
+                    && entity.isAlive() && entity.distanceToSqr(player) <= 64D)
+                sendCompanionState(player, entity);
+        });
+    }
+
+    private static void companionAction(CompanionAction payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player) || player.isSpectator()) return;
+            Entity entity = player.level().getEntity(payload.entityId());
+            if (entity == null || !ModernCompanionBridge.supported(entity)
+                    || !entity.isAlive() || entity.distanceToSqr(player) > 64D) return;
+            // The client never chooses resources to create or sets tame flags.
+            // Permissions, real inventory and actual requirements stay server-owned.
+            switch (payload.action()) {
+                case 0 -> ModernCompanionBridge.deliverOne(entity, player, payload.materialIndex());
+                case 1, 2, 3 -> ModernCompanionBridge.setOrder(entity, player, payload.action() - 1);
+                case 4 -> {
+                    if (ModernCompanionBridge.openNativeInventory(entity, player)) return;
+                }
+                default -> { return; }
+            }
+            sendCompanionState(player, entity);
+        });
+    }
+
+    private static void receiveCompanionState(CompanionState packet, IPayloadContext context) {
+        context.enqueueWork(() ->
+                dev.luxmods.dialogues.client.DialogueClient.onCompanionState(packet));
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToServer(CompanionRequest.TYPE, CompanionRequest.CODEC, DialogueNetwork::companionRequest);
+        registrar.playToServer(CompanionAction.TYPE, CompanionAction.CODEC, DialogueNetwork::companionAction);
+        registrar.playToClient(CompanionState.TYPE, CompanionState.CODEC, DialogueNetwork::receiveCompanionState);
         registrar.playToServer(OpenShop.TYPE, OpenShop.CODEC, DialogueNetwork::openShop);
         registrar.playToServer(EndDialogue.TYPE, EndDialogue.CODEC, DialogueNetwork::endDialogue);
         registrar.playToServer(AcceptContract.TYPE, AcceptContract.CODEC, DialogueNetwork::acceptContract);
