@@ -1,106 +1,113 @@
-# Execute pelo PowerShell:
-# powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-to-sklauncher.ps1
-# Instala APENAS na instancia 'teste' do SKlauncher, se o Gradle concluir sem erros.
+# Atualizador Lux Mods para SKlauncher, Windows PowerShell 5.1 / Java 21.
+# ATENCAO: compila LOCALMENTE; nao usa CI nem GitHub Actions.
+param([string]$Instance = 'lux-mods')
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$mods = Join-Path $env:APPDATA '.sklauncher\instances\teste\mods'
+$mods = Join-Path $env:APPDATA ('.sklauncher\instances\' + $Instance + '\mods')
 $pack = Join-Path $root 'build\lux-testpack\mods'
 $gradle = Join-Path $root 'gradlew.bat'
-
+$names = @('lux-engine', 'lux-discovery', 'lux-compass', 'lux-quests', 'lux-upgrades',
+           'lux-hud', 'lux-menu', 'lux-borderless', 'lux-dialogues')
+# These JARs are OBSOLETE and must never be left in the game.
+$obsolete = @('lux-atlas')
+Write-Host "INSTANCIA DESTINO: $Instance" -ForegroundColor Cyan
+Write-Host "PASTA MODS: $mods" -ForegroundColor Cyan
 if (-not (Test-Path $mods -PathType Container)) {
-    throw "Pasta mods nao encontrada: $mods. Abra a instancia teste primeiro."
+    throw "Instancia nao encontrada: $mods. Nada foi instalado. Execute com -Instance <nome> se diferente."
 }
-if (-not (Test-Path $gradle -PathType Leaf)) {
-    throw "Wrapper Gradle nao encontrado: $gradle"
-}
-if (-not (Get-Command javac -ErrorAction SilentlyContinue)) {
-    throw 'JDK 21 nao encontrado no PATH. Abra um novo PowerShell apos a instalacao.'
-}
+if (-not (Test-Path $gradle -PathType Leaf)) { throw "Gradle wrapper nao encontrado: $gradle" }
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git nao encontrado no PATH.' }
+if (-not (Get-Command javac -ErrorAction SilentlyContinue)) { throw 'JDK 21 nao encontrado.' }
+
+# Nunca afirmar que atualizou quando apenas recompilou um checkout antigo.
+Push-Location $root
+try {
+    $branch = (& git branch --show-current | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel identificar a branch Git.' }
+    if ($branch -ne 'main') {
+        $dirty = (& git status --porcelain | Out-String).Trim()
+        if ($dirty) { throw "Checkout em $branch com mudancas locais. Nao vou trocar de branch." }
+        & git switch main
+        if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel mudar para main.' }
+    }
+    Write-Host 'Buscando codigo atual da main...' -ForegroundColor Yellow
+    & git pull --ff-only origin main
+    if ($LASTEXITCODE -ne 0) { throw 'git pull falhou; nao sera instalada uma versao desatualizada.' }
+    $commit = (& git rev-parse --short HEAD | Out-String).Trim()
+    Write-Host "CODIGO FONTE: main @$commit" -ForegroundColor Green
+} finally { Pop-Location }
+
 $version = (& javac -version 2>&1 | Out-String).Trim()
-if ($version -notmatch '^javac 21(\.|$)') {
-    throw "Precisa do compilador JDK 21; encontrado: $version"
-}
+if ($version -notmatch '^javac 21(\.|$)') { throw "Exigido JDK 21: $version" }
 if (-not $env:JAVA_HOME -or -not (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.exe'))) {
-    throw 'JAVA_HOME invalido. Configure a pasta de instalacao do JDK 21.'
+    throw 'JAVA_HOME invalido. Configure o JDK 21.'
 }
 $env:Path = (Join-Path $env:JAVA_HOME 'bin') + ';' + $env:Path
-# No PowerShell 5.1, "java -version" escreve no stderr, e com
-# ErrorActionPreference=Stop pode virar NativeCommandError mesmo com Java ok.
-# "java --version" (JDK 9+) escreve no stdout.
 $running = (& java --version | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or $running -notmatch '(?m)^(openjdk|java) 21(\.|\s|$)') {
-    throw "O Java que executa o Gradle nao e 21: $running"
+    throw "Gradle precisa executar com Java 21: $running"
 }
-
-Write-Host '=== LUX MODS: COMPILAR E INSTALAR NA INSTANCIA TESTE ===' -ForegroundColor Cyan
-Write-Host "Java: $version | JAVA_HOME: $env:JAVA_HOME"
+Write-Host "Compilando os $($names.Count) JARs..." -ForegroundColor Yellow
 Push-Location $root
 try {
     & $gradle assembleTestPack --no-daemon
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Compilacao falhou. Nenhum JAR foi copiado. Envie o erro do terminal.'
-    }
-}
-finally {
-    Pop-Location
-}
+    if ($LASTEXITCODE -ne 0) { throw 'BUILD FALHOU. Nenhum JAR da instancia foi alterado.' }
+} finally { Pop-Location }
 
 $files = @()
-foreach ($pattern in @('lux-engine-*.jar', 'lux-discovery-*.jar', 'lux-atlas-*.jar', 'lux-hud-*.jar', 'lux-menu-*.jar', 'lux-borderless-*.jar', 'lux-dialogues-*.jar')) {
-    $found = @(Get-ChildItem $pack -Filter $pattern -File -ErrorAction Stop |
+foreach ($name in $names) {
+    $found = @(Get-ChildItem $pack -Filter "$name-*.jar" -File |
         Where-Object { $_.Name -notmatch '-(sources|javadoc)\.jar$' })
     if ($found.Count -ne 1 -or $found[0].Length -le 0) {
-        throw "Esperado exatamente 1 JAR valido para $pattern, encontrados: $($found.Count)"
+        throw "BUILD INCOMPLETO: esperado 1 JAR para $name, encontrados $($found.Count)."
     }
     $files += $found[0]
 }
-
-# Validacao basica dos metadados antes de tocar na pasta mods.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 foreach ($file in $files) {
     $zip = [System.IO.Compression.ZipFile]::OpenRead($file.FullName)
     try {
         $meta = $zip.GetEntry('META-INF/neoforge.mods.toml')
-        $hasClass = @($zip.Entries | Where-Object { $_.FullName -match '^dev/luxmods/.+\.class$' }).Count -gt 0
-        if ($null -eq $meta -or -not $hasClass) {
-            throw "JAR invalido ou sem metadados/classes: $($file.Name)"
-        }
-    }
-    finally {
-        $zip.Dispose()
-    }
+        $classes = @($zip.Entries | Where-Object { $_.FullName -match '^dev/luxmods/.+\.class$' }).Count
+        if ($null -eq $meta -or $classes -eq 0) { throw "JAR sem metadata/classes: $($file.Name)" }
+    } finally { $zip.Dispose() }
 }
-
-# Copiar backups para FORA da pasta mods; outros mods nao sao alterados.
-$old = @(Get-ChildItem $mods -Filter 'lux-engine-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-discovery-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-atlas-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-hud-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-menu-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-borderless-*.jar' -File) +
-       @(Get-ChildItem $mods -Filter 'lux-dialogues-*.jar' -File)
+$allNames = @($names) + @($obsolete)
+$old = @()
+foreach ($name in $allNames) {
+    $old += @(Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction Stop)
+}
 $backup = Join-Path (Split-Path $mods -Parent) ('lux-mods-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 if ($old.Count -gt 0) {
     New-Item -ItemType Directory -Force -Path $backup | Out-Null
-    foreach ($file in $old) {
-        Copy-Item $file.FullName -Destination $backup -Force
-    }
+    foreach ($file in $old) { Copy-Item $file.FullName -Destination $backup -Force }
 }
 try {
     foreach ($file in $old) { Remove-Item $file.FullName -Force }
     foreach ($file in $files) {
         Copy-Item $file.FullName -Destination $mods -Force
-        Write-Host "INSTALADO: $($file.Name)" -ForegroundColor Green
+        $actual = Get-FileHash (Join-Path $mods $file.Name) -Algorithm SHA256
+        $expected = Get-FileHash $file.FullName -Algorithm SHA256
+        if ($actual.Hash -ne $expected.Hash) { throw "HASH INCORRETO: $($file.Name)" }
+        Write-Host ("OK INSTALADO: " + $file.Name + "  sha256=" + $actual.Hash.Substring(0,12)) -ForegroundColor Green
     }
-}
-catch {
-    foreach ($file in $files) {
-        Remove-Item (Join-Path $mods $file.Name) -Force -ErrorAction SilentlyContinue
+    foreach ($name in $obsolete) {
+        if (@(Get-ChildItem $mods -Filter "$name-*.jar" -File).Count -ne 0) {
+            throw "JAR ANTIGO AINDA PRESENTE: $name"
+        }
+    }
+} catch {
+    foreach ($name in $allNames) {
+        Get-ChildItem $mods -Filter "$name-*.jar" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
     }
     if ($old.Count -gt 0) {
-        Copy-Item (Join-Path $backup '*.jar') -Destination $mods -Force
+        Get-ChildItem $backup -Filter '*.jar' -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination $mods -Force
+        }
     }
     throw
 }
-Write-Host "Pronto! Lux Engine + Discovery + Atlas + HUD + Menu + Borderless + Dialogues instalados somente em $mods" -ForegroundColor Green
+Write-Host "INSTALACAO VERIFICADA NA INSTANCIA $Instance! Codigo main @$commit" -ForegroundColor Green
+Write-Host 'Lux Atlas antigo removido. Compass, Quests e Upgrades separados.' -ForegroundColor Cyan
 explorer.exe $mods
