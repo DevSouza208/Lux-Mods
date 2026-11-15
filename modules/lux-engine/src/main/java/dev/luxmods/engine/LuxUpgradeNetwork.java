@@ -11,7 +11,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-/** Minimal multiplayer-safe purchase and status sync for two real perks. */
+/** Server-authoritative XP purchases and character progression sync. */
 public final class LuxUpgradeNetwork {
     private LuxUpgradeNetwork() {}
 
@@ -24,19 +24,21 @@ public final class LuxUpgradeNetwork {
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
-    public record Snapshot(int xpLevel, int healthRank, int strengthRank,
-                           int speedRank, int armorRank) implements CustomPacketPayload {
+    public record Snapshot(int xpLevel, int characterLevel, int healthRank,
+                           int strengthRank, int speedRank, int armorRank)
+            implements CustomPacketPayload {
         public static final Type<Snapshot> TYPE = new Type<>(
                 ResourceLocation.fromNamespaceAndPath(LuxEngine.MOD_ID, "upgrade_snapshot"));
         public static final StreamCodec<FriendlyByteBuf, Snapshot> CODEC =
                 StreamCodec.of((buf, p) -> {
                     buf.writeVarInt(p.xpLevel());
+                    buf.writeVarInt(p.characterLevel());
                     buf.writeVarInt(p.healthRank());
                     buf.writeVarInt(p.strengthRank());
                     buf.writeVarInt(p.speedRank());
                     buf.writeVarInt(p.armorRank());
                 }, buf -> new Snapshot(buf.readVarInt(), buf.readVarInt(),
-                        buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                        buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
@@ -55,6 +57,6 @@ public final class LuxUpgradeNetwork {
 
     private static void onSnapshot(Snapshot packet, IPayloadContext context) {
         context.enqueueWork(() ->
-                LuxUpgradeState.receive(packet.xpLevel(), packet.healthRank(), packet.strengthRank(), packet.speedRank(), packet.armorRank()));
+                LuxUpgradeState.receive(packet.xpLevel(), packet.characterLevel(), packet.healthRank(), packet.strengthRank(), packet.speedRank(), packet.armorRank()));
     }
 }
