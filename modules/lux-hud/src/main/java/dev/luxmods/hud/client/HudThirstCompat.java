@@ -22,7 +22,7 @@ public final class HudThirstCompat {
             "dev.ghen.thirst.foundation.gui.ThirstBarRenderer",
             "dev.ghen.thirst.client.gui.ThirstBarRenderer"
     };
-    private static volatile boolean lookedUp;
+    private static int lastResolveTick = Integer.MIN_VALUE;
     private static Field thirstField;
     private static Method thirstGetter;
     private static ClientLevel lastLevel;
@@ -41,9 +41,17 @@ public final class HudThirstCompat {
             // thirst reference when joining or switching worlds.
             warmupTicks = mc.player.tickCount + 60;
             thirstGetter = null;
+            thirstField = null;
+            lastResolveTick = Integer.MIN_VALUE;
         }
         if (mc.player.tickCount < warmupTicks) return null;
-        if (!lookedUp) resolve();
+        // The legacy renderer can initialize AFTER world join or after changing
+        // game mode. Never cache a failed lookup forever.
+        if (thirstField == null && (lastResolveTick == Integer.MIN_VALUE
+                || mc.player.tickCount - lastResolveTick >= 100)) {
+            lastResolveTick = mc.player.tickCount;
+            resolve();
+        }
         if (thirstField == null) return null;
         try {
             Object state = thirstField.get(null);
@@ -63,17 +71,21 @@ public final class HudThirstCompat {
     }
 
     private static synchronized void resolve() {
-        if (lookedUp) return;
         for (String name : RENDERERS) {
             try {
                 Class<?> owner = Class.forName(name, false, HudThirstCompat.class.getClassLoader());
-                Field field = owner.getField("PLAYER_THIRST");
+                Field field;
+                try {
+                    field = owner.getField("PLAYER_THIRST");
+                } catch (NoSuchFieldException missingPublicField) {
+                    field = owner.getDeclaredField("PLAYER_THIRST");
+                    field.setAccessible(true);
+                }
                 thirstField = field;
                 break;
             } catch (ClassNotFoundException | NoSuchFieldException | LinkageError ignored) {
                 // An installed 1.21.1 port may use a different implementation.
             }
         }
-        lookedUp = true;
     }
 }
