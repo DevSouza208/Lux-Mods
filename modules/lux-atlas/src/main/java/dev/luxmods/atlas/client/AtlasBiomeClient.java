@@ -71,17 +71,29 @@ public final class AtlasBiomeClient {
         int endX = (int) lastX, endZ = (int) lastZ;
         // Only one request every 12 client ticks. A server can throttle as well.
         if (ticks % 12 != 0) return;
-        for (int z = startZ; z <= endZ; z++) {
-            for (int x = startX; x <= endX; x++) {
-                long id = key(x, z);
-                if (REGIONS.containsKey(id)) continue;
-                Integer last = REQUESTED.get(id);
-                if (last != null && ticks >= last && ticks - last < 200) continue;
-                REQUESTED.put(id, ticks);
-                PacketDistributor.sendToServer(new AtlasBiomeNetwork.Request(
-                        x * AtlasBiomeNetwork.REGION_BLOCKS,
-                        z * AtlasBiomeNetwork.REGION_BLOCKS));
-                return;
+        // Fill the player's map center first, instead of starting at the
+        // far corner of a zoomed-out viewport. Bound the search to the cache
+        // capacity so a huge viewport cannot cause unbounded tick work.
+        long centerX = Math.max(firstX, Math.min(lastX,
+                Math.floorDiv(((long) minX + maxX) / 2, AtlasBiomeNetwork.REGION_BLOCKS)));
+        long centerZ = Math.max(firstZ, Math.min(lastZ,
+                Math.floorDiv(((long) minZ + maxZ) / 2, AtlasBiomeNetwork.REGION_BLOCKS)));
+        for (int radius = 0; radius <= 4; radius++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    long x = centerX + dx, z = centerZ + dz;
+                    if (x < firstX || x > lastX || z < firstZ || z > lastZ) continue;
+                    long id = key((int) x, (int) z);
+                    if (REGIONS.containsKey(id)) continue;
+                    Integer last = REQUESTED.get(id);
+                    if (last != null && ticks >= last && ticks - last < 200) continue;
+                    REQUESTED.put(id, ticks);
+                    PacketDistributor.sendToServer(new AtlasBiomeNetwork.Request(
+                            (int) x * AtlasBiomeNetwork.REGION_BLOCKS,
+                            (int) z * AtlasBiomeNetwork.REGION_BLOCKS));
+                    return;
+                }
             }
         }
     }
