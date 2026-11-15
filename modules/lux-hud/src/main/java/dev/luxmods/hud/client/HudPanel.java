@@ -1,7 +1,6 @@
 package dev.luxmods.hud.client;
 
 import dev.luxmods.engine.client.LuxGuiStyle;
-import dev.luxmods.engine.api.LuxUpgradeState;
 import dev.luxmods.hud.HudConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -49,11 +48,9 @@ public final class HudPanel {
         PlayerFaceRenderer.draw(g, player.getSkin(), x + 10, y + 25, 46);
         LuxGuiStyle.icon(g, "portrait_frame", x + 7, y + 22, 52, 52);
 
-        // The vanilla XP level stays on the original hotbar; this label
-        // represents the permanent, separately purchased RPG character level.
-        String level = LuxUpgradeState.received()
-                ? "Nv. " + LuxUpgradeState.characterLevel()
-                : "Nv. --";
+        // Upgrades are frozen. Display the genuine vanilla XP level instead
+        // of a stale or permanently missing RPG snapshot.
+        String level = "XP " + player.experienceLevel;
         int levelX = x + WIDTH - 10 - mc.font.width(level);
         g.drawString(mc.font, level, levelX, y + 8, LuxGuiStyle.MUTED_TEXT, false);
 
