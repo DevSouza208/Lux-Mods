@@ -78,12 +78,17 @@ public final class AtlasBiomeClient {
                 Math.floorDiv(((long) minX + maxX) / 2, AtlasBiomeNetwork.REGION_BLOCKS)));
         long centerZ = Math.max(firstZ, Math.min(lastZ,
                 Math.floorDiv(((long) minZ + maxZ) / 2, AtlasBiomeNetwork.REGION_BLOCKS)));
+        int candidates = 0;
         for (int radius = 0; radius <= 4; radius++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 for (int dx = -radius; dx <= radius; dx++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                     long x = centerX + dx, z = centerZ + dz;
                     if (x < firstX || x > lastX || z < firstZ || z > lastZ) continue;
+                    // Do not cycle through more visible regions than the LRU
+                    // can retain: 9x9 candidates would continually evict and
+                    // re-request each other, wasting server work and bandwidth.
+                    if (++candidates > MAX_REGIONS) return;
                     long id = key((int) x, (int) z);
                     if (REGIONS.containsKey(id)) continue;
                     Integer last = REQUESTED.get(id);
