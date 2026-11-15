@@ -70,15 +70,15 @@ public final class VillagerDialogueScreen extends Screen {
         if (closed || !companion || state.entityId() != npc.getId()) return;
         companionState = state;
         if (!state.recruited()) {
-            StringBuilder text = new StringBuilder("Posso acompanhar você, viajante, ");
-            text.append("mas primeiro preciso de suprimentos: ");
+            StringBuilder text = new StringBuilder("Posso acompanhar você, mas preciso de suprimentos: ");
             if (state.materials().isEmpty()) {
                 text.append("ainda não consegui consultar minhas necessidades.");
             } else {
                 int i = 0;
                 for (var material : state.materials()) {
                     if (i++ > 0) text.append("; ");
-                    text.append(material.remaining()).append(" ").append(itemLabel(material.item()));
+                    text.append(i).append(") ").append(material.remaining())
+                            .append(" ").append(itemLabel(material.item()));
                 }
                 text.append(". Traga-os e poderemos viajar juntos.");
             }
@@ -120,7 +120,7 @@ public final class VillagerDialogueScreen extends Screen {
                 if (material.remaining() <= 0) continue;
                 final int requiredIndex = index;
                 addOption(x + (width + gap) * i++, y, width,
-                        "Entregar " + itemLabel(material.item()),
+                        "Entregar item " + (index + 1),
                         () -> companionAction(0, requiredIndex));
             }
             addOption(x + (width + gap) * i++, y, width, "Atualizar",
@@ -167,10 +167,15 @@ public final class VillagerDialogueScreen extends Screen {
                         : companionState.owner() ? 4 : 0;
             }
             int count = Math.min(5, actions);
-            int buttonWidth = Math.min(116,
-                    Math.max(48, (width - 20 - (count - 1) * gap) / count));
-            int x = Math.max(8, (width - (count * buttonWidth
-                    + (count - 1) * gap)) / 2);
+            // Keep ALL buttons inside the same 470px panel as the dialogue,
+            // rather than spreading them across the entire screen width.
+            int panelLeft = Math.max(8, width / 2 - 235);
+            int panelRight = Math.min(width - 8, width / 2 + 235);
+            int available = Math.max(1, panelRight - panelLeft - 28);
+            int buttonWidth = Math.min(110,
+                    Math.max(1, (available - (count - 1) * gap) / count));
+            int totalWidth = count * buttonWidth + (count - 1) * gap;
+            int x = panelLeft + Math.max(14, (panelRight - panelLeft - totalWidth) / 2);
             companionOptions(x, height - 42, buttonWidth, gap);
             return;
         }
