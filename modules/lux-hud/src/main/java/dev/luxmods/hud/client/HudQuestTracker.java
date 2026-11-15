@@ -1,6 +1,7 @@
 package dev.luxmods.hud.client;
 
 import dev.luxmods.engine.client.LuxGuiStyle;
+import dev.luxmods.engine.api.LuxIntroQuestState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -23,6 +24,7 @@ public final class HudQuestTracker {
 
     /** Called exclusively from the server snapshot; no fabricated client quests. */
     public static void updateStage(int stage, int progress) {
+        LuxIntroQuestState.receive(stage, progress);
         if (stage <= 0) {
             track("Primeiros troncos", "Coletar madeira", progress, 16);
         } else if (stage == 1) {
@@ -38,6 +40,7 @@ public final class HudQuestTracker {
 
     public static void clear() {
         tracked = null;
+        LuxIntroQuestState.clear();
     }
 
     private static String trim(String text, int limit) {
