@@ -28,9 +28,24 @@ public final class AtlasHorseMemory {
 
     private AtlasHorseMemory() {}
 
+    // Horse memory must remain independent of the deleted fullscreen map and
+    // waypoint system. Preserve the same file names so prior horse sightings work.
+    private static String worldKey(Minecraft mc) {
+        String key;
+        if (mc.getCurrentServer() != null) key = mc.getCurrentServer().ip;
+        else if (mc.getSingleplayerServer() != null)
+            key = mc.getSingleplayerServer().getWorldData().getLevelName();
+        else key = "local";
+        return key.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private static String dimension(ClientLevel level) {
+        return level.dimension().location().toString();
+    }
+
     private static Path path(Minecraft mc) {
         return mc.gameDirectory.toPath().resolve("lux-atlas")
-                .resolve(AtlasMarkers.worldKey(mc) + "_horse.json");
+                .resolve(worldKey(mc) + "_horse.json");
     }
 
     private static void load(Minecraft mc) {
@@ -64,7 +79,7 @@ public final class AtlasHorseMemory {
 
     public static Sighting get(Minecraft mc) {
         if (mc.level == null || last == null
-                || !AtlasMarkers.dimension(mc.level).equals(last.dimension())) return null;
+                || !dimension(mc.level).equals(last.dimension())) return null;
         boolean current = mc.player != null && lastSeenTick >= 0
                 && mc.player.tickCount >= lastSeenTick
                 && mc.player.tickCount - lastSeenTick < 40;
@@ -79,7 +94,7 @@ public final class AtlasHorseMemory {
             last = null;
             return;
         }
-        String id = AtlasMarkers.worldKey(mc);
+        String id = worldKey(mc);
         if (world != mc.level || !id.equals(worldId)) {
             world = mc.level;
             worldId = id;
@@ -89,7 +104,7 @@ public final class AtlasHorseMemory {
         }
         if (mc.player.tickCount % 20 != 0) return;
         var player = mc.player;
-        String dimension = AtlasMarkers.dimension(mc.level);
+        String dimension = dimension(mc.level);
         for (var entity : mc.level.getEntities(player, player.getBoundingBox().inflate(64D),
                 e -> e instanceof AbstractHorse)) {
             if (!(entity instanceof AbstractHorse horse) || !horse.isAlive()
