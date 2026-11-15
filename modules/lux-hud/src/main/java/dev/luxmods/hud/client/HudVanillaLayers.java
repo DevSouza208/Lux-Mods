@@ -21,7 +21,12 @@ public final class HudVanillaLayers {
     }
 
     public static void onPre(RenderGuiLayerEvent.Pre event) {
-        if (!HudPanel.shouldDraw(Minecraft.getInstance())) return;
+        // Keep vanilla bars suppressed even while the pause menu is open.
+        // HudPanel.shouldDraw() deliberately returns false with any Screen open;
+        // using it here leaked XP, thirst and heart icons behind pause menus.
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null || mc.player.isSpectator()
+                || mc.options.hideGui || HudConfig.MODE.get() != HudConfig.Mode.RPG) return;
 
         var name = event.getName();
         // Third-party thirst indicator is hidden ONLY after reading a real
