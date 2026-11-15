@@ -14,14 +14,11 @@ public final class DialogueInteractions {
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
         var npc = event.getTarget();
         if (!DialogueNpcTypes.supported(npc) || event.getHand() != InteractionHand.MAIN_HAND) return;
-        // Modern Companions owns ordinary clicks (recruitment, food,
-        // inventory and commands). Offer a separate opt-in conversation:
-        // Shift + right-click with the main hand EMPTY.
+        // Lux handles empty-hand conversations; item-use and sneaking remain
+        // available to ModernCompanions for emergency tools and native actions.
         boolean companion = DialogueNpcTypes.isCompanion(npc);
-        if (companion) {
-            if (!event.getEntity().isShiftKeyDown()
-                    || !event.getEntity().getMainHandItem().isEmpty()) return;
-        } else if (event.getEntity().isShiftKeyDown()) return;
+        if (companion && !event.getEntity().getMainHandItem().isEmpty()) return;
+        if (event.getEntity().isShiftKeyDown()) return;
         if (DialogueNpcTypes.guardInCombat(npc)) return;
         if (!event.getLevel().isClientSide()) {
             if (event.getEntity() instanceof ServerPlayer player && player.distanceToSqr(npc) <= 64D) {
