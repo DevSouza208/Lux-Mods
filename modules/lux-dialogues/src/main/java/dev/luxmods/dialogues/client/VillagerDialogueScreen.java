@@ -152,9 +152,10 @@ public final class VillagerDialogueScreen extends Screen {
             int rowWidth = rowSize * buttonWidth + gap * (rowSize - 1);
             int x = left + (right - left - rowWidth) / 2 + rowIndex * (buttonWidth + gap);
             int y = height - (primary ? 81 : 45);
+            CompanionChoice selectedChoice = choices.get(index);
             addRenderableWidget(new DialogueButton(x, y, buttonWidth, 27,
-                    Component.literal(choices.get(index).label()),
-                    b -> choices.get(index).action().run()));
+                    Component.literal(selectedChoice.label()),
+                    b -> selectedChoice.action().run()));
         }
     }
 
