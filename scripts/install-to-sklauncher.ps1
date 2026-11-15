@@ -17,7 +17,9 @@ if (-not (Test-Path $mods -PathType Container)) {
 }
 if (-not (Test-Path $gradle -PathType Leaf)) { throw "Gradle wrapper nao encontrado: $gradle" }
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git nao encontrado no PATH.' }
-if (-not (Get-Command javac -ErrorAction SilentlyContinue)) { throw 'JDK 21 nao encontrado.' }
+if (-not $env:JAVA_HOME -or -not (Test-Path (Join-Path $env:JAVA_HOME 'bin\javac.exe') -PathType Leaf) -or -not (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.exe') -PathType Leaf)) {
+    throw 'JAVA_HOME deve apontar para um JDK 21 completo (java.exe e javac.exe).'
+}
 
 # Nunca afirmar que atualizou quando apenas recompilou um checkout antigo.
 Push-Location $root
@@ -37,12 +39,9 @@ try {
     Write-Host "CODIGO FONTE: main @$commit" -ForegroundColor Green
 } finally { Pop-Location }
 
-$version = (& javac -version 2>&1 | Out-String).Trim()
-if ($version -notmatch '^javac 21(\.|$)') { throw "Exigido JDK 21: $version" }
-if (-not $env:JAVA_HOME -or -not (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.exe'))) {
-    throw 'JAVA_HOME invalido. Configure o JDK 21.'
-}
 $env:Path = (Join-Path $env:JAVA_HOME 'bin') + ';' + $env:Path
+$version = (& (Join-Path $env:JAVA_HOME 'bin\javac.exe') -version 2>&1 | Out-String).Trim()
+if ($version -notmatch '^javac 21(\.|$)') { throw "Exigido JDK 21: $version" }
 $running = (& java --version | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or $running -notmatch '(?m)^(openjdk|java) 21(\.|\s|$)') {
     throw "Gradle precisa executar com Java 21: $running"
